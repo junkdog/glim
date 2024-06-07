@@ -29,6 +29,6 @@ impl MappedColor {
         to_color: &Color,
         alpha: f32,
     ) -> Color {
-        self.map(from_color, alpha, |c| c.lerp(&to_color, alpha))
+        self.map(from_color, alpha, |c| c.lerp(to_color, alpha))
     }
 }

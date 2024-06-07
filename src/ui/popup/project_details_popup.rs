@@ -5,7 +5,7 @@ use ratatui::text::Span;
 use ratatui::widgets::{TableState, Widget};
 
 use crate::domain::{Pipeline, Project};
-use crate::shader::{open_window, RenderEffect};
+use crate::shader::{open_window, EffectRenderer};
 use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
 use crate::ui::popup::utility::CenteredShrink;

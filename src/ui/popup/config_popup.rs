@@ -9,7 +9,7 @@ use ratatui::text::Span;
 use tui_input::Input;
 
 use crate::glim_app::GlimConfig;
-use crate::shader::{open_window, RenderEffect, Shader};
+use crate::shader::{open_window, EffectRenderer, Shader};
 use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
 use crate::ui::popup::utility::CenteredShrink;

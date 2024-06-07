@@ -5,7 +5,7 @@ use ratatui::widgets::Clear;
 use ratatui::widgets::Widget;
 use crate::interpolation::Interpolatable;
 use crate::shader::lifetime::EffectTimer;
-use crate::shader::{Effect, RenderEffect, Shader};
+use crate::shader::{Effect, EffectRenderer, Shader};
 use crate::shader::effect::FilterMode;
 use crate::ui::popup::CenteredShrink;
 

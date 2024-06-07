@@ -5,7 +5,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::prelude::Color;
 
-use crate::interpolation::Interpolation;
+use crate::interpolation::{Interpolatable, Interpolation};
 use crate::interpolation::Interpolation::Smooth;
 use crate::shader::effect::FilterMode;
 use crate::shader::fx::internal::MappedColor;
@@ -74,11 +74,31 @@ impl Shader for SweepIn {
             .for_each(|(pos, cell)| {
                 let a = window_alpha(pos.x);
                 
+                match a {
+                    0.0 => {
+                        cell.set_fg(self.faded_color);
+                        cell.set_bg(self.faded_color);
+                    },
+                    1.0 => {
+                        // nothing to do
+                    }
+                    _ => {
+                        let fg = fg_mapper
+                            .map(cell.fg, a, |c| self.faded_color.tween(&c, a, Smooth));
+                        let bg = bg_mapper
+                            .map(cell.bg, a, |c| self.faded_color.tween(&c, a, Smooth));
+
+                        cell.set_fg(fg);
+                        cell.set_bg(bg);
+                    }
+                    
+                }
+                
                 if a != 1.0 {
                     let fg = fg_mapper
-                        .map(cell.fg, a, |c| Smooth.interpolate(self.faded_color, c, a));
+                        .map(cell.fg, a, |c| self.faded_color.tween(&c, a, Smooth));
                     let bg = bg_mapper
-                        .map(cell.bg, a, |c| Smooth.interpolate(self.faded_color, c, a));
+                        .map(cell.bg, a, |c| self.faded_color.tween(&c, a, Smooth));
 
                     cell.set_fg(fg);
                     cell.set_bg(bg);

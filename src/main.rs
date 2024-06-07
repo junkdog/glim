@@ -14,7 +14,7 @@ use crate::glim_app::{GlimApp, GlimConfig, StatefulWidgets};
 use crate::input::InputProcessor;
 use crate::input::processor::ConfigProcessor;
 use crate::result::{GlimError, Result};
-use crate::shader::RenderEffect;
+use crate::shader::EffectRenderer;
 use crate::shader::Shader;
 use crate::shader::term256_colors;
 use crate::theme::theme;

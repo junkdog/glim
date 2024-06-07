@@ -6,7 +6,7 @@ use ratatui::widgets::{List, ListState};
 use crate::domain::Project;
 use crate::event::GlimEvent;
 use crate::id::{PipelineId, ProjectId};
-use crate::shader::{open_window, RenderEffect};
+use crate::shader::{open_window, EffectRenderer};
 use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
 use crate::ui::popup::utility::CenteredShrink;

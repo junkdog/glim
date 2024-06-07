@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use crate::shader::shader::Shader;
 
-pub trait RenderEffect<T> {
+pub trait EffectRenderer<T> {
     fn render_effect(
         &mut self,
         effect: &mut T,
@@ -13,7 +13,7 @@ pub trait RenderEffect<T> {
     );
 }
 
-impl<S: Shader> RenderEffect<S> for Frame<'_> {
+impl<S: Shader> EffectRenderer<S> for Frame<'_> {
     fn render_effect(
         &mut self,
         effect: &mut S,
@@ -25,7 +25,7 @@ impl<S: Shader> RenderEffect<S> for Frame<'_> {
 }
 
 
-impl<S: Shader> RenderEffect<S> for Buffer {
+impl<S: Shader> EffectRenderer<S> for Buffer {
     fn render_effect(
         &mut self,
         effect: &mut S,

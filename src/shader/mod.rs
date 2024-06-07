@@ -3,7 +3,7 @@ use ratatui::layout::Margin;
 use ratatui::style::Color;
 
 pub use effect::*;
-pub use render_effect::RenderEffect;
+pub use render_effect::EffectRenderer;
 pub use shader::Shader;
 pub use cell_iter::CellIterator;
 use crate::gruvbox::Gruvbox::Dark0;

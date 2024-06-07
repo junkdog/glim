@@ -1,6 +1,5 @@
 use std::f32::consts::PI;
 
-use chrono::Duration;
 use ratatui::style::{Color, Style};
 
 #[derive(Clone)]
@@ -20,25 +19,6 @@ pub enum Interpolation {
 }
 
 impl Interpolation {
-
-    pub fn interpolate_time<T>(
-        &self,
-        begin: T,
-        end: T,
-        time: Duration,
-        duration: Duration,
-    ) -> T
-        where T: Interpolatable<T>,
-    {
-        let a = time.num_milliseconds() as f32 / duration.num_milliseconds() as f32;
-        begin.lerp(&end, self.alpha(a))
-    }
-
-    pub fn interpolate<T>(&self, begin: T, end: T, a: f32) -> T
-        where T: Interpolatable<T>,
-    {
-        begin.lerp(&end, self.alpha(a))
-    }
 
     pub fn alpha(&self, a: f32) -> f32 {
         match self {
@@ -116,6 +96,10 @@ impl Interpolation {
 
 pub trait Interpolatable<T> {
     fn lerp(&self, target: &T, alpha: f32) -> T;
+    
+    fn tween(&self, target: &T, alpha: f32, interpolation: Interpolation) -> T {
+        self.lerp(target, interpolation.alpha(alpha))
+    }
 }
 
 impl Interpolatable<u16> for u16 {
