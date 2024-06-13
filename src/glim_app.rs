@@ -356,7 +356,7 @@ impl GlimApp {
             GlimEvent::ApplyConfiguration => {
                 if let Some(config_popup) = ui.config_popup_state.as_ref() {
                     let config = config_popup.to_config();
-                    let client = GitlabClient::new_from_config(self.sender.clone(), config.clone());
+                    let client = GitlabClient::new_from_config(self.sender.clone(), config.clone(), self.gitlab.debug());
                     match client.validate_configuration() {
                         Ok(_) => {
                             save_config(config.clone()).expect("failed to save config");

@@ -39,8 +39,7 @@ mod interpolation;
 mod input;
 
 fn main() -> Result<()> {
-    // config is stored in $HOME/.config/glim.toml
-    // let config = read_config()?;
+    let debug = std::env::var("GLIM_DEBUG").is_ok();
 
     // event handler
     let event_handler = EventHandler::new(Duration::milliseconds(33));
@@ -54,10 +53,10 @@ fn main() -> Result<()> {
     tui.enter()?;
 
     let mut widget_states = StatefulWidgets::new(sender.clone());
-    let config = run_config_ui_loop(&mut tui, &mut widget_states, sender.clone())?;
+    let config = run_config_ui_loop(&mut tui, &mut widget_states, sender.clone(), debug)?;
 
     // app state and initial setup
-    let mut app = GlimApp::new(sender.clone(), gitlab_client(sender.clone(), config));
+    let mut app = GlimApp::new(sender.clone(), gitlab_client(sender.clone(), config, debug));
     app.apply(GlimEvent::RequestProjects, &mut widget_states);
 
     // main loop
@@ -176,13 +175,15 @@ fn render_config_popup(
 
 fn gitlab_client(
     sender: Sender<GlimEvent>,
-    config: GlimConfig
+    config: GlimConfig,
+    debug: bool,
 ) -> GitlabClient {
     GitlabClient::new(
         sender,
         config.gitlab_url,
         config.gitlab_token,
-        config.search_filter
+        config.search_filter,
+        debug,
     )
 }
 
@@ -224,6 +225,7 @@ pub fn run_config_ui_loop(
     tui: &mut Tui,
     ui: &mut StatefulWidgets,
     sender: Sender<GlimEvent>,
+    debug: bool,
 ) -> Result<GlimConfig> {
     if let Some(dirs) = BaseDirs::new() {
         let config_file = dirs.config_dir().join("glim.toml");
@@ -253,7 +255,7 @@ pub fn run_config_ui_loop(
                             let config = ui.config_popup_state.as_ref().unwrap().to_config();
                             match config.validate() {
                                 Ok(_) => {
-                                    let client = GitlabClient::new_from_config(sender.clone(), config);
+                                    let client = GitlabClient::new_from_config(sender.clone(), config, debug);
                                     match client.validate_configuration() {
                                         Ok(_) => {
                                             let state = ui.config_popup_state.as_ref().unwrap();

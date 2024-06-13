@@ -1,7 +1,8 @@
+use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use itertools::Itertools;
 use rand::prelude::{SeedableRng, SmallRng};
 use reqwest::{Client, RequestBuilder};
@@ -24,6 +25,7 @@ pub struct GitlabClient {
     private_token: String,
     client: Client,
     search_filter: Option<String>,
+    log_response: bool,
     rt: Runtime
 }
 
@@ -34,6 +36,7 @@ impl GitlabClient {
         host: String,
         private_token: String,
         search_filter: Option<String>,
+        debug: bool
     ) -> Self {
         let client = Self {
             sender,
@@ -41,7 +44,8 @@ impl GitlabClient {
             private_token,
             client: Client::new(),
             search_filter,
-            rt: Runtime::new().unwrap()
+            rt: Runtime::new().unwrap(),
+            log_response: debug
         };
         client.register_polling();
         client
@@ -52,16 +56,22 @@ impl GitlabClient {
         self.private_token = config.gitlab_token;
         self.search_filter = config.search_filter;
     }
+
+    pub fn debug(&self) -> bool {
+        self.log_response
+    }
     
     pub fn new_from_config(
         sender: Sender<GlimEvent>,
-        config: GlimConfig
+        config: GlimConfig,
+        debug: bool
     ) -> Self {
         Self::new(
             sender,
             config.gitlab_url,
             config.gitlab_token,
             config.search_filter,
+            debug
         )
     }
     
@@ -100,13 +110,14 @@ impl GitlabClient {
 
         let sender = self.sender.clone();
 
+        let debug = self.log_response;
         self.rt.spawn(async move {
-            let jobs = match Self::http_json_request::<Vec<JobDto>>(get_jobs_request).await {
+            let jobs = match Self::http_json_request::<Vec<JobDto>>(get_jobs_request, debug).await {
                 Ok(t) => t,
                 Err(e) => return sender.dispatch(GlimEvent::Error(e)),
             };
 
-            let triggered_jobs = match Self::http_json_request::<Vec<JobDto>>(get_trigger_jobs_request).await {
+            let triggered_jobs = match Self::http_json_request::<Vec<JobDto>>(get_trigger_jobs_request, debug).await {
                 Ok(t) => t,
                 Err(e) => return sender.dispatch(GlimEvent::Error(e)),
             };
@@ -144,7 +155,8 @@ impl GitlabClient {
         let request = self.client.get(self.list_projects_url(None, 1))
             .header("PRIVATE-TOKEN", &self.private_token);
 
-        let response = self.rt.block_on(Self::http_json_request::<serde_json::Value>(request))?;
+        let debug = self.log_response;
+        let response = self.rt.block_on(Self::http_json_request::<serde_json::Value>(request, debug))?;
         if response.is_array() {
             Ok(())
         } else {
@@ -188,8 +200,9 @@ impl GitlabClient {
 
         let sender = self.sender.clone();
 
+        let debug = self.log_response;
         self.rt.spawn(async move {
-            let event = match Self::http_json_request::<T>(request).await {
+            let event = match Self::http_json_request::<T>(request, debug).await {
                 Ok(t) => t.into_glim_event(),
                 Err(e) => GlimEvent::Error(e),
             };
@@ -207,6 +220,7 @@ impl GitlabClient {
             .header("PRIVATE-TOKEN", &self.private_token);
 
         let sender = self.sender.clone();
+        let debug = self.log_response;
 
         self.rt.spawn(async move {
             let rng = SmallRng::from_entropy();
@@ -220,7 +234,7 @@ impl GitlabClient {
 
             sleep(Duration::from_millis(400)).await;
 
-            let event = match Self::http_json_request::<T>(request).await {
+            let event = match Self::http_json_request::<T>(request, debug).await {
                 Ok(t) => t.into_glim_event(),
                 Err(e) => GlimEvent::Error(e),
             };
@@ -229,14 +243,21 @@ impl GitlabClient {
         });
     }
 
-    async fn http_json_request<T>(request: RequestBuilder) -> Result<T>
+    async fn http_json_request<T>(request: RequestBuilder, debug: bool) -> Result<T>
         where T: for<'de> Deserialize<'de>
     {
         let response = request.send().await?;
-        
+        let path = response.url().path().to_string();
+
+
         let status = response.status();
         let body = response.text().await?;
-        
+
+        if debug {
+            Self::log_response_to_file(path, &body);
+        }
+
+
         if status.is_success() {
             serde_json::from_str(&body)
                 .map_err(|_| GeneralError(format!("failed to parse json: {}", body)))
@@ -250,6 +271,21 @@ impl GitlabClient {
                 Err(GeneralError(format!("{}: {}", status, body)))
             }
         }
+    }
+
+    fn log_response_to_file(path: String, body: &String) {
+        if !Path::new("glim-logs").exists() {
+            std::fs::create_dir("glim-logs")
+                .expect("Unable to create directory");
+        }
+        
+        let filename = format!("glim-logs/{}_{}.json",
+            Local::now().format("%Y-%m-%d_%H-%M-%S"),
+            path.replace('/', "_"),
+        );
+
+        std::fs::write(filename, body)
+            .expect("Unable to write to file");
     }
 
     async fn http_request(request: RequestBuilder) -> Result<String> {
