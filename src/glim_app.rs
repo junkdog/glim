@@ -201,6 +201,8 @@ impl StatefulWidgets {
 
     fn handle_project_selection(&mut self, direction: i32, app: &GlimApp) {
         let projects = app.projects();
+        if projects.is_empty() { return; }
+        
         if let Some(current) = self.table_state.selected() {
             let new_index = match direction {
                 1  => current.saturating_add(1),
