@@ -3,12 +3,12 @@ use std::thread;
 use chrono::Duration;
 
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind};
+use tachyonfx::fx::Glitch;
 use crate::dispatcher::Dispatcher;
 use crate::domain::{JobDto, PipelineDto, Project, ProjectDto};
 use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result;
-use crate::shader::fx::Glitch;
 
 #[derive(Debug)]
 pub enum GlimEvent {

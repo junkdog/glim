@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::vec;
 
 use derive_builder::Builder;
@@ -6,12 +7,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Position, Rect};
 use ratatui::prelude::{Line, StatefulWidget, Style, Text, Widget};
 use ratatui::text::Span;
+use tachyonfx::{EffectRenderer, Shader};
 use tui_input::Input;
 
 use crate::glim_app::GlimConfig;
-use crate::shader::{open_window, EffectRenderer, Shader};
-use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
+use crate::ui::fx::{open_window, OpenWindow};
 use crate::ui::popup::utility::CenteredShrink;
 
 /// configuration popup
@@ -167,7 +168,8 @@ impl StatefulWidget for ConfigPopup {
         let area = area.inner_centered(80, 12);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        buf.render_effect(&mut state.window_fx, area, self.last_frame_ms);
+        let last_tick = Duration::from_millis(self.last_frame_ms as u64);
+        buf.render_effect(&mut state.window_fx, area, last_tick);
         
         // popup content
         let content_area = area.inner(&Margin::new(1, 1));

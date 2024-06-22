@@ -1,14 +1,15 @@
+use std::time::Duration;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::{Line, StatefulWidget};
 use ratatui::widgets::{List, ListState};
+use tachyonfx::EffectRenderer;
 
 use crate::domain::Project;
 use crate::event::GlimEvent;
 use crate::id::{PipelineId, ProjectId};
-use crate::shader::{open_window, EffectRenderer};
-use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
+use crate::ui::fx::{open_window, OpenWindow};
 use crate::ui::popup::utility::CenteredShrink;
 
 /// pipeline actions popup
@@ -105,7 +106,8 @@ impl StatefulWidget for PipelineActionsPopup {
         let area = area.inner_centered(40, 2 + state.actions.len() as u16);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        buf.render_effect(&mut state.window_fx, area, self.last_frame_ms);
+        let last_tick = Duration::from_millis(self.last_frame_ms as u64);
+        buf.render_effect(&mut state.window_fx, area, last_tick);
 
         let actions = state.actions_as_lines();
         let actions_list = List::new(actions)

@@ -4,8 +4,10 @@ use chrono::{DateTime, Local};
 use rand::prelude::{SeedableRng, SmallRng};
 use ratatui::widgets::{ListState, TableState};
 use serde::{Deserialize, Serialize};
+use tachyonfx::{Effect, fx, Interpolation, IntoEffect};
+use tachyonfx::fx::{Direction, Glitch, parallel};
 
-use crate::{save_config, shader};
+use crate::save_config;
 use crate::client::GitlabClient;
 use crate::dispatcher::Dispatcher;
 use crate::domain::Project;
@@ -14,9 +16,6 @@ use crate::gruvbox::Gruvbox::{Dark0Hard, Dark3};
 use crate::id::{PipelineId, ProjectId};
 use crate::input::InputMultiplexer;
 use crate::input::processor::NormalModeProcessor;
-use crate::interpolation::Interpolation;
-use crate::shader::{Effect, IntoEffect, parallel};
-use crate::shader::fx::Glitch;
 use crate::stores::{InternalLogsStore, ProjectStore};
 use crate::ui::popup::{AlertPopup, ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
 
@@ -112,7 +111,7 @@ impl StatefulWidgets {
 
             GlimEvent::OpenProjectDetails(id)       => self.open_project_details(app.project(*id).clone(), app.sender.clone()),
             GlimEvent::CloseProjectDetails          => self.project_details = {
-                let fade_in = shader::fade_from(Dark3, Dark0Hard, 300, Interpolation::PowIn(2));
+                let fade_in = fx::fade_from(Dark3, Dark0Hard, (300, Interpolation::CircIn));
                 self.shader_pipeline = Some(fade_in);
 
                 None
@@ -137,8 +136,8 @@ impl StatefulWidgets {
 
     fn fade_in_projects_table(&mut self) {
         let effect = parallel(vec![
-            shader::coalesce(550, 2_000, Interpolation::Linear),
-            shader::sweep_in(50, Dark0Hard, 450, Interpolation::PowIn(2))
+            fx::coalesce(2_000, (550, Interpolation::Linear)),
+            fx::sweep_in(Direction::LeftToRight, 50, Dark0Hard, (450, Interpolation::QuadIn))
         ]);
         self.table_fade_in = Some(effect);
     }

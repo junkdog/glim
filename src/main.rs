@@ -7,6 +7,8 @@ use ratatui::{Frame, Terminal};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::prelude::Direction;
+use tachyonfx::{EffectRenderer, Shader};
+use tachyonfx::fx::term256_colors;
 
 use crate::client::GitlabClient;
 use crate::event::{EventHandler, GlimEvent};
@@ -14,9 +16,6 @@ use crate::glim_app::{GlimApp, GlimConfig, StatefulWidgets};
 use crate::input::InputProcessor;
 use crate::input::processor::ConfigProcessor;
 use crate::result::{GlimError, Result};
-use crate::shader::EffectRenderer;
-use crate::shader::Shader;
-use crate::shader::term256_colors;
 use crate::theme::theme;
 use crate::tui::Tui;
 use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
@@ -34,8 +33,6 @@ mod glim_app;
 mod theme;
 mod id;
 mod dispatcher;
-mod shader;
-mod interpolation;
 mod input;
 
 fn main() -> Result<()> {
@@ -120,12 +117,13 @@ fn render_widgets(
         f.render_stateful_widget(popup, layout[0], pipeline_actions);
     }
 
+    let last_tick = std::time::Duration::from_millis(last_frame_ms as u64);
     // glitch shader
-    f.render_effect(widget_states.glitch(), f.size(), last_frame_ms);
+    f.render_effect(widget_states.glitch(), f.size(), last_tick);
 
     // fade in table
     if let Some(shader) = &mut widget_states.table_fade_in {
-        f.render_effect(shader, layout[0], last_frame_ms);
+        f.render_effect(shader, layout[0], last_tick);
         if shader.done() {
             widget_states.table_fade_in = None;
         }
@@ -144,14 +142,14 @@ fn render_widgets(
     
     // shader experiment
     if let Some(shader) = widget_states.shader_pipeline.as_mut() {
-        f.render_effect(shader, f.size(), last_frame_ms);
+        f.render_effect(shader, f.size(), last_tick);
         if shader.done() {
             widget_states.shader_pipeline = None;
         }
     }
     
     if app.ui.use_256_colors {
-        f.render_effect(&mut term256_colors(), f.size(), last_frame_ms);
+        f.render_effect(&mut term256_colors(), f.size(), last_tick);
     }
 }
 

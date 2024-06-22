@@ -1,13 +1,14 @@
+use std::time::Duration;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::prelude::{Line, StatefulWidget, Text};
 use ratatui::text::Span;
 use ratatui::widgets::{TableState, Widget};
+use tachyonfx::EffectRenderer;
 
 use crate::domain::{Pipeline, Project};
-use crate::shader::{open_window, EffectRenderer};
-use crate::shader::fx::OpenWindow;
 use crate::theme::theme;
+use crate::ui::fx::{open_window, OpenWindow};
 use crate::ui::popup::utility::CenteredShrink;
 use crate::ui::widget::PipelineTable;
 
@@ -134,7 +135,7 @@ impl StatefulWidget for ProjectDetailsPopup {
         let area = state.popup_area(area);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        buf.render_effect(&mut state.window_fx, area, self.last_frame_ms);
+        buf.render_effect(&mut state.window_fx, area, Duration::from_millis(self.last_frame_ms as u64));
         
         let content_area = area.inner(&Margin::new(2, 1));
         let outer_layout = Layout::default()

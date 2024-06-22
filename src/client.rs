@@ -7,6 +7,7 @@ use itertools::Itertools;
 use rand::prelude::{SeedableRng, SmallRng};
 use reqwest::{Client, RequestBuilder};
 use serde::Deserialize;
+use tachyonfx::fx::Glitch;
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 
@@ -17,7 +18,6 @@ use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::*;
 use crate::result::GlimError::GeneralError;
-use crate::shader::fx::Glitch;
 
 pub struct GitlabClient {
     sender: Sender<GlimEvent>,

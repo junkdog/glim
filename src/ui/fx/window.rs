@@ -1,4 +1,4 @@
-use chrono::Duration;
+use std::time::Duration;
 use derive_builder::Builder;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -6,10 +6,13 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, BorderType, Clear};
 use ratatui::widgets::Widget;
-
-use crate::shader::{Effect, IntoEffect, Shader};
-use crate::shader::effect::FilterMode;
+use tachyonfx::{CellFilter, CellIterator, Effect, IntoEffect, Shader};
 use crate::ui::widget::Shortcuts;
+
+fn main() {
+
+}
+
 
 #[derive(Builder, Clone)]
 #[builder(pattern = "owned")]
@@ -55,15 +58,17 @@ impl OpenWindow {
             .border_type(self.border_type)
             .style(self.background);
 
-        match self.shortcuts.as_ref() {
-            Some(shortcuts) => w.title_bottom(shortcuts.as_line()),
-            None            => w,
-        }
+        // match self.shortcuts.as_ref() {
+        //     Some(shortcuts) => w.title_bottom(shortcuts.as_line()),
+        //     None            => w,
+        // }
+
+        w
     }
 
     pub fn process_opening(&mut self, duration_ms: u32, buf: &mut Buffer, area: Rect) {
         if let Some(open_window_fx) = self.open_window_fx.as_mut() {
-            open_window_fx.process(Duration::milliseconds(duration_ms as i64), buf, area);
+            open_window_fx.process(Duration::from_millis(duration_ms as u64), buf, area);
             if open_window_fx.done() {
                 self.open_window_fx = None;
             }
@@ -89,6 +94,8 @@ impl Shader for OpenWindow {
         remaining
     }
 
+    fn execute(&mut self, _alpha: f32, _area: Rect, _cell_iter: CellIterator) {}
+
 
     fn done(&self) -> bool {
         self.open_window_fx.is_none()
@@ -111,7 +118,7 @@ impl Shader for OpenWindow {
         }
     }
 
-    fn cell_selection(&mut self, _strategy: FilterMode) {
+    fn set_cell_selection(&mut self, _strategy: CellFilter) {
         todo!()
     }
 }
