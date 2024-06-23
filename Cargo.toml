@@ -10,7 +10,7 @@ arboard = { version = "3.4.0", default-features = false, features = ["windows-sy
 chrono = { version = "0.4.37", features = ["serde"] }
 colorsys = "0.6.7"
 confy = "0.6.1"
-tachyonfx = "0.1.0"
+tachyonfx = "0.2.0"
 crossterm = "0.27.0"
 derive_builder = "0.20.0"
 directories = "5.0.1"
