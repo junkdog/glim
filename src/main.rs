@@ -102,7 +102,7 @@ fn render_widgets(
     // project details popup
     if let Some(project_details) = widget_states.project_details.as_mut() {
         let popup = ProjectDetailsPopup::new(last_frame_ms);
-        let popup_area = layout[0].inner(&Margin::new(6, 2));
+        let popup_area = layout[0].inner(Margin::new(6, 2));
 
         // f.render_effect(popup_area, &mut project_details.fade_in, last_frame_ms);
         f.render_stateful_widget(popup, popup_area, project_details);

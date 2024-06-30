@@ -40,7 +40,7 @@ impl<'a> StatefulWidget for LogsWidget<'a> {
             .border_type(BorderType::Plain)
             .render(area, buf);
 
-        let content_area = area.inner(&Margin::new(2, 1));
+        let content_area = area.inner(Margin::new(2, 1));
         let logs = List::from_iter(self.logs);
 
         StatefulWidget::render(logs, content_area, buf, state);

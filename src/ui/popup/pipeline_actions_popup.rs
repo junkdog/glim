@@ -38,7 +38,7 @@ impl PipelineActionsPopupState {
             project_id,
             pipeline_id,
             list_state: ListState::default().with_selected(Some(0)),
-            window_fx: open_window("configuration", Some(vec![
+            window_fx: open_window("pipeline actions", Some(vec![
                 ("ESC", "close"),
                 ("↑ ↓", "selection"),
                 ("↵",   "apply"),
@@ -114,7 +114,7 @@ impl StatefulWidget for PipelineActionsPopup {
             .style(theme().table_row_b)
             .highlight_style(theme().pipeline_action_selected);
 
-        let inner_area = area.inner(&Margin::new(1, 1));
+        let inner_area = area.inner(Margin::new(1, 1));
         StatefulWidget::render(actions_list, inner_area, buf, &mut state.list_state);
 
         // window decoration and animation

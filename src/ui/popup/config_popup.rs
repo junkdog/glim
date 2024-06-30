@@ -92,7 +92,7 @@ impl ConfigPopupState {
                     .input(Input::new(config.search_filter.clone().unwrap_or("".to_string())))
                     .into(),
             ],
-            window_fx: open_window("configuraation", Some(vec![
+            window_fx: open_window("configuration", Some(vec![
                 ("ESC", "close"),
                 ("↑ ↓", "selection"),
                 ("↵",   "apply"),
@@ -172,7 +172,7 @@ impl StatefulWidget for ConfigPopup {
         buf.render_effect(&mut state.window_fx, area, last_tick);
         
         // popup content
-        let content_area = area.inner(&Margin::new(1, 1));
+        let content_area = area.inner(Margin::new(1, 1));
         let mut text: Vec<Line> = state.input_fields.iter()
             .enumerate()
             .flat_map(|(idx, input_field)| {[

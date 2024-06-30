@@ -34,6 +34,6 @@ impl Widget for AlertPopup {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .render(area, buf);
-        Widget::render(text, area.inner(&Margin::new(2, 1)), buf);
+        Widget::render(text, area.inner(Margin::new(2, 1)), buf);
     }
 }

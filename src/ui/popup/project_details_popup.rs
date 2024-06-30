@@ -137,7 +137,7 @@ impl StatefulWidget for ProjectDetailsPopup {
         state.window_fx.screen_area(buf.area); // for the parent window fx
         buf.render_effect(&mut state.window_fx, area, Duration::from_millis(self.last_frame_ms as u64));
         
-        let content_area = area.inner(&Margin::new(2, 1));
+        let content_area = area.inner(Margin::new(2, 1));
         let outer_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
