@@ -88,7 +88,7 @@ fn render_widgets(
 
     // gitlab pipelines
     let projects = ProjectsTable::new(app.projects());
-    f.render_stateful_widget(projects, layout[0], &mut widget_states.table_state);
+    f.render_stateful_widget(projects, layout[0], &mut widget_states.project_table_state);
 
     // internal logs
     if app.ui.show_internal_logs {

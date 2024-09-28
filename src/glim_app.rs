@@ -48,7 +48,7 @@ pub struct UiState {
 pub struct StatefulWidgets {
     pub last_frame: Duration,
     pub sender: Sender<GlimEvent>,
-    pub table_state: TableState,
+    pub project_table_state: TableState,
     pub logs_state: ListState,
     pub config_popup_state: Option<ConfigPopupState>,
     pub table_fade_in: Option<Effect>,
@@ -77,7 +77,7 @@ impl StatefulWidgets {
         Self {
             last_frame: Duration::default(),
             sender,
-            table_state: TableState::default().with_selected(0),
+            project_table_state: TableState::default().with_selected(0),
             logs_state: ListState::default().with_selected(Some(0)),
             table_fade_in: None,
             config_popup_state: None,
@@ -201,16 +201,18 @@ impl StatefulWidgets {
         let projects = app.projects();
         if projects.is_empty() { return; }
         
-        if let Some(current) = self.table_state.selected() {
+        if let Some(current) = self.project_table_state.selected() {
             let new_index = match direction {
                 1  => current.saturating_add(1),
                 -1 => current.saturating_sub(1),
                 n  => panic!("invalid direction: {n}")
             }.min(projects.len().saturating_sub(1));
 
-            self.table_state.select(Some(new_index));
+            self.project_table_state.select(Some(new_index));
             let project = &projects[new_index];
             app.dispatch(GlimEvent::SelectedProject(project.id));
+        } else {
+            self.project_table_state.select(Some(0));
         }
     }
 
