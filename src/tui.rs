@@ -6,7 +6,7 @@ use crossterm::{
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::Frame;
-use ratatui::layout::{Rect, Size};
+use ratatui::layout::Size;
 use crate::event::{GlimEvent, EventHandler};
 use crate::result::GlimError;
 use crate::result::GlimError::GeneralError;

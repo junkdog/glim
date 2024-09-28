@@ -1,7 +1,6 @@
 use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, Local};
-use rand::prelude::{SeedableRng, SmallRng};
 use ratatui::widgets::{ListState, TableState};
 use serde::{Deserialize, Serialize};
 use tachyonfx::{Effect, fx, Interpolation, IntoEffect, Duration};

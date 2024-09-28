@@ -79,11 +79,11 @@ fn render_widgets(
         Layout::new(Direction::Horizontal, [
             Constraint::Percentage(65),
             Constraint::Percentage(35),
-        ]).split(f.size())
+        ]).split(f.area())
     } else {
         Layout::new(Direction::Horizontal, [
             Constraint::Percentage(100),
-        ]).split(f.size())
+        ]).split(f.area())
     };
 
     // gitlab pipelines
@@ -131,7 +131,7 @@ fn render_widgets(
 
     if let Some(config_popup) = &mut widget_states.config_popup_state {
         // f.render_effect(&mut config_popup.parent_fade, last_frame_ms);
-        render_config_popup(f, config_popup, last_frame_ms, &layout[0]);
+        render_config_popup(f, config_popup, last_frame_ms, layout[0]);
     }
 
     // modal alert.rs message
@@ -141,14 +141,14 @@ fn render_widgets(
     
     // shader experiment
     if let Some(shader) = widget_states.shader_pipeline.as_mut() {
-        f.render_effect(shader, f.size(), last_tick);
+        f.render_effect(shader, f.area(), last_tick);
         if shader.done() {
             widget_states.shader_pipeline = None;
         }
     }
     
     if app.ui.use_256_colors {
-        f.render_effect(&mut term256_colors(), f.size(), last_tick);
+        f.render_effect(&mut term256_colors(), f.area(), last_tick);
     }
 }
 
@@ -156,17 +156,17 @@ fn render_config_popup(
     f: &mut Frame,
     config_popup: &mut ConfigPopupState,
     last_tick: Duration,
-    layout: &Rect
+    layout: Rect
 ) {
     // render widget
     let popup = ConfigPopup::new(last_tick);
-    f.render_stateful_widget(popup, *layout, config_popup);
+    f.render_stateful_widget(popup, layout, config_popup);
 
     // render cursor once UI has ~faded in
     if config_popup.is_open_complete() {
         let cursor = config_popup.cursor_position;
         f.buffer_mut().set_style(Rect::new(cursor.x, cursor.y, 1, 1), theme().input_selected);
-        f.set_cursor(cursor.x, cursor.y);
+        f.set_cursor_position(cursor);
     }
 }
 
@@ -289,7 +289,7 @@ pub fn run_config_ui_loop(
 
                 tui.draw(|f| {
                     if let Some(config_popup) = ui.config_popup_state.as_mut() {
-                        render_config_popup(f, config_popup, ui.last_frame, &f.size())
+                        render_config_popup(f, config_popup, ui.last_frame, f.area())
                     }
                 })?;
             };

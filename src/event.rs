@@ -1,10 +1,8 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::sync::mpsc;
 use std::thread;
-use chrono::Duration;
 
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind};
-use tachyonfx::fx::Glitch;
 use crate::dispatcher::Dispatcher;
 use crate::domain::{JobDto, PipelineDto, Project, ProjectDto};
 use crate::glim_app::GlimConfig;
@@ -116,10 +114,7 @@ impl EventHandler {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press =>
                 sender.send(GlimEvent::Key(e)),
 
-            CrosstermEvent::Key(_)       => Ok(()),
-            CrosstermEvent::Mouse(_)     => Ok(()),
-            CrosstermEvent::Resize(_, _) => Ok(()),
-            _ => !unimplemented!(),
+            _ => Ok(()),
         }.expect("failed to send event")
     }
 }

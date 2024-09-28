@@ -4,10 +4,8 @@ use std::time::Duration;
 
 use chrono::{DateTime, Local, Utc};
 use itertools::Itertools;
-use rand::prelude::{SeedableRng, SmallRng};
 use reqwest::{Client, RequestBuilder};
 use serde::Deserialize;
-use tachyonfx::fx::Glitch;
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
 

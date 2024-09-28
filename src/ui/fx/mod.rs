@@ -4,7 +4,7 @@ use ratatui::layout::Margin;
 use ratatui::style::Color;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::BorderType;
-use tachyonfx::fx::{coalesce, Direction, dissolve, fade_from, fade_to, never_complete, parallel, sequence, sleep, sweep_in, timed_never_complete, with_duration};
+use tachyonfx::fx::{coalesce, Direction, dissolve, fade_from, fade_to, never_complete, parallel, sequence, sleep, sweep_in, with_duration};
 use tachyonfx::{Effect, fx, Interpolation, Duration};
 use tachyonfx::CellFilter::{AllOf, Inner, Not, Outer, Text};
 pub use window::*;
