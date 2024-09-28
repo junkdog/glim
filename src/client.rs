@@ -13,7 +13,8 @@ use tokio::time::sleep;
 
 use crate::dispatcher::Dispatcher;
 use crate::domain::{JobDto, PipelineDto, ProjectDto};
-use crate::event::{GlimEvent, IntoGlimEvent};
+use crate::event::{GlimEvent, GlitchState, IntoGlimEvent};
+use crate::event::GlimEvent::GlitchOverride;
 use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::*;
@@ -223,14 +224,13 @@ impl GitlabClient {
         let debug = self.log_response;
 
         self.rt.spawn(async move {
-            let rng = SmallRng::from_entropy();
-            sender.dispatch(GlimEvent::GlitchOverride(Some(Glitch::builder()
-                .action_ms(100..200)
-                .action_start_delay_ms(0..500)
-                .cell_glitch_ratio(0.05)
-                .rng(rng)
-                .build()
-                .unwrap())));
+            sender.dispatch(GlitchOverride(GlitchState::Active));
+            // let rng = SmallRng::from_entropy();
+            // sender.dispatch(GlimEvent::GlitchOverride(Some(Glitch::builder()
+            //     .action_ms(100..200)
+            //     .action_start_delay_ms(0..500)
+            //     .cell_glitch_ratio(0.05)
+            //     .build())));
 
             sleep(Duration::from_millis(400)).await;
 
@@ -238,7 +238,7 @@ impl GitlabClient {
                 Ok(t) => t.into_glim_event(),
                 Err(e) => GlimEvent::Error(e),
             };
-            sender.dispatch(GlimEvent::GlitchOverride(None));
+            sender.dispatch(GlimEvent::GlitchOverride(GlitchState::Inactive));
             sender.dispatch(event)
         });
     }

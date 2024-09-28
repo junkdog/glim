@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::sync::mpsc;
 use std::thread;
 use chrono::Duration;
@@ -17,7 +18,7 @@ pub enum GlimEvent {
     Key(KeyEvent),
     ToggleInternalLogs,
     Log(String),
-    GlitchOverride(Option<Glitch>),
+    GlitchOverride(GlitchState),
     CloseProjectDetails,
     OpenProjectDetails(ProjectId),
     OpenPipelineActions(ProjectId, PipelineId),
@@ -50,6 +51,12 @@ pub enum GlimEvent {
     ToggleColorDepth
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum GlitchState {
+    Active,
+    Inactive
+}
+
 #[derive(Debug)]
 pub struct EventHandler {
     sender: mpsc::Sender<GlimEvent>,
@@ -62,10 +69,9 @@ pub trait IntoGlimEvent {
 }
 
 impl EventHandler {
-    pub fn new(tick_rate: Duration) -> Self {
+    pub fn new(tick_rate: std::time::Duration) -> Self {
         let (sender, receiver) = mpsc::channel();
 
-        let tick_rate = tick_rate.to_std().expect("failed to convert tick rate to std duration");
         let handler = {
             let sender = sender.clone();
             thread::spawn(move || {

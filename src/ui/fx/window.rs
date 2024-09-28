@@ -1,4 +1,3 @@
-use std::time::Duration;
 use derive_builder::Builder;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -6,7 +5,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, BorderType, Clear};
 use ratatui::widgets::Widget;
-use tachyonfx::{CellFilter, CellIterator, Effect, IntoEffect, Shader};
+use tachyonfx::{CellFilter, CellIterator, Duration, Effect, IntoEffect, Shader};
 use crate::ui::widget::Shortcuts;
 
 fn main() {
@@ -66,9 +65,9 @@ impl OpenWindow {
         w
     }
 
-    pub fn process_opening(&mut self, duration_ms: u32, buf: &mut Buffer, area: Rect) {
+    pub fn process_opening(&mut self, duration: Duration, buf: &mut Buffer, area: Rect) {
         if let Some(open_window_fx) = self.open_window_fx.as_mut() {
-            open_window_fx.process(Duration::from_millis(duration_ms as u64), buf, area);
+            open_window_fx.process(duration, buf, area);
             if open_window_fx.done() {
                 self.open_window_fx = None;
             }
@@ -77,6 +76,10 @@ impl OpenWindow {
 }
 
 impl Shader for OpenWindow {
+    fn name(&self) -> &'static str {
+        "open_window"
+    }
+
     fn process(
         &mut self,
         duration: Duration,

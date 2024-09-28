@@ -1,10 +1,9 @@
-use std::time::Duration;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::prelude::{Line, StatefulWidget, Text};
 use ratatui::text::Span;
 use ratatui::widgets::{TableState, Widget};
-use tachyonfx::EffectRenderer;
+use tachyonfx::{Duration, EffectRenderer};
 
 use crate::domain::{Pipeline, Project};
 use crate::theme::theme;
@@ -14,7 +13,7 @@ use crate::ui::widget::PipelineTable;
 
 /// project details popup
 pub struct ProjectDetailsPopup {
-    last_frame_ms: u32,
+    last_frame_time: Duration,
 }
 
 /// state of the project details popup
@@ -31,10 +30,10 @@ pub struct ProjectDetailsPopupState {
 
 impl ProjectDetailsPopup {
     pub fn new(
-        last_frame_ms: u32
+        last_frame_time: Duration
     ) -> ProjectDetailsPopup {
         Self {
-            last_frame_ms
+            last_frame_time
         }
     }
 }
@@ -135,7 +134,7 @@ impl StatefulWidget for ProjectDetailsPopup {
         let area = state.popup_area(area);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        buf.render_effect(&mut state.window_fx, area, Duration::from_millis(self.last_frame_ms as u64));
+        buf.render_effect(&mut state.window_fx, area, self.last_frame_time);
         
         let content_area = area.inner(Margin::new(2, 1));
         let outer_layout = Layout::default()
@@ -162,6 +161,6 @@ impl StatefulWidget for ProjectDetailsPopup {
         PipelineTable::new(&state.project.recent_pipelines())
             .render(outer_layout[1], buf, &mut state.pipelines_table_state);
 
-        state.window_fx.process_opening(self.last_frame_ms, buf, area);
+        state.window_fx.process_opening(self.last_frame_time, buf, area);
     }
 }

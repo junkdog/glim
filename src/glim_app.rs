@@ -4,14 +4,14 @@ use chrono::{DateTime, Local};
 use rand::prelude::{SeedableRng, SmallRng};
 use ratatui::widgets::{ListState, TableState};
 use serde::{Deserialize, Serialize};
-use tachyonfx::{Effect, fx, Interpolation, IntoEffect};
+use tachyonfx::{Effect, fx, Interpolation, IntoEffect, Duration};
 use tachyonfx::fx::{Direction, Glitch, parallel};
 
 use crate::save_config;
 use crate::client::GitlabClient;
 use crate::dispatcher::Dispatcher;
 use crate::domain::Project;
-use crate::event::GlimEvent;
+use crate::event::{GlimEvent, GlitchState};
 use crate::gruvbox::Gruvbox::{Dark0Hard, Dark3};
 use crate::id::{PipelineId, ProjectId};
 use crate::input::InputMultiplexer;
@@ -47,7 +47,7 @@ pub struct UiState {
 }
 
 pub struct StatefulWidgets {
-    pub last_frame_ms: u32,
+    pub last_frame: Duration,
     pub sender: Sender<GlimEvent>,
     pub table_state: TableState,
     pub logs_state: ListState,
@@ -76,7 +76,7 @@ impl GlimConfig {
 impl StatefulWidgets {
     pub fn new(sender: Sender<GlimEvent>) -> Self {
         Self {
-            last_frame_ms: 0,
+            last_frame: Duration::default(),
             sender,
             table_state: TableState::default().with_selected(0),
             logs_state: ListState::default().with_selected(Some(0)),
@@ -91,8 +91,8 @@ impl StatefulWidgets {
                 .action_ms(100..500)
                 .action_start_delay_ms(0..2000)
                 .cell_glitch_ratio(0.0015)
-                .rng(SmallRng::from_entropy())
-                .into()
+                .build()
+                .into_effect()
         }
     }
 
@@ -102,7 +102,7 @@ impl StatefulWidgets {
         event: &GlimEvent
     ) {
         match event {
-            GlimEvent::GlitchOverride(g)            => self.glitch_override = g.clone().map(|g| g.into_effect()),
+            GlimEvent::GlitchOverride(g)            => self.glitch_override = make_glitch_effect(*g),
 
             GlimEvent::SelectNextProject            => self.handle_project_selection(1, app),
             GlimEvent::SelectPreviousProject        => self.handle_project_selection(-1, app),
@@ -135,9 +135,9 @@ impl StatefulWidgets {
     }
 
     fn fade_in_projects_table(&mut self) {
-        let effect = parallel(vec![
-            fx::coalesce(2_000, (550, Interpolation::Linear)),
-            fx::sweep_in(Direction::LeftToRight, 50, Dark0Hard, (450, Interpolation::QuadIn))
+        let effect = parallel(&[
+            fx::coalesce(550),
+            fx::sweep_in(Direction::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn))
         ]);
         self.table_fade_in = Some(effect);
     }
@@ -373,7 +373,7 @@ impl GlimApp {
         }
     }
 
-    pub fn process_timers(&mut self) -> u32 {
+    pub fn process_timers(&mut self) -> Duration {
         let now = std::time::Instant::now();
         let elapsed = now - self.last_tick;
         self.last_tick = now;
@@ -381,7 +381,7 @@ impl GlimApp {
         // do nothing with elapsed time for now;
         // and consider moving to UiState
 
-        elapsed.as_millis() as u32
+        Duration::from_millis(elapsed.as_millis() as u32)
     }
 
     pub fn project(&self, id: ProjectId) -> &Project {
@@ -402,6 +402,18 @@ impl GlimApp {
 
     pub fn last_frame_time(&self) -> u32 {
         self.last_tick.elapsed().as_millis() as u32
+    }
+}
+
+fn make_glitch_effect(glitch_state: GlitchState) -> Option<Effect> {
+    match glitch_state {
+        GlitchState::Inactive => None,
+        GlitchState::Active => Some(Glitch::builder()
+            .action_ms(100..200)
+            .action_start_delay_ms(0..500)
+            .cell_glitch_ratio(0.05)
+            .build()
+            .into_effect())
     }
 }
 

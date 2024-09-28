@@ -1,4 +1,3 @@
-use std::time::Duration;
 use std::vec;
 
 use derive_builder::Builder;
@@ -7,7 +6,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Position, Rect};
 use ratatui::prelude::{Line, StatefulWidget, Style, Text, Widget};
 use ratatui::text::Span;
-use tachyonfx::{EffectRenderer, Shader};
+use tachyonfx::{Duration, EffectRenderer, Shader};
 use tui_input::Input;
 
 use crate::glim_app::GlimConfig;
@@ -17,7 +16,7 @@ use crate::ui::popup::utility::CenteredShrink;
 
 /// configuration popup
 pub struct ConfigPopup {
-    last_frame_ms: u32,
+    last_frame_time: Duration,
 }
 
 pub struct ConfigPopupState {
@@ -30,8 +29,8 @@ pub struct ConfigPopupState {
 }
 
 impl ConfigPopup {
-    pub fn new(last_frame_ms: u32) -> Self {
-        Self { last_frame_ms }
+    pub fn new(last_frame_time: Duration) -> Self {
+        Self { last_frame_time }
     }
 }
 
@@ -168,7 +167,7 @@ impl StatefulWidget for ConfigPopup {
         let area = area.inner_centered(80, 12);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        let last_tick = Duration::from_millis(self.last_frame_ms as u64);
+        let last_tick = self.last_frame_time;
         buf.render_effect(&mut state.window_fx, area, last_tick);
         
         // popup content
@@ -189,7 +188,7 @@ impl StatefulWidget for ConfigPopup {
         Widget::render(Text::from(text), content_area, buf);
 
         // window decoration and animation
-        state.window_fx.process_opening(self.last_frame_ms, buf, area);
+        state.window_fx.process_opening(self.last_frame_time, buf, area);
         state.update_cursor_position(&area);
     }
 }

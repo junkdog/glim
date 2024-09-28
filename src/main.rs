@@ -1,13 +1,12 @@
 use std::process::exit;
 use std::sync::mpsc::Sender;
 
-use chrono::Duration;
 use directories::BaseDirs;
 use ratatui::{Frame, Terminal};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::prelude::Direction;
-use tachyonfx::{EffectRenderer, Shader};
+use tachyonfx::{Duration, EffectRenderer, Shader};
 use tachyonfx::fx::term256_colors;
 
 use crate::client::GitlabClient;
@@ -39,7 +38,7 @@ fn main() -> Result<()> {
     let debug = std::env::var("GLIM_DEBUG").is_ok();
 
     // event handler
-    let event_handler = EventHandler::new(Duration::milliseconds(33));
+    let event_handler = EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
 
     // tui backend
@@ -58,7 +57,7 @@ fn main() -> Result<()> {
 
     // main loop
     while app.is_running() {
-        widget_states.last_frame_ms = app.process_timers();
+        widget_states.last_frame = app.process_timers();
         tui.receive_events(|event| {
             widget_states.apply(&app, &event);
             app.apply(event, &mut widget_states);
@@ -75,7 +74,7 @@ fn render_widgets(
     app: &GlimApp,
     widget_states: &mut StatefulWidgets
 ) {
-    let last_frame_ms = widget_states.last_frame_ms;
+    let last_frame_ms = widget_states.last_frame;
     let layout = if app.ui.show_internal_logs {
         Layout::new(Direction::Horizontal, [
             Constraint::Percentage(65),
@@ -117,13 +116,13 @@ fn render_widgets(
         f.render_stateful_widget(popup, layout[0], pipeline_actions);
     }
 
-    let last_tick = std::time::Duration::from_millis(last_frame_ms as u64);
+    let last_tick = last_frame_ms;;
     // glitch shader
-    f.render_effect(widget_states.glitch(), f.size(), last_tick);
+    f.render_effect(widget_states.glitch(), f.area(), last_tick);
 
     // fade in table
     if let Some(shader) = &mut widget_states.table_fade_in {
-        f.render_effect(shader, layout[0], last_tick);
+        f.render_effect(shader, layout[0], last_frame_ms);
         if shader.done() {
             widget_states.table_fade_in = None;
         }
@@ -156,11 +155,11 @@ fn render_widgets(
 fn render_config_popup(
     f: &mut Frame,
     config_popup: &mut ConfigPopupState,
-    last_frame_ms: u32,
+    last_tick: Duration,
     layout: &Rect
 ) {
     // render widget
-    let popup = ConfigPopup::new(last_frame_ms);
+    let popup = ConfigPopup::new(last_tick);
     f.render_stateful_widget(popup, *layout, config_popup);
 
     // render cursor once UI has ~faded in
@@ -240,7 +239,7 @@ pub fn run_config_ui_loop(
             let mut valid_config: Option<GlimConfig> = None;
             while valid_config.is_none() && ui.config_popup_state.is_some() {
                 let now = std::time::Instant::now();
-                ui.last_frame_ms = (now - last_tick).as_millis() as u32 / 2;
+                ui.last_frame = Duration::from_millis((now - last_tick).as_millis() as u32 / 2);
                 last_tick = now;
 
                 let mut input_processor = ConfigProcessor::new(sender.clone());
@@ -290,7 +289,7 @@ pub fn run_config_ui_loop(
 
                 tui.draw(|f| {
                     if let Some(config_popup) = ui.config_popup_state.as_mut() {
-                        render_config_popup(f, config_popup, ui.last_frame_ms, &f.size())
+                        render_config_popup(f, config_popup, ui.last_frame, &f.size())
                     }
                 })?;
             };

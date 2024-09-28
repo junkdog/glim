@@ -1,9 +1,8 @@
-use std::time::Duration;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::{Line, StatefulWidget};
 use ratatui::widgets::{List, ListState};
-use tachyonfx::EffectRenderer;
+use tachyonfx::{Duration, EffectRenderer};
 
 use crate::domain::Project;
 use crate::event::GlimEvent;
@@ -14,7 +13,7 @@ use crate::ui::popup::utility::CenteredShrink;
 
 /// pipeline actions popup
 pub struct PipelineActionsPopup {
-    last_frame_ms: u32,
+    last_frame_ms: Duration,
     name: String,
 }
 
@@ -82,7 +81,7 @@ impl PipelineActionsPopupState {
 
 impl PipelineActionsPopup {
     pub fn from(
-        last_frame_ms: u32,
+        last_frame_ms: Duration,
         project: &Project,
     ) -> PipelineActionsPopup {
         let (_, name) = project.path_and_name();
@@ -106,7 +105,7 @@ impl StatefulWidget for PipelineActionsPopup {
         let area = area.inner_centered(40, 2 + state.actions.len() as u16);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
-        let last_tick = Duration::from_millis(self.last_frame_ms as u64);
+        let last_tick = self.last_frame_ms;
         buf.render_effect(&mut state.window_fx, area, last_tick);
 
         let actions = state.actions_as_lines();

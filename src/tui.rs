@@ -6,7 +6,7 @@ use crossterm::{
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Rect, Size};
 use crate::event::{GlimEvent, EventHandler};
 use crate::result::GlimError;
 use crate::result::GlimError::GeneralError;
@@ -39,7 +39,7 @@ impl Tui {
         Ok(())
     }
 
-    pub fn size(&self) -> Rect {
+    pub fn size(&self) -> Size {
         self.terminal.size().unwrap()
     }
 
