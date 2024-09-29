@@ -8,6 +8,7 @@ use crate::result::GlimError;
 pub struct NoticeService {
     info_notices: VecDeque<Notice>,
     error_notices: VecDeque<Notice>,
+    most_recent: Option<Notice>
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +41,7 @@ impl NoticeService {
         Self {
             info_notices: VecDeque::new(),
             error_notices: VecDeque::new(),
+            most_recent: None,
         }
     }
 
@@ -71,9 +73,19 @@ impl NoticeService {
         !self.error_notices.is_empty()
     }
 
+    pub fn last_notification(&self) -> Option<&Notice> {
+        self.most_recent.as_ref()
+    }
+
     pub fn pop_notice(&mut self) -> Option<Notice> {
-        self.error_notices.pop_front()
-            .or_else(|| self.info_notices.pop_front())
+        let notice = self.error_notices.pop_front()
+            .or_else(|| self.info_notices.pop_front());
+
+        if notice.is_some() {
+            self.most_recent = notice.clone();
+        }
+
+        notice
     }
 
     pub fn push_notice(&mut self, level: NoticeLevel, message: NoticeMessage) {

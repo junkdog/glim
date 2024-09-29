@@ -27,6 +27,7 @@ impl NormalModeProcessor {
         if let Some(e) = match event.code {
             KeyCode::Enter if self.selected.is_some() =>
                 Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
+            KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
             KeyCode::Char('c') => Some(GlimEvent::DisplayConfig(read_config().unwrap())),
             KeyCode::Char('l') => Some(GlimEvent::ToggleInternalLogs),
             KeyCode::Char('p') => self.selected.map(GlimEvent::RequestPipelines),

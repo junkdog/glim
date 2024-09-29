@@ -221,10 +221,10 @@ impl InternalLogsStore {
             GlimEvent::ClosePipelineActions => None,
             GlimEvent::GlitchOverride(_) => None,
             GlimEvent::Tick => None,
-            GlimEvent::DismissNotification => None,
             GlimEvent::ProjectUpdated(_) => None,
             GlimEvent::Key(_) => None,
             GlimEvent::SelectNextProject => None,
+            GlimEvent::ShowLastNotification => None,
             GlimEvent::SelectPreviousProject => None,
             GlimEvent::ToggleInternalLogs => None,
         } {

@@ -1,4 +1,3 @@
-use crate::event::GlimEvent;
 use crate::notice_service::{Notice, NoticeMessage};
 use crate::stores::ProjectStore;
 use crate::theme::theme;
@@ -7,7 +6,6 @@ use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::StatefulWidget;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Widget};
-use std::sync::mpsc::Sender;
 use tachyonfx::{Duration, Effect, Shader};
 
 #[derive(Clone)]
@@ -32,7 +30,6 @@ impl NotificationState {
     pub fn new(
         notice: Notice,
         project_lookup: &ProjectStore,
-        sender: Sender<GlimEvent>,
     ) -> Self {
         let project_name = match notice.message {
             NoticeMessage::GeneralMessage(_) |
@@ -47,7 +44,7 @@ impl NotificationState {
         Self {
             notice,
             project_name,
-            effect: effect::notification_effect(sender),
+            effect: effect::notification_effect(),
         }
     }
 }
@@ -125,14 +122,11 @@ impl StatefulWidget for Notification {
 }
 
 mod effect {
-    use crate::dispatcher::Dispatcher;
-    use crate::event::GlimEvent;
     use crate::gruvbox::Gruvbox::Dark0Hard;
-    use std::sync::mpsc::Sender;
     use tachyonfx::Interpolation::{SineIn, SineOut};
     use tachyonfx::{fx, Duration, Effect};
 
-    pub(super) fn notification_effect(sender: Sender<GlimEvent>) -> Effect {
+    pub(super) fn notification_effect() -> Effect {
         fx::sequence(&[
             // 1. clear the border (border is already cleared, so we first fill it back in)
             fx::parallel(&[
@@ -154,15 +148,7 @@ mod effect {
                 draw_border(Duration::from_millis(150)),
                 fx::coalesce(150),
             ]),
-            // 5. dismiss notification
-            dispatch_dismiss_notification(sender),
         ])
-    }
-
-    fn dispatch_dismiss_notification(sender: Sender<GlimEvent>) -> Effect {
-        fx::effect_fn_buf((), 1, move |_, _, _| {
-            sender.dispatch(GlimEvent::DismissNotification);
-        })
     }
 
     fn draw_border(duration: Duration) -> Effect {

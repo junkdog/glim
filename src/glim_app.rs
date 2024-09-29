@@ -364,6 +364,12 @@ impl GlimApp {
                 }
             },
 
+            GlimEvent::ShowLastNotification          => {
+                if let Some(notice) = self.notices.last_notification() {
+                    ui.notice = Some(NotificationState::new(notice.clone(), &self.project_store));
+                }
+            },
+
             _ => {}
         }
 
@@ -375,7 +381,7 @@ impl GlimApp {
         if ui.notice.is_none() {
             // if there's a notice waiting, update fetch it
             if let Some(notice) = self.pop_notice() {
-                ui.notice = Some(NotificationState::new(notice, &self.project_store, self.sender.clone()));
+                ui.notice = Some(NotificationState::new(notice, &self.project_store));
             }
         }
     }

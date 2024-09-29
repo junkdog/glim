@@ -44,7 +44,7 @@ pub enum GlimEvent {
     DownloadErrorLog(ProjectId, PipelineId),
     JobLogDownloaded(ProjectId, JobId, String),
     ProjectUpdated(Box<Project>),
-    DismissNotification,
+    ShowLastNotification,
     ToggleColorDepth,
 }
 
