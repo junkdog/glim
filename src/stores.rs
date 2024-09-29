@@ -227,8 +227,6 @@ impl InternalLogsStore {
             GlimEvent::SelectNextProject => None,
             GlimEvent::SelectPreviousProject => None,
             GlimEvent::ToggleInternalLogs => None,
-
-            GlimEvent::EmitNotification(_) => None,
         } {
             self.logs.push((Local::now(), log));
         }

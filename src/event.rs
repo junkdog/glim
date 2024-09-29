@@ -46,8 +46,6 @@ pub enum GlimEvent {
     ProjectUpdated(Box<Project>),
     DismissNotification,
     ToggleColorDepth,
-
-    EmitNotification(u8)
 }
 
 #[derive(Debug, Clone, Copy)]

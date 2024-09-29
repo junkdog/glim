@@ -15,7 +15,7 @@ use crate::gruvbox::Gruvbox::{Dark0Hard, Dark3};
 use crate::id::{PipelineId, ProjectId};
 use crate::input::InputMultiplexer;
 use crate::input::processor::NormalModeProcessor;
-use crate::notice_service::{Notice, NoticeLevel, NoticeMessage, NoticeService};
+use crate::notice_service::{Notice, NoticeLevel, NoticeService};
 use crate::stores::{InternalLogsStore, ProjectStore};
 use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
 use crate::ui::widget::NotificationState;
@@ -363,24 +363,6 @@ impl GlimApp {
                     }
                 }
             },
-
-            GlimEvent::EmitNotification(n) => {
-                match n {
-                    0 => {
-                        self.notices.push_notice(
-                            NoticeLevel::Info,
-                            NoticeMessage::GeneralMessage("This is a test notification".to_string())
-                        );
-                    },
-                    _ => {
-                        let project = self.project_store.projects().first().unwrap();
-                        self.notices.push_notice(
-                            NoticeLevel::Error,
-                            NoticeMessage::GitlabGetTriggerJobsError(project.id, PipelineId::new(123), "This is a test error".to_string())
-                        )
-                    },
-                }
-            }
 
             _ => {}
         }
