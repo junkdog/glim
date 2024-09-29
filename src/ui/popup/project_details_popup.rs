@@ -22,7 +22,6 @@ pub struct ProjectDetailsPopupState {
     // duration_ms: u32,
     project_namespace: Text<'static>,
     project_stat_summary: Text<'static>,
-    last_activity: Line<'static>,
     pub pipelines: PipelineTable, // widget
     pub pipelines_table_state: TableState,
     window_fx: OpenWindow,
@@ -65,7 +64,6 @@ impl ProjectDetailsPopupState {
             Self::storage_size_line(project.artifacts_size_kb, "in artifacts"),
         ]);
 
-        let last_activity = Line::from(project.last_activity_at.to_string());
 
         let pipelines: Vec<&Pipeline> = project.recent_pipelines();
         let pipelines = PipelineTable::new(&pipelines);
@@ -74,7 +72,6 @@ impl ProjectDetailsPopupState {
             project,
             project_namespace,
             project_stat_summary,
-            last_activity,
             pipelines,
             pipelines_table_state: TableState::default().with_selected(0),
             window_fx: open_window("project details", Some(vec![

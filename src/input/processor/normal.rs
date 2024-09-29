@@ -35,6 +35,8 @@ impl NormalModeProcessor {
             KeyCode::Char('w') => self.selected.map(GlimEvent::BrowseToProject),
             KeyCode::Up        => Some(GlimEvent::SelectPreviousProject),
             KeyCode::Down      => Some(GlimEvent::SelectNextProject),
+            KeyCode::F(1)      => Some(GlimEvent::EmitNotification(0)),
+            KeyCode::F(2)      => Some(GlimEvent::EmitNotification(1)),
             KeyCode::F(12)     => Some(GlimEvent::ToggleColorDepth),
             _ => None
         } { self.dispatch(e) }

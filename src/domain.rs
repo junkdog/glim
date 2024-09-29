@@ -67,6 +67,7 @@ pub struct ProjectDto {
     pub statistics: StatisticsDto
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct StatisticsDto {
     pub commit_count: u32,
@@ -74,6 +75,7 @@ pub struct StatisticsDto {
     pub repository_size: u64,
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CommitDto {
     short_id: String,
@@ -81,6 +83,7 @@ pub struct CommitDto {
     author_name: String,
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct JobDto {
     pub id: JobId,
@@ -95,6 +98,7 @@ pub struct JobDto {
     duration: Option<f32>, // seconds
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PipelineDto {
     pub id: PipelineId,
@@ -205,6 +209,12 @@ impl Project {
         self.last_activity_at
     }
 
+    pub fn title(&self) -> String {
+        match self.path.rfind('/') {
+            Some(i) => self.path[i + 1..].to_string(),
+            None    => self.path.to_string()
+        }
+    }
 
     pub fn first_pipeline_per_branch(
         &self,

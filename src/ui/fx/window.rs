@@ -8,11 +8,6 @@ use ratatui::widgets::Widget;
 use tachyonfx::{CellFilter, CellIterator, Duration, Effect, IntoEffect, Shader};
 use crate::ui::widget::Shortcuts;
 
-fn main() {
-
-}
-
-
 #[derive(Builder, Clone)]
 #[builder(pattern = "owned")]
 pub struct OpenWindow {
@@ -21,7 +16,6 @@ pub struct OpenWindow {
     open_window_fx: Option<Effect>,
     #[builder(default, setter(strip_option))]
     parent_window_fx: Option<Effect>,
-    title_style: Style,
     border_style: Style,
     border_type: BorderType,
     background: Style,
@@ -57,12 +51,10 @@ impl OpenWindow {
             .border_type(self.border_type)
             .style(self.background);
 
-        // match self.shortcuts.as_ref() {
-        //     Some(shortcuts) => w.title_bottom(shortcuts.as_line()),
-        //     None            => w,
-        // }
-
-        w
+        match self.shortcuts.as_ref() {
+            Some(shortcuts) => w.title_bottom(shortcuts.as_line()),
+            None            => w,
+        }
     }
 
     pub fn process_opening(&mut self, duration: Duration, buf: &mut Buffer, area: Rect) {

@@ -33,7 +33,6 @@ pub fn open_window(
         .title(title)
         .border_style(theme().border.config_border)
         .border_type(BorderType::Rounded)
-        .title_style(theme().border.title)
         .background(theme().background)
         .parent_window_fx(fade_screen_bg)
         .open_window_fx(open_window_fx(Dark0))

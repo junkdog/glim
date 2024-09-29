@@ -76,13 +76,6 @@ impl PipelineTable {
         ]).height(2)
     }
 
-    fn pipeline_percentages_cell(_p: &Pipeline) -> Cell<'static> {
-        let job_percent = Line::from(Span::from("NA%")).style(theme().percent);
-        let pipeline_percent = Line::from(Span::from("NA%")).style(theme().percent);
-
-        Cell::from(Text::from(vec![job_percent, pipeline_percent]))
-    }
-
     fn pipeline_jobs_cell(p: &Pipeline) -> Cell<'static> {
         // let branch_name = if Some(p.failing_job_name()) {
         //

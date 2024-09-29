@@ -1,19 +1,30 @@
-use confy::ConfyError;
+use serde_json::error::Category;
 use thiserror::Error;
+use crate::id::{PipelineId, ProjectId};
 
 pub type Result<T> = std::result::Result<T, GlimError>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone,  Error)]
 pub enum GlimError {
     #[error("The provided Gitlab token is invalid.")]
     InvalidGitlabToken,
     #[error("The provided Gitlab token has expired.")]
     ExpiredGitlabToken,
-    #[error("Failure reading configuration file.")]
-    ConfigError(#[source] ConfyError),
+    #[error("{0}")]
+    ConfigError(String),
 
     #[error("{0}")]
     GeneralError(String),
+
+    #[error("{:0} - JSON: {1}")]
+    JsonDeserializeError(Category, String),
+
+    #[error("project_id={0}/pipeline_id={1}: {2}")]
+    GitlabGetJobsError(ProjectId, PipelineId, String),
+    #[error("project_id={0}/pipeline_id={1}: {2}")]
+    GitlabGetTriggerJobsError(ProjectId, PipelineId, String),
+    #[error("project_id={0}/pipeline_id={1}: {2}")]
+    GitlabGetPipelinesError(ProjectId, PipelineId, String),
 }
 
 impl From<reqwest::Error> for GlimError {
@@ -23,19 +34,3 @@ impl From<reqwest::Error> for GlimError {
         }
     }
 }
-
-// impl From<Box<dyn std::error::Error>> for GlimError {
-//     fn from(value: Box<dyn std::error::Error>) -> Self {
-//         // match error type
-//         // if value.is::<reqwest::Error>() {
-//         //     let message = value.downcast::<reqwest::Error>().unwrap().to_string();
-//         //     Error::GeneralError(message)
-//         // } else if value.is::<serde_json::Error>() {
-//         //     Error::Serde(*value.downcast::<serde_json::Error>().unwrap())
-//         // } else if value.is::<std::io::Error>() {
-//         //     Error::IoError(*value.downcast::<std::io::Error>().unwrap())
-//         // } else {
-//             GlimError::GeneralError(value.to_string())
-//         // }
-//     }
-// }

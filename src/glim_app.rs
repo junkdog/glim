@@ -15,8 +15,10 @@ use crate::gruvbox::Gruvbox::{Dark0Hard, Dark3};
 use crate::id::{PipelineId, ProjectId};
 use crate::input::InputMultiplexer;
 use crate::input::processor::NormalModeProcessor;
+use crate::notice_service::{Notice, NoticeLevel, NoticeMessage, NoticeService};
 use crate::stores::{InternalLogsStore, ProjectStore};
-use crate::ui::popup::{AlertPopup, ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
+use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
+use crate::ui::widget::NotificationState;
 
 pub struct GlimApp {
     running: bool,
@@ -24,6 +26,7 @@ pub struct GlimApp {
     last_tick: std::time::Instant,
     sender: Sender<GlimEvent>,
     project_store: ProjectStore,
+    notices: NoticeService,
     logs_store: InternalLogsStore,
     input: InputMultiplexer,
     clipboard: arboard::Clipboard,
@@ -55,9 +58,9 @@ pub struct StatefulWidgets {
     pub project_details: Option<ProjectDetailsPopupState>,
     pub pipeline_actions: Option<PipelineActionsPopupState>,
     pub shader_pipeline: Option<Effect>,
+    pub notice: Option<NotificationState>,
     glitch_override: Option<Effect>,
     glitch: Effect,
-    alerts: Vec<AlertPopup>,
 }
 
 impl GlimConfig {
@@ -83,9 +86,9 @@ impl StatefulWidgets {
             config_popup_state: None,
             project_details: None,
             pipeline_actions: None,
-            alerts: Vec::new(),
             shader_pipeline: None,
             glitch_override: None,
+            notice: None,
             glitch: Glitch::builder()
                 .action_ms(100..500)
                 .action_start_delay_ms(0..2000)
@@ -117,9 +120,6 @@ impl StatefulWidgets {
             },
             GlimEvent::ProjectUpdated(p)            => self.refresh_project_details(p),
 
-            GlimEvent::DisplayAlert(msg)            => self.alerts.push(AlertPopup::new(msg.clone())),
-            GlimEvent::CloseAlert                   => { self.alerts.pop(); },
-            
             GlimEvent::ClosePipelineActions         => self.close_pipeline_actions(),
             GlimEvent::OpenPipelineActions(project_id, pipeline_id) => {
                 let project = app.project(*project_id);
@@ -187,10 +187,6 @@ impl StatefulWidgets {
         };
         
         self.pipeline_actions = Some(PipelineActionsPopupState::new(actions, project.id, pipeline_id));
-    }
-    
-    pub fn alert(&self) -> Option<&AlertPopup> {
-        self.alerts.last()
     }
 
     fn close_pipeline_actions(&mut self) {
@@ -271,6 +267,7 @@ impl GlimApp {
             sender: sender.clone(),
             project_store: ProjectStore::new(sender),
             logs_store: InternalLogsStore::new(),
+            notices: NoticeService::new(),
             input,
             clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
             ui: UiState::new(),
@@ -281,6 +278,7 @@ impl GlimApp {
         self.input.apply(&event, ui);
         self.ui.apply(&event);
         self.logs_store.apply(&event);
+        self.notices.apply(&event);
         self.project_store.apply(&event);
 
         match event {
@@ -320,10 +318,6 @@ impl GlimApp {
             },
             GlimEvent::JobLogDownloaded(_, _, trace) => {
                 self.clipboard.set_text(trace).unwrap();
-                self.dispatch(GlimEvent::DisplayAlert("Job log copied to clipboard".to_string()));
-            },
-            GlimEvent::Error(e) => {
-                self.dispatch(GlimEvent::DisplayAlert(e.to_string()));
             },
 
             GlimEvent::RequestActiveJobs => {
@@ -364,13 +358,43 @@ impl GlimApp {
                             self.dispatch(GlimEvent::CloseConfig);
                         }
                         Err(e) => {
-                            self.dispatch(GlimEvent::DisplayAlert(e.to_string()));
+                            self.dispatch(GlimEvent::Error(e));
                         }
                     }
                 }
             },
 
+            GlimEvent::EmitNotification(n) => {
+                match n {
+                    0 => {
+                        self.notices.push_notice(
+                            NoticeLevel::Info,
+                            NoticeMessage::GeneralMessage("This is a test notification".to_string())
+                        );
+                    },
+                    _ => {
+                        let project = self.project_store.projects().first().unwrap();
+                        self.notices.push_notice(
+                            NoticeLevel::Error,
+                            NoticeMessage::GitlabGetTriggerJobsError(project.id, PipelineId::new(123), "This is a test error".to_string())
+                        )
+                    },
+                }
+            }
+
             _ => {}
+        }
+
+        // if there are any error notifications, and the current notification is an info notice, dismiss it
+        if self.notices.has_error() && ui.notice.as_ref().map(|n| n.notice.level == NoticeLevel::Info).unwrap_or(false) {
+            ui.notice = None;
+        }
+
+        if ui.notice.is_none() {
+            // if there's a notice waiting, update fetch it
+            if let Some(notice) = self.pop_notice() {
+                ui.notice = Some(NotificationState::new(notice, &self.project_store, self.sender.clone()));
+            }
         }
     }
 
@@ -403,6 +427,10 @@ impl GlimApp {
 
     pub fn last_frame_time(&self) -> u32 {
         self.last_tick.elapsed().as_millis() as u32
+    }
+
+    pub fn pop_notice(&mut self) -> Option<Notice> {
+        self.notices.pop_notice()
     }
 }
 
@@ -441,6 +469,8 @@ impl Dispatcher for GlimApp {
     }
 }
 
+
+#[allow(unused)]
 pub fn modulo(a: u32, b: u32) -> u32 {
     if b == 0 { return 0; }
 

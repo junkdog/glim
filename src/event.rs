@@ -9,7 +9,7 @@ use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GlimEvent {
     Tick,
     Shutdown,
@@ -34,8 +34,6 @@ pub enum GlimEvent {
     Error(result::GlimError),
     SelectNextProject,
     SelectPreviousProject,
-    DisplayAlert(String),
-    CloseAlert,
     ApplyConfiguration,
     UpdateConfig(GlimConfig),
     DisplayConfig(GlimConfig),
@@ -46,7 +44,10 @@ pub enum GlimEvent {
     DownloadErrorLog(ProjectId, PipelineId),
     JobLogDownloaded(ProjectId, JobId, String),
     ProjectUpdated(Box<Project>),
-    ToggleColorDepth
+    DismissNotification,
+    ToggleColorDepth,
+
+    EmitNotification(u8)
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -2,7 +2,7 @@ use std::sync::mpsc::Sender;
 use crate::event::GlimEvent;
 use crate::glim_app::StatefulWidgets;
 use crate::input::InputProcessor;
-use crate::input::processor::{AlertProcessor, ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor};
+use crate::input::processor::{ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor};
 
 pub struct InputMultiplexer {
     sender: Sender<GlimEvent>,
@@ -48,12 +48,6 @@ impl InputMultiplexer {
             },
             GlimEvent::ClosePipelineActions => self.pop_processor(),
 
-            // alert.rs
-            GlimEvent::DisplayAlert(_) => {
-                self.push(Box::new(AlertProcessor::new(self.sender.clone())));
-            },
-            GlimEvent::CloseAlert => self.pop_processor(),
-            
             // config
             GlimEvent::DisplayConfig(_) => {
                 self.push(Box::new(ConfigProcessor::new(self.sender.clone())));

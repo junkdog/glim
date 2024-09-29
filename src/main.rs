@@ -18,7 +18,7 @@ use crate::result::{GlimError, Result};
 use crate::theme::theme;
 use crate::tui::Tui;
 use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
-use crate::ui::widget::{LogsWidget, ProjectsTable};
+use crate::ui::widget::{LogsWidget, Notification, ProjectsTable};
 
 mod tui;
 mod event;
@@ -33,6 +33,7 @@ mod theme;
 mod id;
 mod dispatcher;
 mod input;
+mod notice_service;
 
 fn main() -> Result<()> {
     let debug = std::env::var("GLIM_DEBUG").is_ok();
@@ -74,7 +75,7 @@ fn render_widgets(
     app: &GlimApp,
     widget_states: &mut StatefulWidgets
 ) {
-    let last_frame_ms = widget_states.last_frame;
+    let last_tick = widget_states.last_frame;
     let layout = if app.ui.show_internal_logs {
         Layout::new(Direction::Horizontal, [
             Constraint::Percentage(65),
@@ -100,7 +101,7 @@ fn render_widgets(
 
     // project details popup
     if let Some(project_details) = widget_states.project_details.as_mut() {
-        let popup = ProjectDetailsPopup::new(last_frame_ms);
+        let popup = ProjectDetailsPopup::new(last_tick);
         let popup_area = layout[0].inner(Margin::new(6, 2));
 
         // f.render_effect(popup_area, &mut project_details.fade_in, last_frame_ms);
@@ -109,20 +110,19 @@ fn render_widgets(
     
     // pipeline actions popup
     if let Some(pipeline_actions) = widget_states.pipeline_actions.as_mut() {
-        let project = app.project(pipeline_actions.project_id);
-        let popup = PipelineActionsPopup::from(last_frame_ms, project);
+        let popup = PipelineActionsPopup::from(last_tick);
 
         // render popup on top
         f.render_stateful_widget(popup, layout[0], pipeline_actions);
     }
 
-    let last_tick = last_frame_ms;;
+    let last_tick = last_tick;
     // glitch shader
     f.render_effect(widget_states.glitch(), f.area(), last_tick);
 
     // fade in table
     if let Some(shader) = &mut widget_states.table_fade_in {
-        f.render_effect(shader, layout[0], last_frame_ms);
+        f.render_effect(shader, layout[0], last_tick);
         if shader.done() {
             widget_states.table_fade_in = None;
         }
@@ -131,14 +131,16 @@ fn render_widgets(
 
     if let Some(config_popup) = &mut widget_states.config_popup_state {
         // f.render_effect(&mut config_popup.parent_fade, last_frame_ms);
-        render_config_popup(f, config_popup, last_frame_ms, layout[0]);
+        render_config_popup(f, config_popup, last_tick, layout[0]);
     }
 
-    // modal alert.rs message
-    if let Some(alert) = widget_states.alert() {
-        f.render_widget(alert.clone(), layout[0])
+    // notification
+    if let Some(notification) = &mut widget_states.notice {
+        f.render_stateful_widget(Notification::new(last_tick), layout[0], notification);
+        if notification.is_done() {
+            widget_states.notice = None;
+        }
     }
-    
     // shader experiment
     if let Some(shader) = widget_states.shader_pipeline.as_mut() {
         f.render_effect(shader, f.area(), last_tick);
@@ -190,7 +192,7 @@ pub fn read_config() -> Result<GlimConfig> {
         let config_file = dirs.config_dir().join("glim.toml");
         if config_file.exists() {
             let config: GlimConfig = confy::load_path(config_file)
-                .map_err(GlimError::ConfigError)?;
+                .map_err(|e| GlimError::ConfigError(e.to_string()))?;
             
             Ok(config)
         } else {
@@ -207,7 +209,7 @@ pub fn save_config(config: GlimConfig) -> Result<()> {
     if let Some(dirs) = BaseDirs::new() {
         let config_file = dirs.config_dir().join("glim.toml");
         confy::store_path(config_file, &config)
-            .map_err(GlimError::ConfigError)?;
+            .map_err(|e| GlimError::ConfigError(e.to_string()))?;
         Ok(())
     } else {
         eprintln!("Unable to determine home directory");
@@ -228,7 +230,7 @@ pub fn run_config_ui_loop(
         let config_file = dirs.config_dir().join("glim.toml");
         if config_file.exists() {
             let config: GlimConfig = confy::load_path(config_file)
-                .map_err(GlimError::ConfigError)?;
+                .map_err(|e| GlimError::ConfigError(e.to_string()))?;
 
             Ok(config)
         } else {

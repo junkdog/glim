@@ -4,7 +4,6 @@ use ratatui::prelude::{Line, StatefulWidget};
 use ratatui::widgets::{List, ListState};
 use tachyonfx::{Duration, EffectRenderer};
 
-use crate::domain::Project;
 use crate::event::GlimEvent;
 use crate::id::{PipelineId, ProjectId};
 use crate::theme::theme;
@@ -14,7 +13,6 @@ use crate::ui::popup::utility::CenteredShrink;
 /// pipeline actions popup
 pub struct PipelineActionsPopup {
     last_frame_ms: Duration,
-    name: String,
 }
 
 /// state of the pipeline actions popup
@@ -82,12 +80,8 @@ impl PipelineActionsPopupState {
 impl PipelineActionsPopup {
     pub fn from(
         last_frame_ms: Duration,
-        project: &Project,
     ) -> PipelineActionsPopup {
-        let (_, name) = project.path_and_name();
-        let name = name.to_string();
-
-        Self { last_frame_ms, name }
+        Self { last_frame_ms }
     }
 
 }

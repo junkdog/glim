@@ -1,13 +1,9 @@
-
 use once_cell::sync::Lazy;
 use ratatui::style::{Modifier, Style};
-use ratatui::widgets::BorderType;
 
-use tokio::time::Instant;
 use crate::gruvbox::Gruvbox;
 
 pub struct Theme {
-    created_at: Instant, // seeds
     pub project_parents: Style,
     pub project_name: Style,
     pub project_description: Style,
@@ -20,7 +16,6 @@ pub struct Theme {
     pub pipeline_job_failed: Style,
     pub date: Style,
     pub time: Style,
-    pub percent: Style,
     pub highlight_symbol: Style,
     pub table_border: Style,
     pub table_row_a: Style,
@@ -29,11 +24,9 @@ pub struct Theme {
     pub pipeline_action_selected: Style,
     pub background: Style,
     pub border_title: Style,
-    pub logs_border: Style,
     pub log_message: Style,
-    pub alert_message: Style,
-    pub alert_hint: Style,
-    pub alert_background: Style,
+    pub notification: Style,
+    pub notification_project: Style,
     pub input: Style,
     pub input_selected: Style,
     pub input_description: Style,
@@ -44,10 +37,6 @@ pub struct Theme {
 }
 
 pub struct ThemeBorder {
-    pub border_type: BorderType,
-    pub project_details_border: Style,
-    pub pipeline_actions_border: Style,
-    pub alert_border: Style,
     pub config_border: Style,
     pub title: Style,
 }
@@ -56,7 +45,6 @@ pub struct ThemeBorder {
 impl Theme {
     pub fn new() -> Theme {
         Theme {
-            created_at: Instant::now(),
             project_parents: Style::default()
                 .fg(Gruvbox::Orange.into()),
             project_name: Style::default()
@@ -100,9 +88,6 @@ impl Theme {
                 .fg(Gruvbox::Gray244.into()),
             time: Style::default()
                 .fg(Gruvbox::Light2.into()),
-            percent: Style::default()
-                .fg(Gruvbox::Green.into())
-                .add_modifier(Modifier::BOLD),
             table_border: Style::default()
                 .fg(Gruvbox::Orange.into())
                 .bg(Gruvbox::Dark0.into()),
@@ -118,17 +103,15 @@ impl Theme {
             highlight_symbol: Style::default()
                 .bg(Gruvbox::Dark1.into())
                 .add_modifier(Modifier::BOLD),
-            logs_border: Style::default()
-                .fg(Gruvbox::Orange.into()),
             log_message: Style::default()
                 .fg(Gruvbox::Light4.into()),
-            alert_message: Style::default()
+            notification: Style::default()
+                .bg(Gruvbox::Dark0Hard.into())
+                .fg(Gruvbox::Orange.into())
+                .add_modifier(Modifier::BOLD),
+            notification_project: Style::default()
                 .fg(Gruvbox::OrangeBright.into())
                 .add_modifier(Modifier::BOLD),
-            alert_hint: Style::default()
-                .fg(Gruvbox::Orange.into()),
-            alert_background: Style::default()
-                .bg(Gruvbox::OrangeDim.into()),
             input: Style::default()
                 .fg(Gruvbox::Light2.into())
                 .bg(Gruvbox::Dark0Hard.into())
@@ -151,23 +134,13 @@ impl Theme {
                 .fg(Gruvbox::YellowBright.into())
                 .add_modifier(Modifier::BOLD),
             border: ThemeBorder {
-                border_type: BorderType::Rounded,
                 title: Style::default()
                     .bg(Gruvbox::Orange.into())
                     .fg(Gruvbox::Dark0.into())
                     .add_modifier(Modifier::BOLD),
-                alert_border: Style::default()
-                    .fg(Gruvbox::OrangeBright.into())
-                    .bg(Gruvbox::Dark0.into()),
                 config_border: Style::default()
                     .fg(Gruvbox::OrangeBright.into())
                     .bg(Gruvbox::Dark0.into()),
-                project_details_border: Style::default()
-                    .bg(Gruvbox::Dark0.into())
-                    .fg(Gruvbox::Orange.into()),
-                pipeline_actions_border: Style::default()
-                    .bg(Gruvbox::Dark0.into())
-                    .fg(Gruvbox::Orange.into()),
             },
         }
     }

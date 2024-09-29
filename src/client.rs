@@ -16,7 +16,7 @@ use crate::event::GlimEvent::GlitchOverride;
 use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::*;
-use crate::result::GlimError::GeneralError;
+use crate::result::GlimError::{GeneralError, JsonDeserializeError};
 
 pub struct GitlabClient {
     sender: Sender<GlimEvent>,
@@ -113,7 +113,10 @@ impl GitlabClient {
         self.rt.spawn(async move {
             let jobs = match Self::http_json_request::<Vec<JobDto>>(get_jobs_request, debug).await {
                 Ok(t) => t,
-                Err(e) => return sender.dispatch(GlimEvent::Error(e)),
+                Err(e) => {
+                    GlimError::GitlabGetJobsError(project_id, pipeline_id, e.to_string());
+                    return sender.dispatch(GlimEvent::Error(e))
+                },
             };
 
             let triggered_jobs = match Self::http_json_request::<Vec<JobDto>>(get_trigger_jobs_request, debug).await {
@@ -223,13 +226,6 @@ impl GitlabClient {
 
         self.rt.spawn(async move {
             sender.dispatch(GlitchOverride(GlitchState::Active));
-            // let rng = SmallRng::from_entropy();
-            // sender.dispatch(GlimEvent::GlitchOverride(Some(Glitch::builder()
-            //     .action_ms(100..200)
-            //     .action_start_delay_ms(0..500)
-            //     .cell_glitch_ratio(0.05)
-            //     .build())));
-
             sleep(Duration::from_millis(400)).await;
 
             let event = match Self::http_json_request::<T>(request, debug).await {
@@ -258,7 +254,7 @@ impl GitlabClient {
 
         if status.is_success() {
             serde_json::from_str(&body)
-                .map_err(|_| GeneralError(format!("failed to parse json: {}", body)))
+                .map_err(|e| JsonDeserializeError(e.classify(), body))
         } else {
             let api = serde_json::from_str::<GitlabApiError>(&body);
             if let Ok(api) = api {
