@@ -61,7 +61,7 @@ impl StatefulWidget for Notification {
     type State = NotificationState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let project: &str = if let Some(p) = &state.project_name { p } else { "" };
+        let project: &str = if let Some(p) = &state.project_name { p } else { "<unknown project>" };
 
         let text: Line<'_> = match &state.notice.message {
             NoticeMessage::GeneralMessage(s) => Line::from(Span::from(s)),

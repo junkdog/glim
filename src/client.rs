@@ -251,7 +251,6 @@ impl GitlabClient {
             Self::log_response_to_file(path, &body);
         }
 
-
         if status.is_success() {
             serde_json::from_str(&body)
                 .map_err(|e| JsonDeserializeError(e.classify(), body))
