@@ -103,9 +103,9 @@ impl StatefulWidget for Notification {
             ]),
         };
 
-        let text_len = text.width() as u16;
+        let text_len = (text.width() as u16).min(area.width - 2);
         let content_area = Rect {
-            x: area.x + (area.width.saturating_sub(text_len)) / 2 - 1,
+            x: area.x + (area.width - text_len) / 2 - 1,
             y: area.y,
             width: text_len + 2,
             height: 1,

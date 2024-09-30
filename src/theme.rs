@@ -106,7 +106,7 @@ impl Theme {
             log_message: Style::default()
                 .fg(Gruvbox::Light4.into()),
             notification: Style::default()
-                .bg(Gruvbox::Dark0Hard.into())
+                .bg(Gruvbox::Dark0.into())
                 .fg(Gruvbox::Orange.into())
                 .add_modifier(Modifier::BOLD),
             notification_project: Style::default()
