@@ -172,7 +172,7 @@ impl GitlabClient {
         result_per_page: u8
     ) -> String {
         format!(
-            "{}/projects?search_namespaces=true{}{}&statistics=true&archived=false&per_page={result_per_page}",
+            "{}/projects?search_namespaces=true{}{}&statistics=true&archived=false&membership=true&per_page={result_per_page}",
             self.base_url,
             self.search_filter.as_ref().map_or("".to_string(), |f| format!("&search={}", f)),
             updated_after.map_or("".to_string(), |d| format!("&last_activity_after={}", d.to_rfc3339())),
