@@ -1,9 +1,23 @@
 [package]
-name = "glim"
-version = "0.1.0-dev"
+name = "glim-tui"
+version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "A TUI for monitoring GitLab CI/CD pipelines and projects"
+repository = "https://github.com/junkdog/glim"
+homepage = "https://github.com/junkdog/glim"
+documentation = "https://docs.rs/glim-tui"
+readme = "README.md"
+keywords = ["ratatui", "TUI", "monitoring", "gitlab"]
+categories = ["command-line-interface"]
+authors = ["Adrian Papari <junkdog@angelhill.net>"]
+exclude = ["images/*.gif", ".*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "glim"
+path = "src/main.rs"
 
 [dependencies]
 arboard = { version = "3.4.1", default-features = false, features = ["windows-sys", "wl-clipboard-rs"] }
@@ -12,16 +26,16 @@ colorsys = "0.6.7"
 confy = "0.6.1"
 tachyonfx = "0.7.0"
 crossterm = "0.28.1"
-derive_builder = "0.20.0"
+derive_builder = "0.20.1"
 directories = "5.0.1"
 itertools = "0.13.0"
-once_cell = "1.19.0"
-open = "5.1.2"
+once_cell = "1.20.2"
+open = "5.3.0"
 ratatui = "0.28.1"
-reqwest = "0.12.3"
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = "1.0.115"
-thiserror = "1.0.61"
-tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
+reqwest = "0.12.8"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+thiserror = "1.0.64"
+tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "macros"] }
 tui-input = "0.10.1"
 clap = { version = "4.5.19", features = ["derive"] }
