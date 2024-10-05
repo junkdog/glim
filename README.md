@@ -1,5 +1,7 @@
 ## glim
 
+[![Crate Badge]][Crate] [![Deps.rs Badge]][Deps.rs]
+
 ![GitLab Pipelines](screenshots/gitlab_pipelines.png)
 
 [![GitLab Projects](screenshots/gitlab_projects_thumbnail.png)](screenshots/gitlab_projects.png)
@@ -49,3 +51,10 @@ Options:
 There is currently no support for multiple GitLab servers in the configuration file. The interim
 solution is to use the `--config` flag to specify a different configuration file, e.g. 
 `glim --config glim-corporate.toml` or `glim --config glim-personal.toml`.
+
+
+
+  [Crate Badge]: https://img.shields.io/crates/v/glim-tui.svg
+  [Crate]: https://crates.io/crates/glim-tui
+  [Deps.rs Badge]: https://deps.rs/repo/github/junkdog/glim/status.svg
+  [Deps.rs]: https://deps.rs/repo/github/junkdog/glim
