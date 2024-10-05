@@ -124,10 +124,13 @@ pub enum PipelineStatus {
     Running,
     Success,
     Failed,
+    Canceling,
     Canceled,
     Skipped,
     Manual,
     Scheduled,
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Deserialize, Default)]
@@ -520,9 +523,11 @@ impl IconRepresentable for PipelineStatus {
             PipelineStatus::Success            => "🟢",
             PipelineStatus::Failed             => "🔴",
             PipelineStatus::Canceled           => "🚫",
+            PipelineStatus::Canceling          => "🚫",
             PipelineStatus::Skipped            => "⚫",
             PipelineStatus::Manual             => "🟣",
             PipelineStatus::Scheduled          => "📅",
+            PipelineStatus::Unknown            => "❓",
         }.to_string()
     }
 }
@@ -540,4 +545,3 @@ impl IconRepresentable for Pipeline {
             .unwrap_or(self.status.icon())
     }
 }
-

@@ -57,8 +57,6 @@ fn main() -> Result<()> {
         println!("{}", config_path.display());
         exit(0);
     }
-
-
     let debug = std::env::var("GLIM_DEBUG").is_ok();
 
     // event handler
