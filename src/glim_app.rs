@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, Local};
@@ -12,6 +13,7 @@ use crate::id::ProjectId;
 use crate::input::processor::NormalModeProcessor;
 use crate::input::InputMultiplexer;
 use crate::notice_service::{Notice, NoticeLevel, NoticeService};
+use crate::result::GlimError;
 use crate::save_config;
 use crate::stores::{InternalLogsStore, ProjectStore};
 use crate::ui::widget::NotificationState;
@@ -19,6 +21,7 @@ use crate::ui::StatefulWidgets;
 
 pub struct GlimApp {
     running: bool,
+    config_path: PathBuf,
     gitlab: GitlabClient,
     last_tick: std::time::Instant,
     pub sender: Sender<GlimEvent>,
@@ -62,13 +65,15 @@ impl GlimConfig {
 impl GlimApp {
     pub fn new(
         sender: Sender<GlimEvent>,
-        gitlab: GitlabClient,
+        config_path: PathBuf,
+        gitlab: GitlabClient
     ) -> Self {
         let mut input = InputMultiplexer::new(sender.clone());
         input.push(Box::new(NormalModeProcessor::new(sender.clone())));
 
         Self {
             running: true,
+            config_path,
             gitlab,
             last_tick: std::time::Instant::now(),
             sender: sender.clone(),
@@ -160,7 +165,8 @@ impl GlimApp {
                     let client = GitlabClient::new_from_config(self.sender.clone(), config.clone(), self.gitlab.debug());
                     match client.validate_configuration() {
                         Ok(_) => {
-                            save_config(config.clone()).expect("failed to save config");
+                            save_config(&self.config_path, config.clone())
+                                .expect("failed to save config");
                             self.dispatch(GlimEvent::UpdateConfig(config));
                             self.dispatch(GlimEvent::CloseConfig);
                         }
@@ -190,6 +196,18 @@ impl GlimApp {
             if let Some(notice) = self.pop_notice() {
                 ui.notice = Some(NotificationState::new(notice, &self.project_store));
             }
+        }
+    }
+
+    pub fn load_config(&self) -> Result<GlimConfig, GlimError> {
+        let config_file = &self.config_path;
+        if config_file.exists() {
+            let config: GlimConfig = confy::load_path(config_file)
+                .map_err(|e| GlimError::ConfigError(e.to_string()))?;
+
+            Ok(config)
+        } else {
+            Err(GlimError::ConfigError(format!("Unable to find configuration file at {:?}", config_file)))
         }
     }
 

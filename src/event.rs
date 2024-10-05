@@ -36,7 +36,7 @@ pub enum GlimEvent {
     SelectPreviousProject,
     ApplyConfiguration,
     UpdateConfig(GlimConfig),
-    DisplayConfig(GlimConfig),
+    DisplayConfig,
     CloseConfig,
     BrowseToJob(ProjectId, PipelineId, JobId),
     BrowseToPipeline(ProjectId, PipelineId),

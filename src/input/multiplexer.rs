@@ -49,7 +49,7 @@ impl InputMultiplexer {
             GlimEvent::ClosePipelineActions => self.pop_processor(),
 
             // config
-            GlimEvent::DisplayConfig(_) => {
+            GlimEvent::DisplayConfig => {
                 self.push(Box::new(ConfigProcessor::new(self.sender.clone())));
             },
             GlimEvent::CloseConfig => self.pop_processor(),

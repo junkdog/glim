@@ -1,6 +1,7 @@
+use std::path::PathBuf;
 use std::process::exit;
 use std::sync::mpsc::Sender;
-
+use clap::Parser;
 use directories::BaseDirs;
 use ratatui::{Frame, Terminal};
 use ratatui::backend::CrosstermBackend;
@@ -36,7 +37,28 @@ mod dispatcher;
 mod input;
 mod notice_service;
 
+/// A TUI for monitoring GitLab CI/CD pipelines and projects
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    /// Alternate path to the configuration file.
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
+    /// Print the path to the configuration file and exit.
+    #[arg(short, long)]
+    print_config_path: bool,
+}
+
+
 fn main() -> Result<()> {
+    let args = Args::parse();
+    let config_path = args.config.unwrap_or_else(default_config_path);
+    if args.print_config_path {
+        println!("{}", config_path.display());
+        exit(0);
+    }
+
+
     let debug = std::env::var("GLIM_DEBUG").is_ok();
 
     // event handler
@@ -51,10 +73,10 @@ fn main() -> Result<()> {
     tui.enter()?;
 
     let mut widget_states = StatefulWidgets::new(sender.clone());
-    let config = run_config_ui_loop(&mut tui, &mut widget_states, sender.clone(), debug)?;
+    let config = run_config_ui_loop(&mut tui, &mut widget_states, sender.clone(), config_path.clone(), debug)?;
 
     // app state and initial setup
-    let mut app = GlimApp::new(sender.clone(), gitlab_client(sender.clone(), config, debug));
+    let mut app = GlimApp::new(sender.clone(), config_path, gitlab_client(sender.clone(), config, debug));
     app.apply(GlimEvent::RequestProjects, &mut widget_states);
 
     // main loop
@@ -187,35 +209,19 @@ fn gitlab_client(
     )
 }
 
-/// Read the configuration file from $HOME/.config/glim.toml
-pub fn read_config() -> Result<GlimConfig> {
-    return if let Some(dirs) = BaseDirs::new() {
-        let config_file = dirs.config_dir().join("glim.toml");
-        if config_file.exists() {
-            let config: GlimConfig = confy::load_path(config_file)
-                .map_err(|e| GlimError::ConfigError(e.to_string()))?;
-            
-            Ok(config)
-        } else {
-            eprintln!("Unable to find configuration file at {:?}", config_file);
-            exit(3)
-        }
+fn default_config_path() -> PathBuf {
+    if let Some(dirs) = BaseDirs::new() {
+        dirs.config_dir().join("glim.toml")
     } else {
-        eprintln!("Unable to determine home directory");
-        exit(2)
-    };
+        PathBuf::from("glim.toml")
+    }
 }
 
-pub fn save_config(config: GlimConfig) -> Result<()> {
-    if let Some(dirs) = BaseDirs::new() {
-        let config_file = dirs.config_dir().join("glim.toml");
-        confy::store_path(config_file, &config)
-            .map_err(|e| GlimError::ConfigError(e.to_string()))?;
-        Ok(())
-    } else {
-        eprintln!("Unable to determine home directory");
-        exit(2)
-    }
+pub fn save_config(config_file: &PathBuf, config: GlimConfig) -> Result<()> {
+    confy::store_path(config_file, &config)
+        .map_err(|e| GlimError::ConfigError(e.to_string()))?;
+
+    Ok(())
 }
 
 
@@ -225,17 +231,16 @@ pub fn run_config_ui_loop(
     tui: &mut Tui,
     ui: &mut StatefulWidgets,
     sender: Sender<GlimEvent>,
+    config_file: PathBuf,
     debug: bool,
 ) -> Result<GlimConfig> {
-    if let Some(dirs) = BaseDirs::new() {
-        let config_file = dirs.config_dir().join("glim.toml");
         if config_file.exists() {
             let config: GlimConfig = confy::load_path(config_file)
                 .map_err(|e| GlimError::ConfigError(e.to_string()))?;
 
             Ok(config)
         } else {
-            ui.config_popup_state = Some(ConfigPopupState::new(&GlimConfig::default()));
+            ui.config_popup_state = Some(ConfigPopupState::new(GlimConfig::default()));
             let sender = sender.clone();
 
             let mut last_tick = std::time::Instant::now();
@@ -259,7 +264,7 @@ pub fn run_config_ui_loop(
                                     match client.validate_configuration() {
                                         Ok(_) => {
                                             let state = ui.config_popup_state.as_ref().unwrap();
-                                            save_config(state.to_config())
+                                            save_config(&config_file, state.to_config())
                                                 .expect("failed to save configuration");
 
                                             valid_config = Some(state.to_config());
@@ -304,8 +309,4 @@ pub fn run_config_ui_loop(
                 exit(0)
             }
         }
-    } else {
-        eprintln!("Unable to determine home directory");
-        exit(2)
-    }
 }

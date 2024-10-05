@@ -4,7 +4,6 @@ use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
 use crate::id::ProjectId;
 use crate::input::InputProcessor;
-use crate::read_config;
 use crate::ui::StatefulWidgets;
 
 pub struct NormalModeProcessor {
@@ -28,7 +27,7 @@ impl NormalModeProcessor {
             KeyCode::Enter if self.selected.is_some() =>
                 Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
             KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
-            KeyCode::Char('c') => Some(GlimEvent::DisplayConfig(read_config().unwrap())),
+            KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
             KeyCode::Char('l') => Some(GlimEvent::ToggleInternalLogs),
             KeyCode::Char('p') => self.selected.map(GlimEvent::RequestPipelines),
             KeyCode::Char('q') => Some(GlimEvent::Shutdown),

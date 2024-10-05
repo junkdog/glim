@@ -77,7 +77,7 @@ impl StatefulWidgets {
                 self.open_pipeline_actions(project, *pipeline_id);
             },
 
-            GlimEvent::DisplayConfig(config)        => self.open_config(config),
+            GlimEvent::DisplayConfig                => self.open_config(app.load_config().unwrap_or_default()),
             GlimEvent::CloseConfig                  => self.config_popup_state = None,
 
             _ => (),
@@ -110,7 +110,7 @@ impl StatefulWidgets {
         self.project_details = Some(ProjectDetailsPopupState::new(project));
     }
 
-    fn open_config(&mut self, config: &GlimConfig) {
+    fn open_config(&mut self, config: GlimConfig) {
         self.config_popup_state = Some(ConfigPopupState::new(config));
     }
 

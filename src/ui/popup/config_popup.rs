@@ -66,7 +66,7 @@ impl From<InputFieldBuilder> for InputField {
 
 impl ConfigPopupState {
     pub fn new(
-        config: &GlimConfig
+        config: GlimConfig
     ) -> Self {
         Self {
             // duration_ms: 0,

@@ -214,7 +214,7 @@ impl InternalLogsStore {
             GlimEvent::DownloadErrorLog(_, id) =>
                 Some(format!("download job log for failed pipeline_id={id}")),
             GlimEvent::JobLogDownloaded(_, id, _) => Some(format!("downloaded log for job_id={id}")),
-            GlimEvent::DisplayConfig(_) => Some("display config".to_string()),
+            GlimEvent::DisplayConfig => Some("display config".to_string()),
             GlimEvent::ApplyConfiguration => Some("applying new configuration".to_string()),
             GlimEvent::UpdateConfig(_) => Some("updating configuration".to_string()),
             GlimEvent::CloseConfig => None,
