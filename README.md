@@ -20,9 +20,10 @@ cargo build --release
 
 ### Running
 
-`glim` requires a GitLab personal access token (PAT) to authenticate with the GitLab API, which is
-recorded in a configuration file. `glim` starts with no arguments, and prompts for the PAT and
-gitlab server URL. 
+To use glim, you'll need a GitLab personal access token (PAT) for authentication with the GitLab API.
+Be aware that this PAT is stored in plain text within the configuration file. If you start glim
+without any arguments and it hasn't been set up yet, the program will prompt you to enter the PAT
+and the GitLab server URL.
 
 ```
 $ glim -h
