@@ -2,10 +2,10 @@ use std::sync::mpsc::Sender;
 use crossterm::event::{KeyCode, KeyEvent};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
-use crate::glim_app::StatefulWidgets;
 use crate::id::ProjectId;
 use crate::input::InputProcessor;
 use crate::read_config;
+use crate::ui::StatefulWidgets;
 
 pub struct NormalModeProcessor {
     sender: Sender<GlimEvent>,

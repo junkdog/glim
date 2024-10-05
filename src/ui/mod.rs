@@ -3,6 +3,9 @@ use chrono::Duration;
 pub mod popup;
 pub mod widget;
 pub mod fx;
+mod stateful_widgets;
+
+pub use stateful_widgets::StatefulWidgets;
 
 pub fn format_duration(duration: Duration) -> String {
     let total_seconds = duration.abs().num_seconds();

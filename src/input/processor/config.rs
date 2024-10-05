@@ -4,8 +4,8 @@ use tui_input::backend::crossterm::EventHandler;
 use crossterm::{event::Event as CrosstermEvent};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
-use crate::glim_app::StatefulWidgets;
 use crate::input::InputProcessor;
+use crate::ui::StatefulWidgets;
 
 pub struct ConfigProcessor {
     sender: Sender<GlimEvent>,

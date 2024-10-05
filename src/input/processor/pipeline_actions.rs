@@ -2,8 +2,8 @@ use std::sync::mpsc::Sender;
 use crossterm::event::{KeyCode, KeyEvent};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
-use crate::glim_app::StatefulWidgets;
 use crate::input::InputProcessor;
+use crate::ui::StatefulWidgets;
 
 pub struct PipelineActionsProcessor {
     sender: Sender<GlimEvent>,

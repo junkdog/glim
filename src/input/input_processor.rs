@@ -1,5 +1,5 @@
 use crate::event::GlimEvent;
-use crate::glim_app::StatefulWidgets;
+use crate::ui::StatefulWidgets;
 
 pub trait InputProcessor {
     fn apply(

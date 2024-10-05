@@ -11,13 +11,14 @@ use tachyonfx::fx::term256_colors;
 
 use crate::client::GitlabClient;
 use crate::event::{EventHandler, GlimEvent};
-use crate::glim_app::{GlimApp, GlimConfig, StatefulWidgets};
+use crate::glim_app::{GlimApp, GlimConfig};
 use crate::input::InputProcessor;
 use crate::input::processor::ConfigProcessor;
 use crate::result::{GlimError, Result};
 use crate::theme::theme;
 use crate::tui::Tui;
 use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
+use crate::ui::StatefulWidgets;
 use crate::ui::widget::{LogsWidget, Notification, ProjectsTable};
 
 mod tui;

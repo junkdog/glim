@@ -1,8 +1,8 @@
 use std::sync::mpsc::Sender;
 use crate::event::GlimEvent;
-use crate::glim_app::StatefulWidgets;
 use crate::input::InputProcessor;
 use crate::input::processor::{ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor};
+use crate::ui::StatefulWidgets;
 
 pub struct InputMultiplexer {
     sender: Sender<GlimEvent>,
