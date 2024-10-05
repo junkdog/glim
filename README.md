@@ -18,6 +18,12 @@ Built with [ratatui](https://ratatui.rs/).
 cargo build --release 
 ```
 
+### Installation
+
+```
+cargo install glim-tui
+```
+
 ### Running
 
 To use glim, you'll need a GitLab personal access token (PAT) for authentication with the GitLab API.
