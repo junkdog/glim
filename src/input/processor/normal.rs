@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
 use crate::id::ProjectId;
@@ -24,13 +24,18 @@ impl NormalModeProcessor {
         event: &KeyEvent,
     ) {
         if let Some(e) = match event.code {
-            KeyCode::Enter if self.selected.is_some() =>
-                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
+            KeyCode::Enter if self.selected.is_some() => {
+                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap()))
+            }
+            KeyCode::Char(c)
+                if c == 'q' || (c == 'c' && event.modifiers.contains(KeyModifiers::CONTROL)) =>
+            {
+                Some(GlimEvent::Shutdown)
+            }
             KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
             KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
             KeyCode::Char('l') => Some(GlimEvent::ToggleInternalLogs),
             KeyCode::Char('p') => self.selected.map(GlimEvent::RequestPipelines),
-            KeyCode::Char('q') => Some(GlimEvent::Shutdown),
             KeyCode::Char('r') => Some(GlimEvent::RequestProjects),
             KeyCode::Char('w') => self.selected.map(GlimEvent::BrowseToProject),
             KeyCode::Up        => Some(GlimEvent::SelectPreviousProject),
