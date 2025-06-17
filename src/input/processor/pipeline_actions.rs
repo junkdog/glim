@@ -23,17 +23,27 @@ impl PipelineActionsProcessor {
     ) {
         match event.code {
             KeyCode::Esc       => self.sender.dispatch(GlimEvent::ClosePipelineActions),
+            KeyCode::Char('q') => self.sender.dispatch(GlimEvent::ClosePipelineActions),
             KeyCode::Up        => ui.handle_pipeline_action_selection(-1),
             KeyCode::Down      => ui.handle_pipeline_action_selection(1),
+            KeyCode::Char('k') => ui.handle_pipeline_action_selection(-1),
+            KeyCode::Char('j') => ui.handle_pipeline_action_selection(1),
             KeyCode::Enter => {
-                let state = ui.pipeline_actions.as_ref().unwrap();
-                if let Some(action) = state.list_state.selected()
-                    .map(|_| state.copy_action()) { self.sender.dispatch(action) }
-
-                self.sender.dispatch(GlimEvent::ClosePipelineActions)
+                self.show_pipeline_actions(ui);
+            }
+            KeyCode::Char('o') => {
+                self.show_pipeline_actions(ui);
             }
             _ => ()
         }
+    }
+
+fn show_pipeline_actions(&self, ui: &mut StatefulWidgets) {
+        let state = ui.pipeline_actions.as_ref().unwrap();
+        if let Some(action) = state.list_state.selected()
+            .map(|_| state.copy_action()) { self.sender.dispatch(action) }
+    
+        self.sender.dispatch(GlimEvent::ClosePipelineActions)
     }
 }
 
