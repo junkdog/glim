@@ -41,10 +41,11 @@ impl StatefulWidget for ProjectsTable<'_> {
             ("w",   "open web"),
             ("c",   "config"),
             ("a",   "last notification"),
-            ("l",   "logs"),
+            ("f",   "filter"),
             ("r",   "refresh"),
+            ("s",   "sort"),
             ("p",   "pipeline refresh"),
-            ("↑ ↓", "selection"),
+            ("↑↓", "selection"),
             ("↵",   "details"),
         ]);
 

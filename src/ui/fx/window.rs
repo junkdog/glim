@@ -10,7 +10,7 @@ use crate::ui::widget::Shortcuts;
 
 #[derive(Builder, Clone)]
 #[builder(pattern = "owned")]
-pub struct OpenWindow {
+pub struct PopupWindow {
     title: Line<'static>,
     #[builder(default, setter(strip_option))]
     open_window_fx: Option<Effect>,
@@ -25,15 +25,15 @@ pub struct OpenWindow {
 }
 
 
-impl From<OpenWindowBuilder> for Effect {
-    fn from(value: OpenWindowBuilder) -> Self {
+impl From<PopupWindowBuilder> for Effect {
+    fn from(value: PopupWindowBuilder) -> Self {
         value.build().unwrap().into_effect()
     }
 }
 
-impl OpenWindow {
-    pub fn builder() -> OpenWindowBuilder {
-        OpenWindowBuilder::default()
+impl PopupWindow {
+    pub fn builder() -> PopupWindowBuilder {
+        PopupWindowBuilder::default()
     }
 
     pub fn screen_area(&mut self, area: Rect) {
@@ -60,14 +60,12 @@ impl OpenWindow {
     pub fn process_opening(&mut self, duration: Duration, buf: &mut Buffer, area: Rect) {
         if let Some(open_window_fx) = self.open_window_fx.as_mut() {
             open_window_fx.process(duration, buf, area);
-            if open_window_fx.done() {
-                self.open_window_fx = None;
-            }
+            self.open_window_fx.take_if(|s| s.done());
         }
     }
 }
 
-impl Shader for OpenWindow {
+impl Shader for PopupWindow {
     fn name(&self) -> &'static str {
         "open_window"
     }

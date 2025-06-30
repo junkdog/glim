@@ -45,6 +45,8 @@ pub enum GlimEvent {
     JobLogDownloaded(ProjectId, JobId, String),
     ProjectUpdated(Box<Project>),
     ShowLastNotification,
+    ShowFilterMenu,
+    ShowSortMenu,
     ToggleColorDepth,
 }
 

@@ -49,7 +49,7 @@ impl ProjectStore {
                         sender.dispatch(GlimEvent::ProjectUpdated(Box::new(project)))
                     });
 
-                self.sorted = self.sorted_projects();
+                self.sorted = self.projects_sorted_by_last_activity();
                 if first_projects {
                     self.dispatch(GlimEvent::SelectedProject(self.sorted.first().unwrap().id));
                 }
@@ -73,7 +73,7 @@ impl ProjectStore {
                     sender.dispatch(GlimEvent::ProjectUpdated(Box::new(project.clone())))
                 }
 
-                self.sorted = self.sorted_projects();
+                self.sorted = self.projects_sorted_by_last_activity();
             },
 
             GlimEvent::ReceivedJobs(project_id, pipeline_id, job_dtos) => {
@@ -89,7 +89,7 @@ impl ProjectStore {
                     sender.dispatch(GlimEvent::ProjectUpdated(Box::new(project.clone())))
                 }
 
-                self.sorted = self.sorted_projects();
+                self.sorted = self.projects_sorted_by_last_activity();
             },
 
             // requests pipelines for a project if they are not already loaded
@@ -110,7 +110,7 @@ impl ProjectStore {
         }
     }
 
-    fn sorted_projects(&mut self) -> Vec<Project> {
+    fn projects_sorted_by_last_activity(&mut self) -> Vec<Project> {
         self.projects.iter()
             .sorted_by(|a, b| b.last_activity().cmp(&a.last_activity()))
             .cloned()
@@ -213,6 +213,8 @@ impl InternalLogsStore {
                 Some(format!("open job_id={job_id}  in browser")),
             GlimEvent::DownloadErrorLog(_, id) =>
                 Some(format!("download job log for failed pipeline_id={id}")),
+            GlimEvent::ShowFilterMenu => Some("showing filter menu".to_string()),
+            GlimEvent::ShowSortMenu => Some("showing sort menu".to_string()),
             GlimEvent::JobLogDownloaded(_, id, _) => Some(format!("downloaded log for job_id={id}")),
             GlimEvent::DisplayConfig => Some("display config".to_string()),
             GlimEvent::ApplyConfiguration => Some("applying new configuration".to_string()),

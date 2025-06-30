@@ -1,26 +1,26 @@
-use std::path::PathBuf;
-use std::process::exit;
-use std::sync::mpsc::Sender;
 use clap::Parser;
 use directories::BaseDirs;
-use ratatui::{Frame, Terminal};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
 use ratatui::prelude::Direction;
-use tachyonfx::{Duration, EffectRenderer, Shader};
+use ratatui::{Frame, Terminal};
+use std::path::PathBuf;
+use std::process::exit;
+use std::sync::mpsc::Sender;
 use tachyonfx::fx::term256_colors;
+use tachyonfx::{Duration, EffectRenderer, Shader};
 
 use crate::client::GitlabClient;
 use crate::event::{EventHandler, GlimEvent};
 use crate::glim_app::{GlimApp, GlimConfig};
-use crate::input::InputProcessor;
 use crate::input::processor::ConfigProcessor;
+use crate::input::InputProcessor;
 use crate::result::{GlimError, Result};
 use crate::theme::theme;
 use crate::tui::Tui;
 use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
-use crate::ui::StatefulWidgets;
 use crate::ui::widget::{LogsWidget, Notification, ProjectsTable};
+use crate::ui::StatefulWidgets;
 
 mod tui;
 mod event;
@@ -91,6 +91,35 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+struct MainWindowLayout {
+    filter_input: Rect,
+    sort_input: Rect,
+    projects_table: Rect,
+}
+
+impl MainWindowLayout {
+    fn new(app: &GlimApp, area: Rect) -> Self {
+        let layout = if app.ui.show_internal_logs {
+            Layout::new(Direction::Horizontal, [
+                Constraint::Percentage(65),
+                Constraint::Percentage(35),
+            ]).split(area)
+        } else {
+            Layout::new(Direction::Horizontal, [
+                Constraint::Percentage(100),
+            ]).split(area)
+        };
+
+        let main_area = layout[0];
+
+        Self {
+            filter_input: layout[0],
+            sort_input: layout[1],
+            projects_table: layout[2],
+        }
+    }
+}
+
 fn render_widgets(
     f: &mut Frame,
     app: &GlimApp,
@@ -144,10 +173,7 @@ fn render_widgets(
     // fade in table
     if let Some(shader) = &mut widget_states.table_fade_in {
         f.render_effect(shader, layout[0], last_tick);
-        if shader.done() {
-            widget_states.table_fade_in = None;
-        }
-        
+        widget_states.table_fade_in.take_if(|s| s.done());
     }
 
     if let Some(config_popup) = &mut widget_states.config_popup_state {
@@ -158,16 +184,12 @@ fn render_widgets(
     // notification
     if let Some(notification) = &mut widget_states.notice {
         f.render_stateful_widget(Notification::new(last_tick), layout[0], notification);
-        if notification.is_done() {
-            widget_states.notice = None;
-        }
+        widget_states.notice.take_if(|n| n.is_done());
     }
     // shader experiment
     if let Some(shader) = widget_states.shader_pipeline.as_mut() {
         f.render_effect(shader, f.area(), last_tick);
-        if shader.done() {
-            widget_states.shader_pipeline = None;
-        }
+        widget_states.shader_pipeline.take_if(|s| s.done());
     }
     
     if app.ui.use_256_colors {

@@ -11,8 +11,9 @@ use tui_input::Input;
 
 use crate::glim_app::GlimConfig;
 use crate::theme::theme;
-use crate::ui::fx::{open_window, OpenWindow};
+use crate::ui::fx::{open_window, PopupWindow};
 use crate::ui::popup::utility::CenteredShrink;
+use crate::ui::widget::InputField;
 
 /// configuration popup
 pub struct ConfigPopup {
@@ -25,7 +26,7 @@ pub struct ConfigPopupState {
     pub cursor_position: Position,
     input_fields: Vec<InputField>,
     pub error_message: Option<String>,
-    window_fx: OpenWindow,
+    window_fx: PopupWindow,
 }
 
 impl ConfigPopup {
@@ -34,35 +35,6 @@ impl ConfigPopup {
     }
 }
 
-#[derive(Clone, Builder)]
-#[builder(pattern = "owned")]
-pub struct InputField {
-    label: &'static str,
-    description: Line<'static>,
-    input: Input,
-    #[builder(default)]
-    mask_input: bool,
-}
-
-impl InputField {
-    fn builder() -> InputFieldBuilder {
-        InputFieldBuilder::default()
-    }
-
-    fn sanitized_input_display(&self) -> String {
-        if self.mask_input {
-            self.input.value().chars().map(|_| '*').collect()
-        } else {
-            self.input.value().to_string()
-        }
-    }
-}
-
-impl From<InputFieldBuilder> for InputField {
-    fn from(value: InputFieldBuilder) -> Self {
-        value.build().unwrap()
-    }
-}
 
 impl ConfigPopupState {
     pub fn new(

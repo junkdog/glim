@@ -3,6 +3,7 @@ mod projects_table;
 mod internal_logs;
 mod shortcuts;
 mod notification;
+mod input_field;
 
 use chrono::{DateTime, Local};
 use ratatui::prelude::{Line, Text};
@@ -11,6 +12,7 @@ pub use projects_table::*;
 pub use internal_logs::*;
 pub use shortcuts::*;
 pub use notification::*;
+pub use input_field::*;
 use crate::theme::theme;
 
 

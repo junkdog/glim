@@ -7,7 +7,7 @@ use tachyonfx::{Duration, EffectRenderer};
 
 use crate::domain::{Pipeline, Project};
 use crate::theme::theme;
-use crate::ui::fx::{open_window, OpenWindow};
+use crate::ui::fx::{open_window, PopupWindow};
 use crate::ui::popup::utility::CenteredShrink;
 use crate::ui::widget::PipelineTable;
 
@@ -19,12 +19,11 @@ pub struct ProjectDetailsPopup {
 /// state of the project details popup
 pub struct ProjectDetailsPopupState {
     pub project: Project,
-    // duration_ms: u32,
     project_namespace: Text<'static>,
     project_stat_summary: Text<'static>,
     pub pipelines: PipelineTable, // widget
     pub pipelines_table_state: TableState,
-    window_fx: OpenWindow,
+    window_fx: PopupWindow,
 }
 
 impl ProjectDetailsPopup {

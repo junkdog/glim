@@ -15,7 +15,7 @@ use crate::ui::widget::Shortcuts;
 pub fn open_window(
     title: &'static str,
     shortcuts: Option<Vec<(&'static str, &'static str)>>,
-) -> OpenWindow {
+) -> PopupWindow {
     let fade_screen_bg = sequence(&[
         sleep(250),
         never_complete(fade_to(Dark3, Dark0Hard, (750, Interpolation::CircInOut))),
@@ -29,7 +29,7 @@ pub fn open_window(
         Span::from("┣").style(theme().border.config_border),
     ]);
 
-    OpenWindow::builder()
+    PopupWindow::builder()
         .title(title)
         .border_style(theme().border.config_border)
         .border_type(BorderType::Rounded)

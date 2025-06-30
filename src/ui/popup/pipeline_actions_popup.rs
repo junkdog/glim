@@ -7,7 +7,7 @@ use tachyonfx::{Duration, EffectRenderer};
 use crate::event::GlimEvent;
 use crate::id::{PipelineId, ProjectId};
 use crate::theme::theme;
-use crate::ui::fx::{open_window, OpenWindow};
+use crate::ui::fx::{open_window, PopupWindow};
 use crate::ui::popup::utility::CenteredShrink;
 
 /// pipeline actions popup
@@ -21,7 +21,7 @@ pub struct PipelineActionsPopupState {
     pub project_id: ProjectId,
     pub pipeline_id: PipelineId,
     pub list_state: ListState,
-    window_fx: OpenWindow,
+    window_fx: PopupWindow,
 }
 
 impl PipelineActionsPopupState {
@@ -43,18 +43,8 @@ impl PipelineActionsPopupState {
         }
     }
 
-    pub fn copy_action(&self) -> GlimEvent {
-        match &self.actions[self.list_state.selected().unwrap()] {
-            GlimEvent::BrowseToJob(id, p_id, j_id) =>
-                GlimEvent::BrowseToJob(*id, *p_id, *j_id),
-            GlimEvent::BrowseToPipeline(id, p_id) =>
-                GlimEvent::BrowseToPipeline(*id, *p_id),
-            GlimEvent::BrowseToProject(id) =>
-                GlimEvent::BrowseToProject(*id),
-            GlimEvent::DownloadErrorLog(id, pipeline_id) =>
-                GlimEvent::DownloadErrorLog(*id, *pipeline_id),
-            _ => panic!("unsupported action")
-        }
+    pub fn copy_selected_action(&self, selected_action: usize) -> GlimEvent {
+        self.actions[selected_action].clone()
     }
 
     fn actions_as_lines(&self) -> Vec<Line<'static>> {
@@ -83,7 +73,6 @@ impl PipelineActionsPopup {
     ) -> PipelineActionsPopup {
         Self { last_frame_ms }
     }
-
 }
 
 

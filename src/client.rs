@@ -1,6 +1,5 @@
 use std::path::Path;
 use std::sync::mpsc::Sender;
-use std::time::Duration;
 
 use chrono::{DateTime, Local, Utc};
 use itertools::Itertools;
@@ -12,7 +11,6 @@ use tokio::time::sleep;
 use crate::dispatcher::Dispatcher;
 use crate::domain::{JobDto, PipelineDto, ProjectDto};
 use crate::event::{GlimEvent, GlitchState, IntoGlimEvent};
-use crate::event::GlimEvent::GlitchOverride;
 use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::*;
@@ -27,7 +25,6 @@ pub struct GitlabClient {
     log_response: bool,
     rt: Runtime
 }
-
 
 impl GitlabClient {
     pub fn new(
@@ -154,10 +151,10 @@ impl GitlabClient {
     }
     
     pub fn validate_configuration(&self) -> Result<()> {
-        let request = self.client.get(self.list_projects_url(None, 1))
-            .header("PRIVATE-TOKEN", &self.private_token);
-
+        let url = self.list_projects_url(None, 1);
+        let request = self.authenticated_get(&url);
         let debug = self.log_response;
+
         let response = self.rt.block_on(Self::http_json_request::<serde_json::Value>(request, debug))?;
         if response.is_array() {
             Ok(())
@@ -197,12 +194,10 @@ impl GitlabClient {
         &self,
         url: &str,
     ) where T: for<'de> Deserialize<'de> + IntoGlimEvent {
-        let request = self.client.get(url)
-            .header("PRIVATE-TOKEN", &self.private_token);
-
+        let request = self.authenticated_get(url);
         let sender = self.sender.clone();
-
         let debug = self.log_response;
+
         self.rt.spawn(async move {
             let event = match Self::http_json_request::<T>(request, debug).await {
                 Ok(t) => t.into_glim_event(),
@@ -218,15 +213,13 @@ impl GitlabClient {
         &self,
         url: &str,
     ) where T: for<'de> Deserialize<'de> + IntoGlimEvent {
-        let request = self.client.get(url)
-            .header("PRIVATE-TOKEN", &self.private_token);
-
+        let request = self.authenticated_get(url);
         let sender = self.sender.clone();
         let debug = self.log_response;
 
         self.rt.spawn(async move {
-            sender.dispatch(GlitchOverride(GlitchState::Active));
-            sleep(Duration::from_millis(400)).await;
+            sender.dispatch(GlimEvent::GlitchOverride(GlitchState::Active));
+            sleep(std::time::Duration::from_millis(400)).await;
 
             let event = match Self::http_json_request::<T>(request, debug).await {
                 Ok(t) => t.into_glim_event(),
@@ -235,6 +228,11 @@ impl GitlabClient {
             sender.dispatch(GlimEvent::GlitchOverride(GlitchState::Inactive));
             sender.dispatch(event)
         });
+    }
+
+    fn authenticated_get(&self, url: &str) -> RequestBuilder {
+        self.client.get(url)
+            .header("PRIVATE-TOKEN", &self.private_token)
     }
 
     async fn http_json_request<T>(request: RequestBuilder, debug: bool) -> Result<T>

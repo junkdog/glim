@@ -29,22 +29,23 @@ impl PipelineActionsProcessor {
             KeyCode::Char('k') => ui.handle_pipeline_action_selection(-1),
             KeyCode::Char('j') => ui.handle_pipeline_action_selection(1),
             KeyCode::Enter => {
-                self.show_pipeline_actions(ui);
+                let state = ui.pipeline_actions.as_ref().unwrap();
+                if let Some(action) = state.list_state.selected()
+                    .map(|idx| state.copy_selected_action(idx)) { self.sender.dispatch(action) }
+
+                self.sender.dispatch(GlimEvent::ClosePipelineActions)
             }
             KeyCode::Char('o') => {
-                self.show_pipeline_actions(ui);
+                let state = ui.pipeline_actions.as_ref().unwrap();
+                if let Some(action) = state.list_state.selected()
+                    .map(|idx| state.copy_selected_action(idx)) { self.sender.dispatch(action) }
+
+                self.sender.dispatch(GlimEvent::ClosePipelineActions)
             }
             _ => ()
         }
     }
 
-fn show_pipeline_actions(&self, ui: &mut StatefulWidgets) {
-        let state = ui.pipeline_actions.as_ref().unwrap();
-        if let Some(action) = state.list_state.selected()
-            .map(|_| state.copy_action()) { self.sender.dispatch(action) }
-    
-        self.sender.dispatch(GlimEvent::ClosePipelineActions)
-    }
 }
 
 impl InputProcessor for PipelineActionsProcessor {
