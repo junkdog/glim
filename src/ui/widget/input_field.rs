@@ -14,6 +14,7 @@ pub struct InputField {
     pub label: &'static str,
     pub description: Option<Line<'static>>,
     pub input: Input,
+    #[builder(default)]
     input_style: Style,
     #[builder(default)]
     mask_input: bool,
