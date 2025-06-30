@@ -61,7 +61,7 @@ impl StatefulWidget for ProjectsTable<'_> {
 
         let content_area = area.inner(Margin::new(2, 1));
         let table = Table::new(self.rows, PROJECT_COLUMN_CONSTRAINTS)
-            .highlight_style(theme().highlight_symbol)
+            .row_highlight_style(theme().highlight_symbol)
             .column_spacing(1);
 
         StatefulWidget::render(table, content_area, buf, state);

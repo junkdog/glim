@@ -125,7 +125,7 @@ impl StatefulWidget for PipelineTable {
         state: &mut Self::State
     ) {
         let table = Table::new(self.rows, self.constraints)
-            .highlight_style(theme().highlight_symbol)
+            .row_highlight_style(theme().highlight_symbol)
             .column_spacing(1);
 
         StatefulWidget::render(table, area, buf, state);

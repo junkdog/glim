@@ -5,10 +5,10 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, BorderType, Clear};
 use ratatui::widgets::Widget;
-use tachyonfx::{CellFilter, CellIterator, Duration, Effect, IntoEffect, Shader};
+use tachyonfx::{CellFilter, Duration, Effect, IntoEffect, Shader};
 use crate::ui::widget::Shortcuts;
 
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, Debug)]
 #[builder(pattern = "owned")]
 pub struct PopupWindow {
     title: Line<'static>,
@@ -79,7 +79,7 @@ impl Shader for PopupWindow {
         None
     }
 
-    fn execute(&mut self, _alpha: f32, _area: Rect, _cell_iter: CellIterator) {}
+    fn execute(&mut self, _duration: Duration, _area: Rect, _buf: &mut Buffer) {}
 
 
     fn done(&self) -> bool {
@@ -102,5 +102,9 @@ impl Shader for PopupWindow {
 
     fn set_cell_selection(&mut self, _strategy: CellFilter) {
         todo!()
+    }
+
+    fn filter(&mut self, _filter: CellFilter) {
+        // TODO: Implement filter - currently no-op for refactoring
     }
 }
