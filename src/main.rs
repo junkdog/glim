@@ -1,4 +1,5 @@
 use clap::Parser;
+use compact_str::ToCompactString;
 use directories::BaseDirs;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Layout, Margin, Rect};
@@ -68,7 +69,7 @@ fn main() -> Result<()> {
     // tui backend
     let backend = CrosstermBackend::new(std::io::stdout());
     let terminal = Terminal::new(backend)
-        .map_err(|_| GlimError::GeneralError("failed to initialize terminal".to_string()))?;
+        .map_err(|_| GlimError::GeneralError("failed to initialize terminal".to_compact_string()))?;
     let mut tui = Tui::new(terminal, event_handler);
     tui.enter()?;
 
@@ -100,7 +101,7 @@ fn main() -> Result<()> {
     }
 
     tui.exit()
-        .map_err(|_| GlimError::GeneralError("failed to exit TUI".to_string()))?;
+        .map_err(|_| GlimError::GeneralError("failed to exit TUI".to_compact_string()))?;
     Ok(())
 }
 
@@ -251,7 +252,7 @@ fn default_config_path() -> PathBuf {
 }
 
 pub fn save_config(config_file: &PathBuf, config: GlimConfig) -> Result<()> {
-    confy::store_path(config_file, &config).map_err(|e| GlimError::ConfigError(e.to_string()))?;
+    confy::store_path(config_file, &config).map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
 
     Ok(())
 }
@@ -267,7 +268,7 @@ pub fn run_config_ui_loop(
 ) -> Result<GlimConfig> {
     if config_file.exists() {
         let config: GlimConfig =
-            confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_string()))?;
+            confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
 
         Ok(config)
     } else {
@@ -304,13 +305,13 @@ pub fn run_config_ui_loop(
                                     }
                                     Err(error) => {
                                         ui.config_popup_state.as_mut().unwrap().error_message =
-                                            Some(error.to_string());
+                                            Some(error.to_compact_string());
                                     }
                                 }
                             }
                             Err(error) => {
                                 ui.config_popup_state.as_mut().unwrap().error_message =
-                                    Some(error.to_string());
+                                    Some(error.to_compact_string());
                             }
                         }
                     }
@@ -319,7 +320,7 @@ pub fn run_config_ui_loop(
                     }
                     GlimEvent::Error(error) => {
                         ui.config_popup_state.as_mut().unwrap().error_message =
-                            Some(error.to_string());
+                            Some(error.to_compact_string());
                     }
                     GlimEvent::Shutdown => {}
                     _ => {}

@@ -1,5 +1,6 @@
 use std::vec;
 
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Position, Rect};
@@ -24,7 +25,7 @@ pub struct ConfigPopupState {
     active_input_idx: u16,
     pub cursor_position: Position,
     input_fields: Vec<InputField>,
-    pub error_message: Option<String>,
+    pub error_message: Option<CompactString>,
     window_fx: PopupWindow,
 }
 
@@ -45,19 +46,19 @@ impl ConfigPopupState {
                 InputField::builder()
                     .label("gitlab url")
                     .description(Some(url_description()))
-                    .input(Input::new(config.gitlab_url.clone()))
+                    .input(Input::new(config.gitlab_url.to_string()))
                     .into(),
                 InputField::builder()
                     .label("gitlab token")
                     .description(Some(token_description()))
-                    .input(Input::new(config.gitlab_token.clone()))
+                    .input(Input::new(config.gitlab_token.to_string()))
                     .mask_input(true)
                     .into(),
                 InputField::builder()
                     .label("search filter")
                     .description(Some(filter_description()))
                     .input(Input::new(
-                        config.search_filter.clone().unwrap_or("".to_string()),
+                        config.search_filter.as_ref().map(|s| s.to_string()).unwrap_or_default(),
                     ))
                     .into(),
             ],
@@ -103,12 +104,12 @@ impl ConfigPopupState {
         let search_filter = if search_filter.trim().is_empty() {
             None
         } else {
-            Some(search_filter.trim().to_string())
+            Some(search_filter.trim().to_compact_string())
         };
 
         GlimConfig {
-            gitlab_url: gitlab_url.trim().to_string(),
-            gitlab_token: gitlab_token.trim().to_string(),
+            gitlab_url: gitlab_url.trim().to_compact_string(),
+            gitlab_token: gitlab_token.trim().to_compact_string(),
             search_filter,
         }
     }
@@ -154,14 +155,14 @@ impl StatefulWidget for ConfigPopup {
                         .description
                         .clone()
                         .unwrap_or_else(|| Line::from("")),
-                    Line::from(input_field.sanitized_input_display())
+                    Line::from(input_field.sanitized_input_display().to_string())
                         .style(state.input_style(idx as u16)),
                 ]
             })
             .collect();
 
         if let Some(error_message) = &state.error_message {
-            text.push(Line::from(error_message.clone()).style(theme().configuration_error));
+            text.push(Line::from(error_message.to_string()).style(theme().configuration_error));
         }
 
         Widget::render(Text::from(text), content_area, buf);

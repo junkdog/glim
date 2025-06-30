@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, Local, Utc};
+use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use reqwest::{Client, RequestBuilder};
 use serde::Deserialize;
@@ -18,10 +19,10 @@ use crate::result::*;
 
 pub struct GitlabClient {
     sender: Sender<GlimEvent>,
-    base_url: String,
-    private_token: String,
+    base_url: CompactString,
+    private_token: CompactString,
     client: Client,
-    search_filter: Option<String>,
+    search_filter: Option<CompactString>,
     log_response: bool,
     rt: Runtime,
 }
@@ -29,9 +30,9 @@ pub struct GitlabClient {
 impl GitlabClient {
     pub fn new(
         sender: Sender<GlimEvent>,
-        host: String,
-        private_token: String,
-        search_filter: Option<String>,
+        host: CompactString,
+        private_token: CompactString,
+        search_filter: Option<CompactString>,
         debug: bool,
     ) -> Self {
         let client = Self {
@@ -70,11 +71,11 @@ impl GitlabClient {
     pub fn dispatch_download_job_log(&self, project_id: ProjectId, job_id: JobId) {
         let get_trace_request = self
             .client
-            .get(format!(
+            .get(format_compact!(
                 "{}/projects/{project_id}/jobs/{job_id}/trace",
                 self.base_url
-            ))
-            .header("PRIVATE-TOKEN", &self.private_token);
+            ).as_str())
+            .header("PRIVATE-TOKEN", self.private_token.as_str());
 
         let sender = self.sender.clone();
         self.rt.spawn(async move {
@@ -88,19 +89,19 @@ impl GitlabClient {
     }
 
     pub fn dispatch_get_jobs(&self, project_id: ProjectId, pipeline_id: PipelineId) {
-        let base_url = format!(
+        let base_url = format_compact!(
             "{}/projects/{project_id}/pipelines/{pipeline_id}",
             self.base_url
         );
 
         let get_jobs_request = self
             .client
-            .get(format!("{base_url}/jobs"))
-            .header("PRIVATE-TOKEN", &self.private_token);
+            .get(format_compact!("{base_url}/jobs").as_str())
+            .header("PRIVATE-TOKEN", self.private_token.as_str());
         let get_trigger_jobs_request = self
             .client
-            .get(format!("{base_url}/bridges"))
-            .header("PRIVATE-TOKEN", &self.private_token);
+            .get(format_compact!("{base_url}/bridges").as_str())
+            .header("PRIVATE-TOKEN", self.private_token.as_str());
 
         let sender = self.sender.clone();
 
@@ -109,7 +110,7 @@ impl GitlabClient {
             let jobs = match Self::http_json_request::<Vec<JobDto>>(get_jobs_request, debug).await {
                 Ok(t) => t,
                 Err(e) => {
-                    GlimError::GitlabGetJobsError(project_id, pipeline_id, e.to_string());
+                    GlimError::GitlabGetJobsError(project_id, pipeline_id, e.to_compact_string());
                     return sender.dispatch(GlimEvent::Error(e));
                 }
             };
@@ -133,9 +134,9 @@ impl GitlabClient {
     }
 
     pub fn dispatch_get_pipelines(&self, id: ProjectId, updated_after: Option<DateTime<Utc>>) {
-        let mut url = format!("{}/projects/{id}/pipelines?per_page=60", self.base_url);
+        let mut url = format_compact!("{}/projects/{id}/pipelines?per_page=60", self.base_url);
         if let Some(date) = updated_after {
-            url.push_str(&format!("?last_activity_after={}", date.to_rfc3339()));
+            url.push_str(&format_compact!("?last_activity_after={}", date.to_rfc3339()));
         }
 
         self.dispatch::<Vec<PipelineDto>>(&url);
@@ -156,7 +157,7 @@ impl GitlabClient {
         if response.is_array() {
             Ok(())
         } else {
-            Err(GeneralError(format!("Invalid configuration: {}", response)))
+            Err(GeneralError(format_compact!("Invalid configuration: {}", response)))
         }
     }
 
@@ -164,12 +165,12 @@ impl GitlabClient {
         &self,
         updated_after: Option<DateTime<Utc>>,
         result_per_page: u8,
-    ) -> String {
-        format!(
+    ) -> CompactString {
+        format_compact!(
             "{}/projects?search_namespaces=true{}{}&statistics=true&archived=false&membership=true&per_page={result_per_page}",
             self.base_url,
-            self.search_filter.as_ref().map_or("".to_string(), |f| format!("&search={}", f)),
-            updated_after.map_or("".to_string(), |d| format!("&last_activity_after={}", d.to_rfc3339())),
+            self.search_filter.as_ref().map_or("".into(), |f| format_compact!("&search={}", f)),
+            updated_after.map_or("".into(), |d| format_compact!("&last_activity_after={}", d.to_rfc3339())),
         )
     }
 
@@ -230,7 +231,7 @@ impl GitlabClient {
     fn authenticated_get(&self, url: &str) -> RequestBuilder {
         self.client
             .get(url)
-            .header("PRIVATE-TOKEN", &self.private_token)
+            .header("PRIVATE-TOKEN", self.private_token.as_str())
     }
 
     async fn http_json_request<T>(request: RequestBuilder, debug: bool) -> Result<T>
@@ -238,34 +239,34 @@ impl GitlabClient {
         T: for<'de> Deserialize<'de>,
     {
         let response = request.send().await?;
-        let path = response.url().path().to_string();
+        let path = response.url().path().into();
 
         let status = response.status();
-        let body = response.text().await?;
+        let body = response.text().await?.into();
 
         if debug {
             Self::log_response_to_file(path, &body);
         }
 
         if status.is_success() {
-            serde_json::from_str(&body).map_err(|e| JsonDeserializeError(e.classify(), body))
+            serde_json::from_str(&body).map_err(|e| JsonDeserializeError(e.classify(), body.clone()))
         } else {
             let api = serde_json::from_str::<GitlabApiError>(&body);
             if let Ok(api) = api {
-                Err(GeneralError(format!(
+                Err(GeneralError(format_compact!(
                     "HTTP {}\n {}",
                     api.error,
                     api.description()
                 )))
             } else if let Ok(api2) = serde_json::from_str::<GitlabApiError2>(&body) {
-                Err(GeneralError(format!("HTTP {}", api2.message)))
+                Err(GeneralError(format_compact!("HTTP {}", api2.message)))
             } else {
-                Err(GeneralError(format!("{}: {}", status, body)))
+                Err(GeneralError(format_compact!("{}: {}", status, body)))
             }
         }
     }
 
-    fn log_response_to_file(path: String, body: &String) {
+    fn log_response_to_file(path: CompactString, body: &CompactString) {
         if !Path::new("glim-logs").exists() {
             std::fs::create_dir("glim-logs").expect("Unable to create directory");
         }
@@ -279,26 +280,26 @@ impl GitlabClient {
         std::fs::write(filename, body).expect("Unable to write to file");
     }
 
-    async fn http_request(request: RequestBuilder) -> Result<String> {
+    async fn http_request(request: RequestBuilder) -> Result<CompactString> {
         let body = request.send().await?.text().await?;
 
-        Ok(body)
+        Ok(body.into())
     }
 }
 
 #[derive(Debug, Deserialize)]
 struct GitlabApiError {
-    error: String,
-    error_description: Option<String>,
+    error: CompactString,
+    error_description: Option<CompactString>,
 }
 
 #[derive(Debug, Deserialize)]
 struct GitlabApiError2 {
-    message: String,
+    message: CompactString,
 }
 
 impl GitlabApiError {
-    pub fn description(&self) -> String {
-        self.error_description.clone().unwrap_or("".to_string())
+    pub fn description(&self) -> CompactString {
+        self.error_description.clone().unwrap_or("".into())
     }
 }

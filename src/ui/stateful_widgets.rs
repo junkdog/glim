@@ -8,6 +8,7 @@ use crate::glim_app::{GlimApp, GlimConfig, Modulo};
 use crate::id::PipelineId;
 use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
 use crate::ui::widget::NotificationState;
+use compact_str::CompactString;
 use ratatui::widgets::{ListState, TableState};
 use std::sync::mpsc::Sender;
 use tachyonfx::{Duration, Effect};
@@ -24,8 +25,8 @@ pub struct StatefulWidgets {
     pub shader_pipeline: Option<Effect>,
     pub notice: Option<NotificationState>,
     pub filter_input_active: bool,
-    pub filter_input_text: String,
-    pub temporary_filter: Option<String>,
+    pub filter_input_text: CompactString,
+    pub temporary_filter: Option<CompactString>,
     current_filtered_indices: Vec<usize>,
     glitch_override: Option<Effect>,
     glitch: Effect,
@@ -46,7 +47,7 @@ impl StatefulWidgets {
             glitch_override: None,
             notice: None,
             filter_input_active: false,
-            filter_input_text: String::new(),
+            filter_input_text: CompactString::default(),
             temporary_filter: None,
             current_filtered_indices: Vec::new(),
             glitch: default_glitch_effect(),
@@ -260,7 +261,7 @@ impl StatefulWidgets {
         }
     }
 
-    fn apply_temporary_filter(&mut self, filter: Option<String>) {
+    fn apply_temporary_filter(&mut self, filter: Option<CompactString>) {
         self.temporary_filter = filter;
         self.filter_input_active = false;
         // Reset table selection when filter changes
@@ -274,7 +275,7 @@ impl StatefulWidgets {
         self.sender.dispatch(GlimEvent::ApplyTemporaryFilter(None));
     }
 
-    pub fn effective_filter(&self, config_filter: &Option<String>) -> Option<String> {
+    pub fn effective_filter(&self, config_filter: &Option<CompactString>) -> Option<CompactString> {
         // Temporary filter takes precedence over config filter
         self.temporary_filter
             .clone()

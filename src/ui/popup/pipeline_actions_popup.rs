@@ -47,11 +47,11 @@ impl PipelineActionsPopupState {
             .iter()
             .map(|action| {
                 let action = match action {
-                    GlimEvent::BrowseToJob(_, _, _) => "browse to failed job".to_string(),
-                    GlimEvent::BrowseToPipeline(_, _) => "browse to pipeline".to_string(),
-                    GlimEvent::BrowseToProject(_) => "browse to project".to_string(),
+                    GlimEvent::BrowseToJob(_, _, _) => "browse to failed job",
+                    GlimEvent::BrowseToPipeline(_, _) => "browse to pipeline",
+                    GlimEvent::BrowseToProject(_) => "browse to project",
                     GlimEvent::DownloadErrorLog(_, _) => {
-                        "download failed job log to clipboard".to_string()
+                        "download failed job log to clipboard"
                     }
                     _ => panic!("unsupported action"),
                 };

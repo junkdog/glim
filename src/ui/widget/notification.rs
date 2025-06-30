@@ -2,6 +2,7 @@ use crate::effects::notification_effect;
 use crate::notice_service::{Notice, NoticeMessage};
 use crate::stores::ProjectStore;
 use crate::theme::theme;
+use compact_str::CompactString;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::StatefulWidget;
@@ -16,7 +17,7 @@ pub struct Notification {
 
 pub struct NotificationState {
     pub notice: Notice,
-    project_name: Option<String>,
+    project_name: Option<CompactString>,
     effect: Effect,
 }
 

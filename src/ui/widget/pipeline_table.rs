@@ -4,6 +4,7 @@ use crate::theme::theme;
 use crate::ui::format_duration;
 use crate::ui::widget::text_from;
 use chrono::Local;
+use compact_str::ToCompactString;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Constraint, Rect};
 use ratatui::prelude::{Line, Span, StatefulWidget, Text};
@@ -62,12 +63,14 @@ impl PipelineTable {
         let comment = if let Some(commit) = &p.commit {
             commit.title.clone()
         } else {
-            "".to_string()
+"".to_compact_string()
         };
 
+        let branch_text = branch.to_string();
+        let source_text = p.source.to_string().to_string();
         let branch_cell = Cell::from(Text::from(vec![
-            Line::from(branch).style(theme().pipeline_branch),
-            Line::from(p.source.to_string()).style(theme().pipeline_source),
+            Line::from(branch_text).style(theme().pipeline_branch),
+            Line::from(source_text).style(theme().pipeline_source),
         ]));
 
         Row::new(vec![
@@ -87,12 +90,12 @@ impl PipelineTable {
         // }
 
         let branch_name = if let Some(name) = p.failing_job_name() {
-            Line::from(name).style(theme().pipeline_job_failed)
+            Line::from(name.to_string()).style(theme().pipeline_job_failed)
         } else {
-            Line::from(p.active_job_name()).style(theme().pipeline_job)
+            Line::from(p.active_job_name().to_string()).style(theme().pipeline_job)
         };
 
-        let content = Text::from(vec![Line::from(p.icon()), branch_name]);
+        let content = Text::from(vec![Line::from(p.icon().to_string()), branch_name]);
 
         Cell::from(content)
     }
@@ -102,14 +105,14 @@ impl PipelineTable {
             .active_job()
             .map(|j| j.duration())
             .map(format_duration)
-            .unwrap_or("".to_string());
+            .unwrap_or("".to_compact_string());
 
         let duration = p.duration();
         let content = Text::from(vec![
-            Line::from(format_duration(duration))
+            Line::from(format_duration(duration).to_string())
                 .style(theme().time)
                 .alignment(Alignment::Right),
-            Line::from(active_job_duration)
+            Line::from(active_job_duration.to_string())
                 .style(theme().time)
                 .alignment(Alignment::Right),
         ]);

@@ -4,6 +4,7 @@ use crate::theme::theme;
 use crate::ui::format_duration;
 use crate::ui::widget::text_from;
 use chrono::{DateTime, Duration, Local, Utc};
+use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::Row;
@@ -12,11 +13,11 @@ use serde::Deserialize;
 #[derive(Clone, Debug)]
 pub struct Project {
     pub id: ProjectId,
-    pub path: String,
-    pub description: Option<String>,
-    pub default_branch: String,
-    pub ssh_git_url: String,
-    pub url: String,
+    pub path: CompactString,
+    pub description: Option<CompactString>,
+    pub default_branch: CompactString,
+    pub ssh_git_url: CompactString,
+    pub url: CompactString,
     pub last_activity_at: DateTime<Utc>,
     pub pipelines: Option<Vec<Pipeline>>,
     pub commit_count: u32,
@@ -30,8 +31,8 @@ pub struct Pipeline {
     pub project_id: ProjectId,
     pub status: PipelineStatus,
     pub source: PipelineSource,
-    pub branch: String,
-    pub url: String,
+    pub branch: CompactString,
+    pub url: CompactString,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub jobs: Option<Vec<Job>>,
@@ -40,30 +41,30 @@ pub struct Pipeline {
 
 #[derive(Clone, Debug)]
 pub struct Commit {
-    pub title: String,
-    pub author_name: String,
+    pub title: CompactString,
+    pub author_name: CompactString,
 }
 
 #[derive(Clone, Debug)]
 pub struct Job {
     pub id: JobId,
-    pub name: String,
+    pub name: CompactString,
     pub status: PipelineStatus,
-    pub stage: String,
+    pub stage: CompactString,
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub finished_at: Option<DateTime<Utc>>,
-    pub url: String,
+    pub url: CompactString,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ProjectDto {
     pub id: ProjectId,
-    pub path_with_namespace: String,
-    pub description: Option<String>,
-    pub default_branch: String,
-    pub ssh_url_to_repo: String,
-    pub web_url: String,
+    pub path_with_namespace: CompactString,
+    pub description: Option<CompactString>,
+    pub default_branch: CompactString,
+    pub ssh_url_to_repo: CompactString,
+    pub web_url: CompactString,
     pub last_activity_at: DateTime<Utc>,
     pub statistics: StatisticsDto,
 }
@@ -77,21 +78,21 @@ pub struct StatisticsDto {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CommitDto {
-    pub title: String,
-    pub author_name: String,
+    pub title: CompactString,
+    pub author_name: CompactString,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct JobDto {
     pub id: JobId,
-    pub name: String,
-    pub stage: String,
+    pub name: CompactString,
+    pub stage: CompactString,
     pub commit: CommitDto,
     pub status: PipelineStatus,
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub finished_at: Option<DateTime<Utc>>,
-    pub web_url: String,
+    pub web_url: CompactString,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -101,8 +102,8 @@ pub struct PipelineDto {
     pub status: PipelineStatus,
     pub source: PipelineSource,
     #[serde(rename = "ref")]
-    pub branch: String,
-    pub web_url: String,
+    pub branch: CompactString,
+    pub web_url: CompactString,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -149,7 +150,7 @@ pub enum PipelineSource {
 }
 
 impl PipelineSource {
-    pub fn to_string(&self) -> String {
+    pub fn to_string(&self) -> CompactString {
         match self {
             PipelineSource::Api => "api",
             PipelineSource::Chat => "chat",
@@ -167,7 +168,7 @@ impl PipelineSource {
             PipelineSource::Web => "web",
             PipelineSource::Webide => "web ide",
         }
-        .to_string()
+        .into()
     }
 }
 
@@ -196,9 +197,9 @@ impl PipelineSource {
 impl Project {
     pub fn row(&self) -> Row<'_> {
         Row::new(vec![
-            Span::from(self.last_activity_at.to_string()),
-            Span::from(self.path.to_string()),
-            Span::from(self.default_branch.to_string()),
+            Span::from(self.last_activity_at.to_compact_string()),
+            Span::from(self.path.as_str()),
+            Span::from(self.default_branch.as_str()),
         ])
     }
 
@@ -206,10 +207,10 @@ impl Project {
         self.last_activity_at
     }
 
-    pub fn title(&self) -> String {
+    pub fn title(&self) -> CompactString {
         match self.path.rfind('/') {
-            Some(i) => self.path[i + 1..].to_string(),
-            None => self.path.to_string(),
+            Some(i) => self.path[i + 1..].into(),
+            None => self.path.clone(),
         }
     }
 
@@ -401,15 +402,15 @@ impl Pipeline {
             .and_then(|jobs| jobs.iter().find(|j| j.status == PipelineStatus::Failed))
     }
 
-    pub fn active_job_name(&self) -> String {
-        self.active_job().map_or("".to_string(), |j| j.name.clone())
+    pub fn active_job_name(&self) -> CompactString {
+        self.active_job().map_or("".into(), |j| j.name.clone())
     }
 
     pub fn has_failed_jobs(&self) -> bool {
         self.failed_job().is_some()
     }
 
-    pub fn failing_job_name(&self) -> Option<String> {
+    pub fn failing_job_name(&self) -> Option<CompactString> {
         self.failed_job().map(|j| j.name.clone())
     }
 
@@ -450,9 +451,9 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
         let updated_at = p.updated_at.with_timezone(&Local);
         match () {
             _ if p.has_active_jobs() => Line::from(vec![
-                Span::from(updated_at.format("%a, %d %b").to_string()).style(theme().date),
+                Span::from(updated_at.format("%a, %d %b").to_compact_string()).style(theme().date),
                 Span::from(" "),
-                Span::from(updated_at.format("%H:%M:%S").to_string()).style(theme().time),
+                Span::from(updated_at.format("%H:%M:%S").to_compact_string()).style(theme().time),
                 Span::from(" "),
                 Span::from(p.jobs.as_ref().unwrap().icon()),
                 Span::from(" "),
@@ -463,9 +464,9 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
                 Span::from(format_duration(p.duration())).style(theme().time),
             ]),
             _ if p.status.is_active() => Line::from(vec![
-                Span::from(updated_at.format("%a, %d %b").to_string()).style(theme().date),
+                Span::from(updated_at.format("%a, %d %b").to_compact_string()).style(theme().date),
                 Span::from(" "),
-                Span::from(updated_at.format("%H:%M:%S").to_string()).style(theme().time),
+                Span::from(updated_at.format("%H:%M:%S").to_compact_string()).style(theme().time),
                 Span::from(" "),
                 Span::from(icon),
                 Span::from(" "),
@@ -474,9 +475,9 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
                 Span::from(format_duration(p.duration())).style(theme().time),
             ]),
             _ => Line::from(vec![
-                Span::from(updated_at.format("%a, %d %b").to_string()).style(theme().date),
+                Span::from(updated_at.format("%a, %d %b").to_compact_string()).style(theme().date),
                 Span::from(" "),
-                Span::from(updated_at.format("%H:%M:%S").to_string()).style(theme().time),
+                Span::from(updated_at.format("%H:%M:%S").to_compact_string()).style(theme().time),
                 Span::from(" "),
                 Span::from(icon),
                 Span::from(" "),
@@ -513,11 +514,11 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
 /// The icon returned is expected to be a string that may contain
 /// special characters or emojis
 pub trait IconRepresentable {
-    fn icon(&self) -> String;
+    fn icon(&self) -> CompactString;
 }
 
 impl IconRepresentable for PipelineStatus {
-    fn icon(&self) -> String {
+    fn icon(&self) -> CompactString {
         match self {
             PipelineStatus::Created => "⚪",
             PipelineStatus::WaitingForResource => "⏳",
@@ -533,18 +534,18 @@ impl IconRepresentable for PipelineStatus {
             PipelineStatus::Scheduled => "📅",
             PipelineStatus::Unknown => "❓",
         }
-        .to_string()
+        .into()
     }
 }
 
 impl IconRepresentable for &Vec<Job> {
-    fn icon(&self) -> String {
-        self.iter().map(|j| j.status.icon()).collect()
+    fn icon(&self) -> CompactString {
+        self.iter().map(|j| j.status.icon()).collect::<CompactString>()
     }
 }
 
 impl IconRepresentable for Pipeline {
-    fn icon(&self) -> String {
+    fn icon(&self) -> CompactString {
         self.jobs
             .as_ref()
             .map(|jobs| jobs.icon())

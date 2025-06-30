@@ -1,6 +1,7 @@
 use crate::event::GlimEvent;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::GlimError;
+use compact_str::CompactString;
 use serde_json::error::Category;
 use std::collections::VecDeque;
 
@@ -25,15 +26,15 @@ pub enum NoticeLevel {
 
 #[derive(Debug, Clone)]
 pub enum NoticeMessage {
-    GeneralMessage(String),
+    GeneralMessage(CompactString),
     JobLogDownloaded(ProjectId, PipelineId, JobId),
     // InvalidGitlabToken,
     // ExpiredGitlabToken,
-    ConfigError(String),
-    JsonDeserializeError(Category, String),
-    GitlabGetJobsError(ProjectId, PipelineId, String),
-    GitlabGetTriggerJobsError(ProjectId, PipelineId, String),
-    GitlabGetPipelinesError(ProjectId, PipelineId, String),
+    ConfigError(CompactString),
+    JsonDeserializeError(Category, CompactString),
+    GitlabGetJobsError(ProjectId, PipelineId, CompactString),
+    GitlabGetTriggerJobsError(ProjectId, PipelineId, CompactString),
+    GitlabGetPipelinesError(ProjectId, PipelineId, CompactString),
 }
 
 impl NoticeService {
@@ -70,7 +71,7 @@ impl NoticeService {
             .unwrap_or(()),
             GlimEvent::JobLogDownloaded(_project_id, _job_id, _) => self.push_notice(
                 NoticeLevel::Info,
-                NoticeMessage::GeneralMessage("Job log downloaded".to_string()),
+                NoticeMessage::GeneralMessage("Job log downloaded".into()),
             ),
             _ => {}
         }

@@ -357,6 +357,7 @@ dependencies = [
  "itoa",
  "rustversion",
  "ryu",
+ "serde",
  "static_assertions",
 ]
 
@@ -704,6 +705,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "colorsys",
+ "compact_str 0.8.0",
  "confy",
  "crossterm",
  "derive_builder",

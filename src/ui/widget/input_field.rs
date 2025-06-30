@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use derive_builder::Builder;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
@@ -25,11 +26,11 @@ impl InputField {
         InputFieldBuilder::default()
     }
 
-    pub fn sanitized_input_display(&self) -> String {
+    pub fn sanitized_input_display(&self) -> CompactString {
         if self.mask_input {
-            self.input.value().chars().map(|_| '*').collect()
+            self.input.value().chars().map(|_| '*').collect::<CompactString>()
         } else {
-            self.input.value().to_string()
+            self.input.value().into()
         }
     }
 }
@@ -48,7 +49,7 @@ impl WidgetRef for InputField {
             rows.next().map(|row| description.render_ref(row, buf));
             rows.next().map(|row| {
                 let input = self.sanitized_input_display();
-                Line::from(input).style(self.input_style).render(row, buf);
+                Line::from(input.to_string()).style(self.input_style).render(row, buf);
             });
         } else {
             self.label.render_ref(area, buf);

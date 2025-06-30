@@ -3,6 +3,7 @@ use crate::event::GlimEvent;
 use crate::id::ProjectId;
 use crate::input::InputProcessor;
 use crate::ui::StatefulWidgets;
+use compact_str::ToCompactString;
 use crossterm::event::{KeyCode, KeyEvent};
 use std::sync::mpsc::Sender;
 
@@ -62,7 +63,7 @@ impl NormalModeProcessor {
                 self.dispatch(GlimEvent::FilterInputBackspace);
             }
             KeyCode::Char(c) => {
-                self.dispatch(GlimEvent::FilterInputChar(c.to_string()));
+                self.dispatch(GlimEvent::FilterInputChar(c.to_compact_string()));
             }
             _ => {}
         }

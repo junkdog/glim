@@ -8,6 +8,7 @@ use tachyonfx::{Duration, EffectRenderer};
 use crate::domain::{Pipeline, Project};
 use crate::theme::theme;
 use crate::ui::fx::{open_window, PopupWindow};
+use compact_str::ToCompactString;
 use crate::ui::popup::utility::CenteredShrink;
 use crate::ui::widget::PipelineTable;
 
@@ -42,8 +43,8 @@ impl ProjectDetailsPopupState {
     pub fn new(project: Project) -> ProjectDetailsPopupState {
         let (namespace, name) = project.path_and_name();
         let description = match &project.description {
-            Some(d) => d.clone(),
-            None => "".to_string(),
+            Some(d) => d.to_string(),
+            None => String::new(),
         };
         let project_namespace = Text::from(vec![
             Line::from(name.to_string()).style(theme().project_name),
@@ -79,7 +80,7 @@ impl ProjectDetailsPopupState {
 
     fn commit_count_line(commit_count: u32) -> Line<'static> {
         Line::from(vec![
-            Span::from(commit_count.to_string()).style(theme().project_commits[0]),
+            Span::from(commit_count.to_compact_string()).style(theme().project_commits[0]),
             Span::from(" commits").style(theme().project_commits[1]),
         ])
     }
@@ -92,10 +93,7 @@ impl ProjectDetailsPopupState {
             s => (s as f32 / (1024.0 * 1024.0), "gb"),
         };
 
-        Line::from(vec![
-            Span::from(format!("{:.2}{unit} ", size)).style(theme().project_size[0]),
-            Span::from(label.to_string()).style(theme().project_size[1]),
-        ])
+        Line::from(format!("{size:.2}{unit} {label}", size = size, unit = unit, label = label)).style(theme().project_size[0])
     }
 
     pub fn popup_area(&self, screen: Rect) -> Rect {

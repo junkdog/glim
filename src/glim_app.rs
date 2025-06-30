@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
 use chrono::{DateTime, Local};
+use compact_str::{format_compact, CompactString, ToCompactString};
 use serde::{Deserialize, Serialize};
 use tachyonfx::Duration;
 
@@ -36,11 +37,11 @@ pub struct GlimApp {
 #[derive(Default, Debug, Clone, Deserialize, Serialize)]
 pub struct GlimConfig {
     /// The URL of the GitLab instance
-    pub gitlab_url: String,
+    pub gitlab_url: CompactString,
     /// The Personal Access Token to authenticate with GitLab
-    pub gitlab_token: String,
+    pub gitlab_token: CompactString,
     /// Filter applied to the projects list
-    pub search_filter: Option<String>,
+    pub search_filter: Option<CompactString>,
 }
 
 pub struct UiState {
@@ -228,11 +229,11 @@ impl GlimApp {
         let config_file = &self.config_path;
         if config_file.exists() {
             let config: GlimConfig =
-                confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_string()))?;
+                confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
 
             Ok(config)
         } else {
-            Err(GlimError::ConfigError(format!(
+            Err(GlimError::ConfigError(format_compact!(
                 "Unable to find configuration file at {:?}",
                 config_file
             )))
@@ -260,7 +261,7 @@ impl GlimApp {
 
     pub fn filtered_projects(
         &self,
-        temporary_filter: &Option<String>,
+        temporary_filter: &Option<CompactString>,
     ) -> (Vec<Project>, Vec<usize>) {
         let all_projects = self.project_store.projects();
 
@@ -271,11 +272,11 @@ impl GlimApp {
                 let mut filtered_indices = Vec::new();
 
                 for (index, project) in all_projects.iter().enumerate() {
-                    if project.path.to_lowercase().contains(&filter_lower)
+                    if project.path.to_lowercase().contains(filter_lower.as_str())
                         || project
                             .description
                             .as_ref()
-                            .map_or(false, |d| d.to_lowercase().contains(&filter_lower))
+                            .map_or(false, |d| d.to_lowercase().contains(filter_lower.as_str()))
                     {
                         filtered_projects.push(project.clone());
                         filtered_indices.push(index);

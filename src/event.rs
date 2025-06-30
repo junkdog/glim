@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::sync::mpsc;
 use std::thread;
 
+use compact_str::CompactString;
 use crate::dispatcher::Dispatcher;
 use crate::domain::{JobDto, PipelineDto, Project, ProjectDto};
 use crate::glim_app::GlimConfig;
@@ -15,7 +16,7 @@ pub enum GlimEvent {
     Shutdown,
     Key(KeyEvent),
     ToggleInternalLogs,
-    Log(String),
+    Log(CompactString),
     GlitchOverride(GlitchState),
     CloseProjectDetails,
     OpenProjectDetails(ProjectId),
@@ -42,15 +43,15 @@ pub enum GlimEvent {
     BrowseToPipeline(ProjectId, PipelineId),
     BrowseToProject(ProjectId),
     DownloadErrorLog(ProjectId, PipelineId),
-    JobLogDownloaded(ProjectId, JobId, String),
+    JobLogDownloaded(ProjectId, JobId, CompactString),
     ProjectUpdated(Box<Project>),
     ShowLastNotification,
     ShowFilterMenu,
     CloseFilter,
-    FilterInputChar(String),
+    FilterInputChar(CompactString),
     FilterInputBackspace,
-    ApplyFilter(String),
-    ApplyTemporaryFilter(Option<String>),
+    ApplyFilter(CompactString),
+    ApplyTemporaryFilter(Option<CompactString>),
     ClearFilter,
     ShowSortMenu,
     ToggleColorDepth,

@@ -31,7 +31,7 @@ impl Tui {
     pub fn draw(&mut self, render_ui: impl FnOnce(&mut Frame)) -> Result<(), GlimError> {
         self.terminal
             .draw(render_ui)
-            .map_err(|_| GeneralError("failed to draw UI".to_string()))?;
+            .map_err(|_| GeneralError("failed to draw UI".into()))?;
         Ok(())
     }
 
@@ -60,10 +60,10 @@ impl Tui {
 
     pub fn enter(&mut self) -> Result<(), GlimError> {
         terminal::enable_raw_mode()
-            .map_err(|_| GeneralError("failed to initialize raw mode".to_string()))?;
+            .map_err(|_| GeneralError("failed to initialize raw mode".into()))?;
 
         crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)
-            .map_err(|_| GeneralError("failed to enter alternate screen".to_string()))?;
+            .map_err(|_| GeneralError("failed to enter alternate screen".into()))?;
 
         // Define a custom panic hook to reset the terminal properties.
         // This way, you won't have your terminal messed up if an unexpected error happens.
@@ -75,18 +75,18 @@ impl Tui {
 
         self.terminal
             .hide_cursor()
-            .map_err(|_| GeneralError("failed to hide cursor".to_string()))?;
+            .map_err(|_| GeneralError("failed to hide cursor".into()))?;
         self.terminal
             .clear()
-            .map_err(|_| GeneralError("failed to clear the screen".to_string()))?;
+            .map_err(|_| GeneralError("failed to clear the screen".into()))?;
         Ok(())
     }
 
     fn reset() -> Result<(), GlimError> {
         terminal::disable_raw_mode()
-            .map_err(|_| GeneralError("failed to disable raw mode".to_string()))?;
+            .map_err(|_| GeneralError("failed to disable raw mode".into()))?;
         crossterm::execute!(io::stderr(), LeaveAlternateScreen, DisableMouseCapture)
-            .map_err(|_| GeneralError("failed to leave alternate screen".to_string()))?;
+            .map_err(|_| GeneralError("failed to leave alternate screen".into()))?;
 
         Ok(())
     }
@@ -95,7 +95,7 @@ impl Tui {
         Self::reset()?;
         self.terminal
             .show_cursor()
-            .map_err(|_| GeneralError("failed to show cursor".to_string()))?;
+            .map_err(|_| GeneralError("failed to show cursor".into()))?;
         Ok(())
     }
 }

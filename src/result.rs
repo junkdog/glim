@@ -1,4 +1,5 @@
 use crate::id::{PipelineId, ProjectId};
+use compact_str::{CompactString, ToCompactString};
 use serde_json::error::Category;
 use thiserror::Error;
 
@@ -11,26 +12,26 @@ pub enum GlimError {
     #[error("The provided Gitlab token has expired.")]
     ExpiredGitlabToken,
     #[error("{0}")]
-    ConfigError(String),
+    ConfigError(CompactString),
 
     #[error("{0}")]
-    GeneralError(String),
+    GeneralError(CompactString),
 
     #[error("{:0} - JSON: {1}")]
-    JsonDeserializeError(Category, String),
+    JsonDeserializeError(Category, CompactString),
 
     #[error("project_id={0}/pipeline_id={1}: {2}")]
-    GitlabGetJobsError(ProjectId, PipelineId, String),
+    GitlabGetJobsError(ProjectId, PipelineId, CompactString),
     #[error("project_id={0}/pipeline_id={1}: {2}")]
-    GitlabGetTriggerJobsError(ProjectId, PipelineId, String),
+    GitlabGetTriggerJobsError(ProjectId, PipelineId, CompactString),
     #[error("project_id={0}/pipeline_id={1}: {2}")]
-    GitlabGetPipelinesError(ProjectId, PipelineId, String),
+    GitlabGetPipelinesError(ProjectId, PipelineId, CompactString),
 }
 
 impl From<reqwest::Error> for GlimError {
     fn from(e: reqwest::Error) -> Self {
         match () {
-            _ => GlimError::GeneralError(e.to_string()),
+            _ => GlimError::GeneralError(e.to_compact_string()),
         }
     }
 }

@@ -23,6 +23,7 @@ path = "src/main.rs"
 arboard = { version = "3.4.1", default-features = false, features = ["windows-sys", "wl-clipboard-rs"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 colorsys = "0.6.7"
+compact_str = { version = "0.8", features = ["serde"] }
 confy = "0.6.1"
 tachyonfx = "0.15.0"
 crossterm = "0.28.1"
