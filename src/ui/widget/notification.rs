@@ -1,6 +1,7 @@
 use crate::notice_service::{Notice, NoticeMessage};
 use crate::stores::ProjectStore;
 use crate::theme::theme;
+use crate::effects::notification_effect;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::StatefulWidget;
@@ -44,7 +45,7 @@ impl NotificationState {
         Self {
             notice,
             project_name,
-            effect: effect::notification_effect(),
+            effect: notification_effect(),
         }
     }
 }
@@ -121,39 +122,3 @@ impl StatefulWidget for Notification {
     }
 }
 
-mod effect {
-    use crate::gruvbox::Gruvbox::Dark0Hard;
-    use tachyonfx::Interpolation::{SineIn, SineOut};
-    use tachyonfx::{fx, Duration, Effect};
-
-    pub(super) fn notification_effect() -> Effect {
-        fx::sequence(&[
-            // 1. clear the border (border is already cleared, so we first fill it back in)
-            fx::parallel(&[
-                draw_border(Duration::from_millis(100)),
-                fx::dissolve(Duration::from_millis(100))
-            ]),
-            // 2. fade in notification text
-            fx::fade_from_fg(Dark0Hard, (250, SineOut)),
-            // 3. smooth blink while notification is shown
-            fx::with_duration(Duration::from_millis(6000),
-                fx::repeating(fx::ping_pong(
-                    fx::hsl_shift_fg([0.0, 0.0, 25.0], (500, SineOut))
-                )),
-            ),
-            // 4. fade out notification text and then redraw border
-            fx::prolong_end(Duration::from_millis(100),
-                fx::fade_to_fg(Dark0Hard, (250, SineIn))),
-            fx::parallel(&[
-                draw_border(Duration::from_millis(150)),
-                fx::coalesce(150),
-            ]),
-        ])
-    }
-
-    fn draw_border(duration: Duration) -> Effect {
-        fx::effect_fn((), duration, |_, _, cells| {
-            cells.for_each(|(_, cell)| { cell.set_char('─'); });
-        })
-    }
-}

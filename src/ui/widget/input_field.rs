@@ -6,6 +6,7 @@ use ratatui::style::Style;
 use ratatui::widgets::WidgetRef;
 use ratatui::widgets::Widget;
 use tui_input::Input;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Clone, Builder)]
 #[builder(pattern = "owned")]
@@ -51,7 +52,9 @@ impl WidgetRef for InputField {
         } else {
             self.label.render_ref(area, buf);
             let label_width = self.label.width();
-            buf.cell_mut(Position::new(area.x + label_width, area.y)).set_char(':');
+            if let Some(cell) = buf.cell_mut(Position::new(area.x + label_width as u16, area.y)) {
+                cell.set_char(':');
+            }
         }
     }
 }

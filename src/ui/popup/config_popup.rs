@@ -1,6 +1,5 @@
 use std::vec;
 
-use derive_builder::Builder;
 use itertools::Itertools;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Position, Rect};
@@ -48,18 +47,18 @@ impl ConfigPopupState {
             input_fields: vec![
                 InputField::builder()
                     .label("gitlab url")
-                    .description(url_description())
+                    .description(Some(url_description()))
                     .input(Input::new(config.gitlab_url.clone()))
                     .into(),
                 InputField::builder()
                     .label("gitlab token")
-                    .description(token_description())
+                    .description(Some(token_description()))
                     .input(Input::new(config.gitlab_token.clone()))
                     .mask_input(true)
                     .into(),
                 InputField::builder()
                     .label("search filter")
-                    .description(filter_description())
+                    .description(Some(filter_description()))
                     .input(Input::new(config.search_filter.clone().unwrap_or("".to_string())))
                     .into(),
             ],
@@ -148,7 +147,7 @@ impl StatefulWidget for ConfigPopup {
             .enumerate()
             .flat_map(|(idx, input_field)| {[
                 Line::from(input_field.label).style(theme().input_label),
-                input_field.description.clone(),
+                input_field.description.clone().unwrap_or_else(|| Line::from("")),
                 Line::from(input_field.sanitized_input_display()).style(state.input_style(idx as u16)),
             ]})
             .collect();

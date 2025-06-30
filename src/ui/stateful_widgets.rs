@@ -1,15 +1,14 @@
 use std::sync::mpsc::Sender;
 use ratatui::widgets::{ListState, TableState};
-use tachyonfx::{fx, Duration, Effect, Interpolation, IntoEffect};
-use tachyonfx::fx::{parallel, Direction, Glitch};
+use tachyonfx::{Duration, Effect};
 use crate::dispatcher::Dispatcher;
 use crate::domain::Project;
-use crate::event::{GlimEvent, GlitchState};
+use crate::event::GlimEvent;
 use crate::glim_app::{GlimApp, GlimConfig, Modulo};
-use crate::gruvbox::Gruvbox::{Dark0Hard, Dark3};
 use crate::id::PipelineId;
 use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
 use crate::ui::widget::NotificationState;
+use crate::effects::{make_glitch_effect, default_glitch_effect, fade_in_projects_table, project_details_close_effect};
 
 pub struct StatefulWidgets {
     pub last_frame: Duration,
@@ -40,12 +39,7 @@ impl StatefulWidgets {
             shader_pipeline: None,
             glitch_override: None,
             notice: None,
-            glitch: Glitch::builder()
-                .action_ms(100..500)
-                .action_start_delay_ms(0..2000)
-                .cell_glitch_ratio(0.0015)
-                .build()
-                .into_effect()
+            glitch: default_glitch_effect()
         }
     }
 
@@ -64,9 +58,7 @@ impl StatefulWidgets {
 
             GlimEvent::OpenProjectDetails(id)       => self.open_project_details(app.project(*id).clone(), app.sender.clone()),
             GlimEvent::CloseProjectDetails          => self.project_details = {
-                let fade_in = fx::fade_from(Dark3, Dark0Hard, (300, Interpolation::CircIn));
-                self.shader_pipeline = Some(fade_in);
-
+                self.shader_pipeline = Some(project_details_close_effect());
                 None
             },
             GlimEvent::ProjectUpdated(p)            => self.refresh_project_details(p),
@@ -85,11 +77,7 @@ impl StatefulWidgets {
     }
 
     fn fade_in_projects_table(&mut self) {
-        let effect = parallel(&[
-            fx::coalesce(550),
-            fx::sweep_in(Direction::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn))
-        ]);
-        self.table_fade_in = Some(effect);
+        self.table_fade_in = Some(fade_in_projects_table());
     }
 
     fn refresh_project_details(&mut self, project: &Project) {
@@ -204,14 +192,3 @@ impl StatefulWidgets {
 }
 
 
-fn make_glitch_effect(glitch_state: GlitchState) -> Option<Effect> {
-    match glitch_state {
-        GlitchState::Inactive => None,
-        GlitchState::Active => Some(Glitch::builder()
-            .action_ms(100..200)
-            .action_start_delay_ms(0..500)
-            .cell_glitch_ratio(0.05)
-            .build()
-            .into_effect())
-    }
-}

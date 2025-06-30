@@ -36,6 +36,7 @@ mod id;
 mod dispatcher;
 mod input;
 mod notice_service;
+mod effects;
 
 /// A TUI for monitoring GitLab CI/CD pipelines and projects
 #[derive(Parser, Debug)]
@@ -110,7 +111,7 @@ impl MainWindowLayout {
             ]).split(area)
         };
 
-        let main_area = layout[0];
+        let _main_area = layout[0];
 
         Self {
             filter_input: layout[0],
