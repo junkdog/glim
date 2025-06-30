@@ -34,11 +34,8 @@ impl ConfigPopup {
     }
 }
 
-
 impl ConfigPopupState {
-    pub fn new(
-        config: GlimConfig
-    ) -> Self {
+    pub fn new(config: GlimConfig) -> Self {
         Self {
             // duration_ms: 0,
             active_input_idx: 0,
@@ -59,21 +56,22 @@ impl ConfigPopupState {
                 InputField::builder()
                     .label("search filter")
                     .description(Some(filter_description()))
-                    .input(Input::new(config.search_filter.clone().unwrap_or("".to_string())))
+                    .input(Input::new(
+                        config.search_filter.clone().unwrap_or("".to_string()),
+                    ))
                     .into(),
             ],
-            window_fx: open_window("configuration", Some(vec![
-                ("ESC", "close"),
-                ("↑ ↓", "selection"),
-                ("↵",   "apply"),
-            ])),
+            window_fx: open_window(
+                "configuration",
+                Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "apply")]),
+            ),
         }
     }
 
     pub fn is_open_complete(&self) -> bool {
         self.window_fx.done()
     }
-    
+
     pub fn select_next_input(&mut self) {
         self.active_input_idx = (self.active_input_idx + 1) % 3;
     }
@@ -95,7 +93,9 @@ impl ConfigPopupState {
     }
 
     pub fn to_config(&self) -> GlimConfig {
-        let (gitlab_url, gitlab_token, search_filter) = self.input_fields.iter()
+        let (gitlab_url, gitlab_token, search_filter) = self
+            .input_fields
+            .iter()
             .map(|field| field.input.value())
             .collect_tuple()
             .unwrap();
@@ -140,16 +140,24 @@ impl StatefulWidget for ConfigPopup {
         state.window_fx.screen_area(buf.area); // for the parent window fx
         let last_tick = self.last_frame_time;
         buf.render_effect(&mut state.window_fx, area, last_tick);
-        
+
         // popup content
         let content_area = area.inner(Margin::new(1, 1));
-        let mut text: Vec<Line> = state.input_fields.iter()
+        let mut text: Vec<Line> = state
+            .input_fields
+            .iter()
             .enumerate()
-            .flat_map(|(idx, input_field)| {[
-                Line::from(input_field.label).style(theme().input_label),
-                input_field.description.clone().unwrap_or_else(|| Line::from("")),
-                Line::from(input_field.sanitized_input_display()).style(state.input_style(idx as u16)),
-            ]})
+            .flat_map(|(idx, input_field)| {
+                [
+                    Line::from(input_field.label).style(theme().input_label),
+                    input_field
+                        .description
+                        .clone()
+                        .unwrap_or_else(|| Line::from("")),
+                    Line::from(input_field.sanitized_input_display())
+                        .style(state.input_style(idx as u16)),
+                ]
+            })
             .collect();
 
         if let Some(error_message) = &state.error_message {
@@ -159,34 +167,31 @@ impl StatefulWidget for ConfigPopup {
         Widget::render(Text::from(text), content_area, buf);
 
         // window decoration and animation
-        state.window_fx.process_opening(self.last_frame_time, buf, area);
+        state
+            .window_fx
+            .process_opening(self.last_frame_time, buf, area);
         state.update_cursor_position(&area);
     }
 }
 
 fn url_description() -> Line<'static> {
     Line::from(vec![
-        Span::from("base url of the gitlab instance, e.g. ")
-            .style(theme().input_description),
-        Span::from("https://mygitlab.com/api/v4")
-            .style(theme().input_description_em),
+        Span::from("base url of the gitlab instance, e.g. ").style(theme().input_description),
+        Span::from("https://mygitlab.com/api/v4").style(theme().input_description_em),
     ])
 }
 
 fn token_description() -> Line<'static> {
     Line::from(vec![
-        Span::from("personal access token ")
-            .style(theme().input_description_em),
-        Span::from("for the gitlab api; scoped to ")
-            .style(theme().input_description),
-        Span::from("read_api")
-            .style(theme().input_description_em),
+        Span::from("personal access token ").style(theme().input_description_em),
+        Span::from("for the gitlab api; scoped to ").style(theme().input_description),
+        Span::from("read_api").style(theme().input_description_em),
     ])
 }
 
 fn filter_description() -> Line<'static> {
-    Line::from(vec![
-        Span::from("optional project filter, applied to project namespace")
-            .style(theme().input_description),
-    ])
+    Line::from(vec![Span::from(
+        "optional project filter, applied to project namespace",
+    )
+    .style(theme().input_description)])
 }

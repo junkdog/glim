@@ -1,13 +1,13 @@
-use chrono::Local;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Constraint, Rect};
-use ratatui::prelude::{Line, Span, StatefulWidget, Text};
-use ratatui::widgets::{Cell, Row, Table, TableState};
 use crate::domain::{IconRepresentable, Pipeline};
 use crate::id::PipelineId;
 use crate::theme::theme;
 use crate::ui::format_duration;
 use crate::ui::widget::text_from;
+use chrono::Local;
+use ratatui::buffer::Buffer;
+use ratatui::layout::{Alignment, Constraint, Rect};
+use ratatui::prelude::{Line, Span, StatefulWidget, Text};
+use ratatui::widgets::{Cell, Row, Table, TableState};
 
 /// pipelines widget. used inside the project details popup.
 ///
@@ -21,19 +21,22 @@ use crate::ui::widget::text_from;
 pub struct PipelineTable {
     pub constraints: [Constraint; 5],
     pub rows: Vec<Row<'static>>,
-    pub ids: Vec<PipelineId>
+    pub ids: Vec<PipelineId>,
 }
 
 impl PipelineTable {
     pub fn new(pipelines: &[&Pipeline]) -> Self {
-        let (max_branch, max_job_name, max_failed_job_name, max_duration) = pipelines.iter()
-            .fold((5, 12, 12, 4), |(b, j, f, d), p| (
-                b.max(p.branch.chars().count()),
-                j.max(p.active_job_name().chars().count()).max(p.jobs.clone().map(|j| j.len() * 2).unwrap_or(0)),
-                f.max(p.failing_job_name().map(|j| j.chars().count()).unwrap_or(0)),
-                d.max(format_duration(p.duration()).chars().count()),
-                // pe.max("NA%".chars().count()),
-            ));
+        let (max_branch, max_job_name, max_failed_job_name, max_duration) =
+            pipelines.iter().fold((5, 12, 12, 4), |(b, j, f, d), p| {
+                (
+                    b.max(p.branch.chars().count()),
+                    j.max(p.active_job_name().chars().count())
+                        .max(p.jobs.clone().map(|j| j.len() * 2).unwrap_or(0)),
+                    f.max(p.failing_job_name().map(|j| j.chars().count()).unwrap_or(0)),
+                    d.max(format_duration(p.duration()).chars().count()),
+                    // pe.max("NA%".chars().count()),
+                )
+            });
 
         Self {
             constraints: [
@@ -43,7 +46,8 @@ impl PipelineTable {
                 Constraint::Length(max_duration as u16),
                 Constraint::Percentage(100),
             ],
-            rows: pipelines.iter()
+            rows: pipelines
+                .iter()
                 .map(|p| Self::parse_row(p))
                 .enumerate()
                 .map(|(idx, r)| r.style(theme().table_row(idx)))
@@ -73,7 +77,8 @@ impl PipelineTable {
             Self::pipeline_duration_cell(p),
             // Self::pipeline_percentages_cell(p),
             Cell::from(Span::from(comment).style(theme().commit_title)),
-        ]).height(2)
+        ])
+        .height(2)
     }
 
     fn pipeline_jobs_cell(p: &Pipeline) -> Cell<'static> {
@@ -87,16 +92,14 @@ impl PipelineTable {
             Line::from(p.active_job_name()).style(theme().pipeline_job)
         };
 
-        let content = Text::from(vec![
-            Line::from(p.icon()),
-            branch_name,
-        ]);
+        let content = Text::from(vec![Line::from(p.icon()), branch_name]);
 
         Cell::from(content)
     }
 
     fn pipeline_duration_cell(p: &Pipeline) -> Cell<'static> {
-        let active_job_duration = p.active_job()
+        let active_job_duration = p
+            .active_job()
             .map(|j| j.duration())
             .map(format_duration)
             .unwrap_or("".to_string());
@@ -118,12 +121,7 @@ impl PipelineTable {
 impl StatefulWidget for PipelineTable {
     type State = TableState;
 
-    fn render(
-        self,
-        area: Rect,
-        buf: &mut Buffer,
-        state: &mut Self::State
-    ) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let table = Table::new(self.rows, self.constraints)
             .row_highlight_style(theme().highlight_symbol)
             .column_spacing(1);

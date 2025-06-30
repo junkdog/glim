@@ -1,11 +1,11 @@
-use std::sync::mpsc::Sender;
-use crossterm::event::KeyCode;
-use tui_input::backend::crossterm::EventHandler;
-use crossterm::{event::Event as CrosstermEvent};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
 use crate::input::InputProcessor;
 use crate::ui::StatefulWidgets;
+use crossterm::event::Event as CrosstermEvent;
+use crossterm::event::KeyCode;
+use std::sync::mpsc::Sender;
+use tui_input::backend::crossterm::EventHandler;
 
 pub struct ConfigProcessor {
     sender: Sender<GlimEvent>,
@@ -30,7 +30,7 @@ impl InputProcessor for ConfigProcessor {
                 KeyCode::Char('k') => popup.select_previous_input(),
                 _ => {
                     popup.input_mut().handle_event(&CrosstermEvent::Key(*code));
-                },
+                }
             }
         }
     }
@@ -38,4 +38,3 @@ impl InputProcessor for ConfigProcessor {
     fn on_pop(&self) {}
     fn on_push(&self) {}
 }
-

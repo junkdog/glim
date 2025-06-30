@@ -7,8 +7,8 @@ pub struct Theme {
     pub project_parents: Style,
     pub project_name: Style,
     pub project_description: Style,
-    pub project_commits: [Style; 2],  // [0] = count, [1] = "commits"
-    pub project_size: [Style; 2], // [0] = size, [1] = unit
+    pub project_commits: [Style; 2], // [0] = count, [1] = "commits"
+    pub project_size: [Style; 2],    // [0] = size, [1] = unit
     pub commit_title: Style,
     pub pipeline_source: Style,
     pub pipeline_branch: Style,
@@ -41,12 +41,10 @@ pub struct ThemeBorder {
     pub title: Style,
 }
 
-
 impl Theme {
     pub fn new() -> Theme {
         Theme {
-            project_parents: Style::default()
-                .fg(Gruvbox::Orange.into()),
+            project_parents: Style::default().fg(Gruvbox::Orange.into()),
             project_name: Style::default()
                 .fg(Gruvbox::OrangeBright.into())
                 .add_modifier(Modifier::BOLD),
@@ -57,54 +55,41 @@ impl Theme {
                 Style::default()
                     .fg(Gruvbox::BlueBright.into())
                     .add_modifier(Modifier::BOLD),
-                Style::default()
-                    .fg(Gruvbox::Blue.into())
+                Style::default().fg(Gruvbox::Blue.into()),
             ],
             project_commits: [
                 Style::default()
                     .fg(Gruvbox::BlueBright.into())
                     .add_modifier(Modifier::BOLD),
-                Style::default()
-                    .fg(Gruvbox::Blue.into())
+                Style::default().fg(Gruvbox::Blue.into()),
             ],
             commit_title: Style::default()
                 .fg(Gruvbox::Light4.into())
                 .add_modifier(Modifier::ITALIC),
-            pipeline_source: Style::default()
-                .fg(Gruvbox::BlueBright.into()),
-            pipeline_branch: Style::default()
-                .fg(Gruvbox::Light2.into()),
-            pipeline_job: Style::default()
-                .fg(Gruvbox::BlueBright.into()),
-            pipeline_job_failed: Style::default()
-                .fg(Gruvbox::RedBright.into()),
-            pipeline_action: Style::default()
-                .fg(Gruvbox::Orange.into()),
+            pipeline_source: Style::default().fg(Gruvbox::BlueBright.into()),
+            pipeline_branch: Style::default().fg(Gruvbox::Light2.into()),
+            pipeline_job: Style::default().fg(Gruvbox::BlueBright.into()),
+            pipeline_job_failed: Style::default().fg(Gruvbox::RedBright.into()),
+            pipeline_action: Style::default().fg(Gruvbox::Orange.into()),
             pipeline_action_selected: Style::default()
                 .fg(Gruvbox::OrangeBright.into())
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::REVERSED),
-            date: Style::default()
-                .fg(Gruvbox::Gray244.into()),
-            time: Style::default()
-                .fg(Gruvbox::Light2.into()),
+            date: Style::default().fg(Gruvbox::Gray244.into()),
+            time: Style::default().fg(Gruvbox::Light2.into()),
             table_border: Style::default()
                 .fg(Gruvbox::Orange.into())
                 .bg(Gruvbox::Dark0.into()),
-            table_row_a: Style::default()
-                .bg(Gruvbox::Dark0Hard.into()),
-            table_row_b: Style::default()
-                .bg(Gruvbox::Dark0.into()),
-            background: Style::default()
-                .bg(Gruvbox::Dark0.into()),
+            table_row_a: Style::default().bg(Gruvbox::Dark0Hard.into()),
+            table_row_b: Style::default().bg(Gruvbox::Dark0.into()),
+            background: Style::default().bg(Gruvbox::Dark0.into()),
             border_title: Style::default()
                 .fg(Gruvbox::Light2.into())
                 .add_modifier(Modifier::BOLD),
             highlight_symbol: Style::default()
                 .bg(Gruvbox::Dark1.into())
                 .add_modifier(Modifier::BOLD),
-            log_message: Style::default()
-                .fg(Gruvbox::Light4.into()),
+            log_message: Style::default().fg(Gruvbox::Light4.into()),
             notification: Style::default()
                 .bg(Gruvbox::Dark0.into())
                 .fg(Gruvbox::Orange.into())
@@ -154,4 +139,6 @@ impl Theme {
 }
 
 static THEME: Lazy<Theme> = Lazy::new(Theme::new);
-pub(crate) fn theme() -> &'static Theme { &THEME }
+pub(crate) fn theme() -> &'static Theme {
+    &THEME
+}

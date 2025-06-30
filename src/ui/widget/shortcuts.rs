@@ -1,8 +1,8 @@
+use crate::gruvbox::Gruvbox;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Offset, Rect};
 use ratatui::prelude::{Line, Modifier, Span, Style, Widget};
 use ratatui::widgets::Clear;
-use crate::gruvbox::Gruvbox;
 
 /// shortcuts widget
 #[derive(Debug, Clone, Default)]
@@ -28,17 +28,19 @@ impl Shortcuts<'_> {
     }
 
     pub fn as_line(&self) -> Line {
-        let shortcuts = self.values.iter()
+        let shortcuts = self
+            .values
+            .iter()
             .flat_map(|(key, label)| {
                 if label.contains(key) {
                     self.spans_from_mnemonic(key, label)
                 } else {
                     self.spans_from_shortcut(key, label)
                 }
-            }).collect::<Vec<Span>>();
+            })
+            .collect::<Vec<Span>>();
 
-        Line::from(shortcuts)
-            .alignment(self.alignment)
+        Line::from(shortcuts).alignment(self.alignment)
     }
 
     fn spans_from_shortcut<'a>(&'a self, key: &'a str, label: &'a str) -> Vec<Span> {
@@ -55,12 +57,10 @@ impl Shortcuts<'_> {
         let mnemonic = key.chars().next().unwrap();
         let mnemonic_idx = label.find(mnemonic).unwrap();
 
-        let start = Span::from(&label[0..mnemonic_idx])
-            .style(self.shortcut_label_style);
-        let m = Span::from(&label[mnemonic_idx..mnemonic_idx + 1])
-            .style(self.shortcut_key_style);
-        let end = Span::from(&label[mnemonic_idx + 1..label.len()])
-            .style(self.shortcut_label_style);
+        let start = Span::from(&label[0..mnemonic_idx]).style(self.shortcut_label_style);
+        let m = Span::from(&label[mnemonic_idx..mnemonic_idx + 1]).style(self.shortcut_key_style);
+        let end =
+            Span::from(&label[mnemonic_idx + 1..label.len()]).style(self.shortcut_label_style);
 
         vec![Span::from(" "), start, m, end, Span::from(" ")]
     }

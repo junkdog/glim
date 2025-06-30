@@ -1,14 +1,14 @@
-use std::collections::VecDeque;
-use serde_json::error::Category;
 use crate::event::GlimEvent;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::GlimError;
+use serde_json::error::Category;
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub struct NoticeService {
     info_notices: VecDeque<Notice>,
     error_notices: VecDeque<Notice>,
-    most_recent: Option<Notice>
+    most_recent: Option<Notice>,
 }
 
 #[derive(Debug, Clone)]
@@ -50,21 +50,28 @@ impl NoticeService {
             GlimEvent::Error(e) => match e.clone() {
                 // GlimError::InvalidGitlabToken => {}
                 // GlimError::ExpiredGitlabToken => {}
-                GlimError::ConfigError(s) =>
-                    Some(NoticeMessage::ConfigError(s)),
-                GlimError::GeneralError(s) =>
-                    Some(NoticeMessage::GeneralMessage(s)),
-                GlimError::JsonDeserializeError(cat, json) =>
-                    Some(NoticeMessage::JsonDeserializeError(cat, json)),
-                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) =>
-                    Some(NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s)),
-                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) =>
-                    Some(NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s)),
-                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) =>
-                    Some(NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s)),
-                _ => None
-            }.map(|m| self.push_notice(NoticeLevel::Error, m)).unwrap_or(()),
-            GlimEvent::JobLogDownloaded(_project_id, _job_id, _) => self.push_notice(NoticeLevel::Info, NoticeMessage::GeneralMessage("Job log downloaded".to_string())),
+                GlimError::ConfigError(s) => Some(NoticeMessage::ConfigError(s)),
+                GlimError::GeneralError(s) => Some(NoticeMessage::GeneralMessage(s)),
+                GlimError::JsonDeserializeError(cat, json) => {
+                    Some(NoticeMessage::JsonDeserializeError(cat, json))
+                }
+                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s),
+                ),
+                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s),
+                ),
+                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s),
+                ),
+                _ => None,
+            }
+            .map(|m| self.push_notice(NoticeLevel::Error, m))
+            .unwrap_or(()),
+            GlimEvent::JobLogDownloaded(_project_id, _job_id, _) => self.push_notice(
+                NoticeLevel::Info,
+                NoticeMessage::GeneralMessage("Job log downloaded".to_string()),
+            ),
             _ => {}
         }
     }
@@ -78,7 +85,9 @@ impl NoticeService {
     }
 
     pub fn pop_notice(&mut self) -> Option<Notice> {
-        let notice = self.error_notices.pop_front()
+        let notice = self
+            .error_notices
+            .pop_front()
             .or_else(|| self.info_notices.pop_front());
 
         if notice.is_some() {

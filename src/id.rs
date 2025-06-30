@@ -16,20 +16,27 @@ pub struct PipelineId {
 }
 
 impl ProjectId {
-    pub fn new(id: u32) -> Self { Self { value: id } }
+    pub fn new(id: u32) -> Self {
+        Self { value: id }
+    }
 }
 
 impl PipelineId {
-    pub fn new(id: u32) -> Self { Self { value: id } }
+    pub fn new(id: u32) -> Self {
+        Self { value: id }
+    }
 }
 
 impl JobId {
-    pub fn new(id: u32) -> Self { Self { value: id } }
+    pub fn new(id: u32) -> Self {
+        Self { value: id }
+    }
 }
 
 impl<'de> Deserialize<'de> for ProjectId {
     fn deserialize<D>(deserializer: D) -> Result<ProjectId, D::Error>
-        where D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let id = u32::deserialize(deserializer)?;
         Ok(ProjectId::new(id))
@@ -38,7 +45,8 @@ impl<'de> Deserialize<'de> for ProjectId {
 
 impl<'de> Deserialize<'de> for PipelineId {
     fn deserialize<D>(deserializer: D) -> Result<PipelineId, D::Error>
-        where D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let id = u32::deserialize(deserializer)?;
         Ok(PipelineId::new(id))
@@ -47,7 +55,8 @@ impl<'de> Deserialize<'de> for PipelineId {
 
 impl<'de> Deserialize<'de> for JobId {
     fn deserialize<D>(deserializer: D) -> Result<JobId, D::Error>
-        where D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let id = u32::deserialize(deserializer)?;
         Ok(JobId::new(id))
@@ -59,7 +68,6 @@ impl std::fmt::Display for ProjectId {
         write!(f, "{}", self.value)
     }
 }
-
 
 impl std::fmt::Display for PipelineId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

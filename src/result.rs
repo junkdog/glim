@@ -1,10 +1,10 @@
+use crate::id::{PipelineId, ProjectId};
 use serde_json::error::Category;
 use thiserror::Error;
-use crate::id::{PipelineId, ProjectId};
 
 pub type Result<T> = std::result::Result<T, GlimError>;
 
-#[derive(Debug, Clone,  Error)]
+#[derive(Debug, Clone, Error)]
 pub enum GlimError {
     #[error("The provided Gitlab token is invalid.")]
     InvalidGitlabToken,

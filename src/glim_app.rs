@@ -40,14 +40,13 @@ pub struct GlimConfig {
     /// The Personal Access Token to authenticate with GitLab
     pub gitlab_token: String,
     /// Filter applied to the projects list
-    pub search_filter: Option<String>
+    pub search_filter: Option<String>,
 }
 
 pub struct UiState {
     pub show_internal_logs: bool,
     pub use_256_colors: bool,
 }
-
 
 impl GlimConfig {
     pub fn validate(&self) -> Result<(), String> {
@@ -61,13 +60,8 @@ impl GlimConfig {
     }
 }
 
-
 impl GlimApp {
-    pub fn new(
-        sender: Sender<GlimEvent>,
-        config_path: PathBuf,
-        gitlab: GitlabClient
-    ) -> Self {
+    pub fn new(sender: Sender<GlimEvent>, config_path: PathBuf, gitlab: GitlabClient) -> Self {
         let mut input = InputMultiplexer::new(sender.clone());
         input.push(Box::new(NormalModeProcessor::new(sender.clone())));
 
@@ -94,75 +88,81 @@ impl GlimApp {
         self.project_store.apply(&event);
 
         match event {
-            GlimEvent::Shutdown                 => self.running = false,
-            
+            GlimEvent::Shutdown => self.running = false,
+
             // www
-            GlimEvent::BrowseToProject(id) => open::that(&self.project(id).url)
-                .expect("unable to open browser"),
+            GlimEvent::BrowseToProject(id) => {
+                open::that(&self.project(id).url).expect("unable to open browser")
+            }
             GlimEvent::BrowseToPipeline(project_id, pipeline_id) => {
                 let project = self.project(project_id);
-                let pipeline = project.pipeline(pipeline_id)
-                    .expect("pipeline not found");
+                let pipeline = project.pipeline(pipeline_id).expect("pipeline not found");
 
-                open::that(&pipeline.url)
-                    .expect("unable to open browser");
-            },
+                open::that(&pipeline.url).expect("unable to open browser");
+            }
             GlimEvent::BrowseToJob(project_id, pipeline_id, job_id) => {
                 let project = self.project(project_id);
-                let job_url = project.pipeline(pipeline_id)
+                let job_url = project
+                    .pipeline(pipeline_id)
                     .and_then(|p| p.job(job_id))
                     .map(|job| &job.url)
                     .expect("job not found");
 
-                open::that(job_url)
-                    .expect("unable to open browser");
-            },
+                open::that(job_url).expect("unable to open browser");
+            }
 
             GlimEvent::DownloadErrorLog(project_id, pipeline_id) => {
                 let project = self.project(project_id);
-                let pipeline = project.pipeline(pipeline_id)
-                    .expect("pipeline not found");
+                let pipeline = project.pipeline(pipeline_id).expect("pipeline not found");
 
-                let job = pipeline.failed_job()
-                    .expect("no failed job found");
+                let job = pipeline.failed_job().expect("no failed job found");
 
                 self.gitlab.dispatch_download_job_log(project_id, job.id);
-            },
+            }
             GlimEvent::JobLogDownloaded(_, _, trace) => {
                 self.clipboard.set_text(trace).unwrap();
-            },
+            }
 
             GlimEvent::RequestActiveJobs => {
-                self.projects().iter()
+                self.projects()
+                    .iter()
                     .flat_map(|p| p.pipelines.iter())
                     .flatten()
                     .filter(|p| p.status.is_active() || p.has_active_jobs())
                     .for_each(|p| self.gitlab.dispatch_get_jobs(p.project_id, p.id));
             }
-            GlimEvent::RequestPipelines(id)     =>
-                self.gitlab.dispatch_get_pipelines(id, None),
-            GlimEvent::RequestProjects          => {
-                let latest_activity = self.projects().iter()
+            GlimEvent::RequestPipelines(id) => self.gitlab.dispatch_get_pipelines(id, None),
+            GlimEvent::RequestProjects => {
+                let latest_activity = self
+                    .projects()
+                    .iter()
                     .max_by_key(|p| p.last_activity_at)
                     .map(|p| p.last_activity_at);
 
-                let updated_after = self.projects().iter()
+                let updated_after = self
+                    .projects()
+                    .iter()
                     .filter(|p| p.has_active_pipelines())
                     .min_by_key(|p| p.last_activity_at)
                     .map(|p| p.last_activity_at)
                     .map_or_else(|| latest_activity, Some);
 
                 self.gitlab.dispatch_list_projects(updated_after)
-            },
-            GlimEvent::RequestJobs(project_id, pipeline_id) =>
-                self.gitlab.dispatch_get_jobs(project_id, pipeline_id),
-            
-            // configuration 
+            }
+            GlimEvent::RequestJobs(project_id, pipeline_id) => {
+                self.gitlab.dispatch_get_jobs(project_id, pipeline_id)
+            }
+
+            // configuration
             GlimEvent::UpdateConfig(config) => self.gitlab.update_config(config),
             GlimEvent::ApplyConfiguration => {
                 if let Some(config_popup) = ui.config_popup_state.as_ref() {
                     let config = config_popup.to_config();
-                    let client = GitlabClient::new_from_config(self.sender.clone(), config.clone(), self.gitlab.debug());
+                    let client = GitlabClient::new_from_config(
+                        self.sender.clone(),
+                        config.clone(),
+                        self.gitlab.debug(),
+                    );
                     match client.validate_configuration() {
                         Ok(_) => {
                             save_config(&self.config_path, config.clone())
@@ -175,19 +175,44 @@ impl GlimApp {
                         }
                     }
                 }
-            },
+            }
 
-            GlimEvent::ShowLastNotification          => {
+            GlimEvent::ShowLastNotification => {
                 if let Some(notice) = self.notices.last_notification() {
                     ui.notice = Some(NotificationState::new(notice.clone(), &self.project_store));
                 }
-            },
+            }
+
+            GlimEvent::ShowFilterMenu => {
+                // Initialize filter input with the current temporary filter
+                // The show_filter_input method will handle initialization
+                ui.filter_input_active = true;
+            }
+
+            GlimEvent::ApplyFilter(filter_text) => {
+                let mut config = self.load_config().unwrap_or_default();
+                config.search_filter = if filter_text.is_empty() {
+                    None
+                } else {
+                    Some(filter_text)
+                };
+
+                save_config(&self.config_path, config.clone()).expect("failed to save config");
+                self.dispatch(GlimEvent::UpdateConfig(config));
+                self.dispatch(GlimEvent::RequestProjects);
+            }
 
             _ => {}
         }
 
         // if there are any error notifications, and the current notification is an info notice, dismiss it
-        if self.notices.has_error() && ui.notice.as_ref().map(|n| n.notice.level == NoticeLevel::Info).unwrap_or(false) {
+        if self.notices.has_error()
+            && ui
+                .notice
+                .as_ref()
+                .map(|n| n.notice.level == NoticeLevel::Info)
+                .unwrap_or(false)
+        {
             ui.notice = None;
         }
 
@@ -202,12 +227,15 @@ impl GlimApp {
     pub fn load_config(&self) -> Result<GlimConfig, GlimError> {
         let config_file = &self.config_path;
         if config_file.exists() {
-            let config: GlimConfig = confy::load_path(config_file)
-                .map_err(|e| GlimError::ConfigError(e.to_string()))?;
+            let config: GlimConfig =
+                confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_string()))?;
 
             Ok(config)
         } else {
-            Err(GlimError::ConfigError(format!("Unable to find configuration file at {:?}", config_file)))
+            Err(GlimError::ConfigError(format!(
+                "Unable to find configuration file at {:?}",
+                config_file
+            )))
         }
     }
 
@@ -228,6 +256,37 @@ impl GlimApp {
 
     pub fn projects(&self) -> &[Project] {
         self.project_store.projects()
+    }
+
+    pub fn filtered_projects(
+        &self,
+        temporary_filter: &Option<String>,
+    ) -> (Vec<Project>, Vec<usize>) {
+        let all_projects = self.project_store.projects();
+
+        if let Some(filter) = temporary_filter {
+            if !filter.trim().is_empty() {
+                let filter_lower = filter.to_lowercase();
+                let mut filtered_projects = Vec::new();
+                let mut filtered_indices = Vec::new();
+
+                for (index, project) in all_projects.iter().enumerate() {
+                    if project.path.to_lowercase().contains(&filter_lower)
+                        || project
+                            .description
+                            .as_ref()
+                            .map_or(false, |d| d.to_lowercase().contains(&filter_lower))
+                    {
+                        filtered_projects.push(project.clone());
+                        filtered_indices.push(index);
+                    }
+                }
+
+                return (filtered_projects, filtered_indices);
+            }
+        }
+
+        (all_projects.to_vec(), (0..all_projects.len()).collect())
     }
 
     pub fn logs(&self) -> Vec<(DateTime<Local>, &str)> {
@@ -258,8 +317,8 @@ impl UiState {
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             GlimEvent::ToggleInternalLogs => self.show_internal_logs = !self.show_internal_logs,
-            GlimEvent::ToggleColorDepth   => self.use_256_colors = !self.use_256_colors,
-            _ => ()
+            GlimEvent::ToggleColorDepth => self.use_256_colors = !self.use_256_colors,
+            _ => (),
         }
     }
 }
@@ -270,10 +329,11 @@ impl Dispatcher for GlimApp {
     }
 }
 
-
 #[allow(unused)]
 pub fn modulo(a: u32, b: u32) -> u32 {
-    if b == 0 { return 0; }
+    if b == 0 {
+        return 0;
+    }
 
     let a = a as i32;
     let b = b as i32;
@@ -286,7 +346,9 @@ pub trait Modulo {
 
 impl Modulo for i32 {
     fn modulo(self, b: i32) -> i32 {
-        if b == 0 { return 0; }
+        if b == 0 {
+            return 0;
+        }
 
         ((self % b) + b) % b
     }
@@ -294,7 +356,9 @@ impl Modulo for i32 {
 
 impl Modulo for u32 {
     fn modulo(self, b: u32) -> u32 {
-        if b == 0 { return 0; }
+        if b == 0 {
+            return 0;
+        }
 
         (self as i32).modulo(b as i32) as u32
     }
@@ -302,7 +366,9 @@ impl Modulo for u32 {
 
 impl Modulo for isize {
     fn modulo(self, b: isize) -> isize {
-        if b == 0 { return 0; }
+        if b == 0 {
+            return 0;
+        }
 
         ((self % b) + b) % b
     }
@@ -310,7 +376,9 @@ impl Modulo for isize {
 
 impl Modulo for usize {
     fn modulo(self, b: usize) -> usize {
-        if b == 0 { return 0; }
+        if b == 0 {
+            return 0;
+        }
 
         (self as isize).modulo(b as isize) as usize
     }

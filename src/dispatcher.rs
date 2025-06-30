@@ -1,5 +1,5 @@
-use std::sync::mpsc;
 use crate::event::GlimEvent;
+use std::sync::mpsc;
 
 pub trait Dispatcher {
     fn dispatch(&self, event: GlimEvent);

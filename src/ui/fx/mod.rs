@@ -1,7 +1,7 @@
 mod window;
 
+pub use crate::effects::create_window_title;
 pub use window::*;
-pub use crate::effects::{create_window_title};
 
 // TODO: Re-implement open_window function that returns PopupWindow with proper effects
 use crate::ui::widget::Shortcuts;

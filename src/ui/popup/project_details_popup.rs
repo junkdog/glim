@@ -27,12 +27,8 @@ pub struct ProjectDetailsPopupState {
 }
 
 impl ProjectDetailsPopup {
-    pub fn new(
-        last_frame_time: Duration
-    ) -> ProjectDetailsPopup {
-        Self {
-            last_frame_time
-        }
+    pub fn new(last_frame_time: Duration) -> ProjectDetailsPopup {
+        Self { last_frame_time }
     }
 }
 
@@ -43,9 +39,7 @@ impl ProjectDetailsPopupState {
         state
     }
 
-    pub fn new(
-        project: Project,
-    ) -> ProjectDetailsPopupState {
+    pub fn new(project: Project) -> ProjectDetailsPopupState {
         let (namespace, name) = project.path_and_name();
         let description = match &project.description {
             Some(d) => d.clone(),
@@ -63,7 +57,6 @@ impl ProjectDetailsPopupState {
             Self::storage_size_line(project.artifacts_size_kb, "in artifacts"),
         ]);
 
-
         let pipelines: Vec<&Pipeline> = project.recent_pipelines();
         let pipelines = PipelineTable::new(&pipelines);
 
@@ -73,36 +66,35 @@ impl ProjectDetailsPopupState {
             project_stat_summary,
             pipelines,
             pipelines_table_state: TableState::default().with_selected(0),
-            window_fx: open_window("project details", Some(vec![
-                ("ESC", "close"),
-                ("↑ ↓", "selection"),
-                ("↵",   "actions..."),
-            ])),
+            window_fx: open_window(
+                "project details",
+                Some(vec![
+                    ("ESC", "close"),
+                    ("↑ ↓", "selection"),
+                    ("↵", "actions..."),
+                ]),
+            ),
         }
     }
 
     fn commit_count_line(commit_count: u32) -> Line<'static> {
         Line::from(vec![
-            Span::from(commit_count.to_string())
-                .style(theme().project_commits[0]),
-            Span::from(" commits")
-                .style(theme().project_commits[1]),
+            Span::from(commit_count.to_string()).style(theme().project_commits[0]),
+            Span::from(" commits").style(theme().project_commits[1]),
         ])
     }
 
     fn storage_size_line(size_kb: u64, label: &str) -> Line<'static> {
         let size = size_kb;
         let (size, unit) = match size {
-            s if s < 1024        => (s as f32, "kb"),
+            s if s < 1024 => (s as f32, "kb"),
             s if s < 1024 * 1024 => (s as f32 / 1024.0, "mb"),
-            s                    => (s as f32 / (1024.0 * 1024.0), "gb"),
+            s => (s as f32 / (1024.0 * 1024.0), "gb"),
         };
 
         Line::from(vec![
-            Span::from(format!("{:.2}{unit} ", size))
-                .style(theme().project_size[0]),
-            Span::from(label.to_string())
-                .style(theme().project_size[1]),
+            Span::from(format!("{:.2}{unit} ", size)).style(theme().project_size[0]),
+            Span::from(label.to_string()).style(theme().project_size[1]),
         ])
     }
 
@@ -118,12 +110,7 @@ impl ProjectDetailsPopupState {
 impl StatefulWidget for ProjectDetailsPopup {
     type State = ProjectDetailsPopupState;
 
-    fn render(
-        self,
-        area: Rect,
-        buf: &mut Buffer,
-        state: &mut Self::State
-    ) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let pipeline_table_h = 2 * state.pipelines.rows.len() as u16;
         let project_details_h = 4;
 
@@ -131,7 +118,7 @@ impl StatefulWidget for ProjectDetailsPopup {
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
         buf.render_effect(&mut state.window_fx, area, self.last_frame_time);
-        
+
         let content_area = area.inner(Margin::new(2, 1));
         let outer_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -143,20 +130,26 @@ impl StatefulWidget for ProjectDetailsPopup {
 
         let project_details_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(100),
-                Constraint::Length(22),
-            ])
+            .constraints([Constraint::Percentage(100), Constraint::Length(22)])
             .split(outer_layout[0]);
 
-        state.project_namespace.clone()
+        state
+            .project_namespace
+            .clone()
             .render(project_details_layout[0], buf);
-        state.project_stat_summary.clone()
+        state
+            .project_stat_summary
+            .clone()
             .render(project_details_layout[1], buf);
 
-        PipelineTable::new(&state.project.recent_pipelines())
-            .render(outer_layout[1], buf, &mut state.pipelines_table_state);
+        PipelineTable::new(&state.project.recent_pipelines()).render(
+            outer_layout[1],
+            buf,
+            &mut state.pipelines_table_state,
+        );
 
-        state.window_fx.process_opening(self.last_frame_time, buf, area);
+        state
+            .window_fx
+            .process_opening(self.last_frame_time, buf, area);
     }
 }

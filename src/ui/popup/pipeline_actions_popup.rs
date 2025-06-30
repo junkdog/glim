@@ -25,21 +25,16 @@ pub struct PipelineActionsPopupState {
 }
 
 impl PipelineActionsPopupState {
-    pub fn new(
-        actions: Vec<GlimEvent>,
-        project_id: ProjectId,
-        pipeline_id: PipelineId,
-    ) -> Self {
+    pub fn new(actions: Vec<GlimEvent>, project_id: ProjectId, pipeline_id: PipelineId) -> Self {
         Self {
             actions,
             project_id,
             pipeline_id,
             list_state: ListState::default().with_selected(Some(0)),
-            window_fx: open_window("pipeline actions", Some(vec![
-                ("ESC", "close"),
-                ("↑ ↓", "selection"),
-                ("↵",   "apply"),
-            ])),
+            window_fx: open_window(
+                "pipeline actions",
+                Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "apply")]),
+            ),
         }
     }
 
@@ -48,18 +43,17 @@ impl PipelineActionsPopupState {
     }
 
     fn actions_as_lines(&self) -> Vec<Line<'static>> {
-        self.actions.iter()
+        self.actions
+            .iter()
             .map(|action| {
                 let action = match action {
-                    GlimEvent::BrowseToJob(_, _, _) =>
-                        "browse to failed job".to_string(),
-                    GlimEvent::BrowseToPipeline(_, _) =>
-                        "browse to pipeline".to_string(),
-                    GlimEvent::BrowseToProject(_) =>
-                        "browse to project".to_string(),
-                    GlimEvent::DownloadErrorLog(_, _) =>
-                        "download failed job log to clipboard".to_string(),
-                    _ => panic!("unsupported action")
+                    GlimEvent::BrowseToJob(_, _, _) => "browse to failed job".to_string(),
+                    GlimEvent::BrowseToPipeline(_, _) => "browse to pipeline".to_string(),
+                    GlimEvent::BrowseToProject(_) => "browse to project".to_string(),
+                    GlimEvent::DownloadErrorLog(_, _) => {
+                        "download failed job log to clipboard".to_string()
+                    }
+                    _ => panic!("unsupported action"),
                 };
                 Line::from(action).style(theme().pipeline_action)
             })
@@ -68,23 +62,15 @@ impl PipelineActionsPopupState {
 }
 
 impl PipelineActionsPopup {
-    pub fn from(
-        last_frame_ms: Duration,
-    ) -> PipelineActionsPopup {
+    pub fn from(last_frame_ms: Duration) -> PipelineActionsPopup {
         Self { last_frame_ms }
     }
 }
 
-
 impl StatefulWidget for PipelineActionsPopup {
     type State = PipelineActionsPopupState;
 
-    fn render(
-        self,
-        area: Rect,
-        buf: &mut Buffer,
-        state: &mut Self::State
-    ) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let area = area.inner_centered(40, 2 + state.actions.len() as u16);
 
         state.window_fx.screen_area(buf.area); // for the parent window fx
@@ -100,6 +86,8 @@ impl StatefulWidget for PipelineActionsPopup {
         StatefulWidget::render(actions_list, inner_area, buf, &mut state.list_state);
 
         // window decoration and animation
-        state.window_fx.process_opening(self.last_frame_ms, buf, area);
+        state
+            .window_fx
+            .process_opening(self.last_frame_ms, buf, area);
     }
 }

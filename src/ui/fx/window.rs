@@ -1,12 +1,12 @@
+use crate::ui::widget::Shortcuts;
 use derive_builder::Builder;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Borders, BorderType, Clear};
 use ratatui::widgets::Widget;
+use ratatui::widgets::{Block, BorderType, Borders, Clear};
 use tachyonfx::{CellFilter, Duration, Effect, IntoEffect, Shader};
-use crate::ui::widget::Shortcuts;
 
 #[derive(Builder, Clone, Debug)]
 #[builder(pattern = "owned")]
@@ -21,9 +21,8 @@ pub struct PopupWindow {
     background: Style,
 
     #[builder(default)]
-    shortcuts: Option<Shortcuts<'static>>
+    shortcuts: Option<Shortcuts<'static>>,
 }
-
 
 impl From<PopupWindowBuilder> for Effect {
     fn from(value: PopupWindowBuilder) -> Self {
@@ -53,7 +52,7 @@ impl PopupWindow {
 
         match self.shortcuts.as_ref() {
             Some(shortcuts) => w.title_bottom(shortcuts.as_line()),
-            None            => w,
+            None => w,
         }
     }
 
@@ -67,12 +66,7 @@ impl Shader for PopupWindow {
         "open_window"
     }
 
-    fn process(
-        &mut self,
-        _duration: Duration,
-        buf: &mut Buffer,
-        area: Rect
-    ) -> Option<Duration> {
+    fn process(&mut self, _duration: Duration, buf: &mut Buffer, area: Rect) -> Option<Duration> {
         // TODO: Implement parent window effects - currently disabled for refactoring
         Clear.render(area, buf);
         self.window_block().render(area, buf);
@@ -80,7 +74,6 @@ impl Shader for PopupWindow {
     }
 
     fn execute(&mut self, _duration: Duration, _area: Rect, _buf: &mut Buffer) {}
-
 
     fn done(&self) -> bool {
         // TODO: Implement proper done check - currently always true for refactoring

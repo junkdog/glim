@@ -1,9 +1,9 @@
 use chrono::Duration;
 
-pub mod popup;
-pub mod widget;
 pub mod fx;
+pub mod popup;
 mod stateful_widgets;
+pub mod widget;
 
 pub use stateful_widgets::StatefulWidgets;
 
@@ -14,8 +14,8 @@ pub fn format_duration(duration: Duration) -> String {
     let seconds = total_seconds % 60;
 
     match () {
-        _ if hours > 0   => format!("{}:{:02}:{:02}", hours, minutes, seconds),
+        _ if hours > 0 => format!("{}:{:02}:{:02}", hours, minutes, seconds),
         _ if minutes > 0 => format!("{}:{:02}", minutes, seconds),
-        _                => format!("0:{:02}", seconds),
+        _ => format!("0:{:02}", seconds),
     }
 }

@@ -1,7 +1,7 @@
+use crate::effects::notification_effect;
 use crate::notice_service::{Notice, NoticeMessage};
 use crate::stores::ProjectStore;
 use crate::theme::theme;
-use crate::effects::notification_effect;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::StatefulWidget;
@@ -26,20 +26,18 @@ impl NotificationState {
     }
 }
 
-
 impl NotificationState {
-    pub fn new(
-        notice: Notice,
-        project_lookup: &ProjectStore,
-    ) -> Self {
+    pub fn new(notice: Notice, project_lookup: &ProjectStore) -> Self {
         let project_name = match notice.message {
-            NoticeMessage::GeneralMessage(_) |
-            NoticeMessage::ConfigError(_) |
-            NoticeMessage::JsonDeserializeError(_, _) => None,
-            NoticeMessage::JobLogDownloaded(id, _, _) |
-            NoticeMessage::GitlabGetJobsError(id, _, _) |
-            NoticeMessage::GitlabGetTriggerJobsError(id, _, _) |
-            NoticeMessage::GitlabGetPipelinesError(id, _, _) => project_lookup.find(id).map(|p| p.title()),
+            NoticeMessage::GeneralMessage(_)
+            | NoticeMessage::ConfigError(_)
+            | NoticeMessage::JsonDeserializeError(_, _) => None,
+            NoticeMessage::JobLogDownloaded(id, _, _)
+            | NoticeMessage::GitlabGetJobsError(id, _, _)
+            | NoticeMessage::GitlabGetTriggerJobsError(id, _, _)
+            | NoticeMessage::GitlabGetPipelinesError(id, _, _) => {
+                project_lookup.find(id).map(|p| p.title())
+            }
         };
 
         Self {
@@ -51,9 +49,7 @@ impl NotificationState {
 }
 
 impl Notification {
-    pub fn new(
-        last_tick: Duration,
-    ) -> Self {
+    pub fn new(last_tick: Duration) -> Self {
         Self { last_tick }
     }
 }
@@ -62,14 +58,17 @@ impl StatefulWidget for Notification {
     type State = NotificationState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let project: &str = if let Some(p) = &state.project_name { p } else { "<unknown project>" };
+        let project: &str = if let Some(p) = &state.project_name {
+            p
+        } else {
+            "<unknown project>"
+        };
 
         let text: Line<'_> = match &state.notice.message {
             NoticeMessage::GeneralMessage(s) => Line::from(Span::from(s)),
-            NoticeMessage::ConfigError(s) => Line::from(vec![
-                Span::from("Config error: "),
-                Span::from(s),
-            ]),
+            NoticeMessage::ConfigError(s) => {
+                Line::from(vec![Span::from("Config error: "), Span::from(s)])
+            }
             NoticeMessage::JsonDeserializeError(cat, s) => Line::from(vec![
                 Span::from("Failed to parse JSON ("),
                 Span::from(format!("{:?}", cat)),
@@ -78,29 +77,25 @@ impl StatefulWidget for Notification {
             ]),
             NoticeMessage::GitlabGetJobsError(_, _, s) => Line::from(vec![
                 Span::from("Failed to get jobs for "),
-                Span::from(project)
-                    .style(theme().notification_project),
+                Span::from(project).style(theme().notification_project),
                 Span::from(": "),
                 Span::from(s),
             ]),
             NoticeMessage::GitlabGetTriggerJobsError(_, _, s) => Line::from(vec![
                 Span::from("Failed to get trigger jobs for "),
-                Span::from(project)
-                    .style(theme().notification_project),
+                Span::from(project).style(theme().notification_project),
                 Span::from(": "),
                 Span::from(s),
             ]),
             NoticeMessage::GitlabGetPipelinesError(_, _, s) => Line::from(vec![
                 Span::from("Failed to get pipelines for "),
-                Span::from(project)
-                    .style(theme().notification_project),
+                Span::from(project).style(theme().notification_project),
                 Span::from(": "),
                 Span::from(s),
             ]),
             NoticeMessage::JobLogDownloaded(_, _, _) => Line::from(vec![
                 Span::from("Finished downloading job log for "),
-                Span::from(project)
-                    .style(theme().notification_project),
+                Span::from(project).style(theme().notification_project),
             ]),
         };
 
@@ -121,4 +116,3 @@ impl StatefulWidget for Notification {
         state.effect.process(self.last_tick, buf, content_area);
     }
 }
-

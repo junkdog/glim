@@ -1,9 +1,9 @@
-mod normal;
-mod project_details;
-mod pipeline_actions;
 mod config;
+mod normal;
+mod pipeline_actions;
+mod project_details;
 
-pub use normal::*;
-pub use project_details::*;
-pub use pipeline_actions::*;
 pub use config::*;
+pub use normal::*;
+pub use pipeline_actions::*;
+pub use project_details::*;

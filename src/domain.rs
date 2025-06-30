@@ -1,13 +1,13 @@
 // GitLab API Documentation: https://docs.gitlab.com/ee/api/api_resources.html
-use chrono::{DateTime, Duration, Local, Utc};
-use itertools::Itertools;
-use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::Row;
-use serde::{Deserialize};
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::theme::theme;
 use crate::ui::format_duration;
 use crate::ui::widget::text_from;
+use chrono::{DateTime, Duration, Local, Utc};
+use itertools::Itertools;
+use ratatui::text::{Line, Span, Text};
+use ratatui::widgets::Row;
+use serde::Deserialize;
 
 #[derive(Clone, Debug)]
 pub struct Project {
@@ -41,7 +41,7 @@ pub struct Pipeline {
 #[derive(Clone, Debug)]
 pub struct Commit {
     pub title: String,
-    pub author_name: String
+    pub author_name: String,
 }
 
 #[derive(Clone, Debug)]
@@ -65,7 +65,7 @@ pub struct ProjectDto {
     pub ssh_url_to_repo: String,
     pub web_url: String,
     pub last_activity_at: DateTime<Utc>,
-    pub statistics: StatisticsDto
+    pub statistics: StatisticsDto,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -151,22 +151,23 @@ pub enum PipelineSource {
 impl PipelineSource {
     pub fn to_string(&self) -> String {
         match self {
-            PipelineSource::Api                         => "api",
-            PipelineSource::Chat                        => "chat",
-            PipelineSource::External                    => "external",
-            PipelineSource::ExternalPullRequestEvent    => "pull request",
-            PipelineSource::MergeRequestEvent           => "merge request",
-            PipelineSource::OndemandDastScan            => "dast scan",
-            PipelineSource::OndemandDastValidation      => "dast validation",
-            PipelineSource::ParentPipeline              => "parent pipeline",
-            PipelineSource::Pipeline                    => "pipeline",
-            PipelineSource::Push                        => "push",
-            PipelineSource::Schedule                    => "schedule",
+            PipelineSource::Api => "api",
+            PipelineSource::Chat => "chat",
+            PipelineSource::External => "external",
+            PipelineSource::ExternalPullRequestEvent => "pull request",
+            PipelineSource::MergeRequestEvent => "merge request",
+            PipelineSource::OndemandDastScan => "dast scan",
+            PipelineSource::OndemandDastValidation => "dast validation",
+            PipelineSource::ParentPipeline => "parent pipeline",
+            PipelineSource::Pipeline => "pipeline",
+            PipelineSource::Push => "push",
+            PipelineSource::Schedule => "schedule",
             PipelineSource::SecurityOrchestrationPolicy => "sec policy",
-            PipelineSource::Trigger                     => "trigger",
-            PipelineSource::Web                         => "web",
-            PipelineSource::Webide                      => "web ide",
-        }.to_string()
+            PipelineSource::Trigger => "trigger",
+            PipelineSource::Web => "web",
+            PipelineSource::Webide => "web ide",
+        }
+        .to_string()
     }
 }
 
@@ -190,7 +191,6 @@ impl PipelineSource {
             _ => false,
         }
     }
-
 }
 
 impl Project {
@@ -209,7 +209,7 @@ impl Project {
     pub fn title(&self) -> String {
         match self.path.rfind('/') {
             Some(i) => self.path[i + 1..].to_string(),
-            None    => self.path.to_string()
+            None => self.path.to_string(),
         }
     }
 
@@ -219,7 +219,8 @@ impl Project {
         predicate: impl Fn(&Pipeline) -> bool,
     ) -> Vec<&Pipeline> {
         if let Some(pipelines) = self.pipelines.as_ref() {
-            pipelines.iter()
+            pipelines
+                .iter()
                 .filter(|p| p.source.is_interesting() || predicate(p))
                 .unique_by(|p| &p.branch)
                 .take(count)
@@ -231,7 +232,8 @@ impl Project {
 
     pub fn recent_pipelines(&self) -> Vec<&Pipeline> {
         if let Some(pipelines) = self.pipelines.as_ref() {
-            pipelines.iter()
+            pipelines
+                .iter()
                 .filter(|p| p.source.is_interesting())
                 .take(8)
                 .collect()
@@ -241,19 +243,22 @@ impl Project {
     }
 
     pub fn has_active_pipelines(&self) -> bool {
-        self.pipelines.as_ref()
-            .map_or(false, |ps| ps.iter().any(|p| p.status.is_active() || p.has_active_jobs()))
+        self.pipelines.as_ref().map_or(false, |ps| {
+            ps.iter()
+                .any(|p| p.status.is_active() || p.has_active_jobs())
+        })
     }
 
     pub fn path_and_name(&self) -> (&str, &str) {
         match self.path.rfind('/') {
             Some(i) => (&self.path[0..=i], &self.path[i + 1..]),
-            None => ("", self.path.as_str())
+            None => ("", self.path.as_str()),
         }
     }
-    
+
     pub fn pipeline(&self, id: PipelineId) -> Option<&Pipeline> {
-        self.pipelines.as_ref()
+        self.pipelines
+            .as_ref()
             .and_then(|ps| ps.iter().find(|p| p.id == id))
     }
 }
@@ -280,8 +285,8 @@ impl Job {
     pub fn duration(&self) -> Duration {
         match (&self.started_at, &self.finished_at) {
             (Some(begin), Some(end)) => end.signed_duration_since(begin),
-            (Some(begin), None)      => Utc::now().signed_duration_since(begin),
-            _                        => Duration::zero(),
+            (Some(begin), None) => Utc::now().signed_duration_since(begin),
+            _ => Duration::zero(),
         }
     }
 }
@@ -289,18 +294,24 @@ impl Job {
 impl Project {
     pub fn update_pipelines(&mut self, pipelines: Vec<Pipeline>) {
         self.pipelines = Some(
-            pipelines.iter().map(|p| {
-                if let Some(existing) = self.pipelines.as_ref().and_then(|ps| ps.iter().find(|ep| ep.id == p.id)) {
-                    let mut new = p.clone();
-                    new.jobs.clone_from(&existing.jobs);
-                    new.commit.clone_from(&existing.commit);
-                    new
-                } else {
-                    p.clone()
-                }
-            })
-            .sorted_by(|a, b| b.updated_at.cmp(&a.updated_at))
-            .collect()
+            pipelines
+                .iter()
+                .map(|p| {
+                    if let Some(existing) = self
+                        .pipelines
+                        .as_ref()
+                        .and_then(|ps| ps.iter().find(|ep| ep.id == p.id))
+                    {
+                        let mut new = p.clone();
+                        new.jobs.clone_from(&existing.jobs);
+                        new.commit.clone_from(&existing.commit);
+                        new
+                    } else {
+                        p.clone()
+                    }
+                })
+                .sorted_by(|a, b| b.updated_at.cmp(&a.updated_at))
+                .collect(),
         );
     }
 
@@ -373,61 +384,63 @@ impl From<CommitDto> for Commit {
 
 impl Pipeline {
     pub fn has_active_jobs(&self) -> bool {
-        self.jobs.as_ref()
+        self.jobs
+            .as_ref()
             .map_or(false, |jobs| jobs.iter().any(|j| j.status.is_active()))
     }
 
     pub fn active_job(&self) -> Option<&Job> {
-        self.jobs.as_ref()
+        self.jobs
+            .as_ref()
             .and_then(|jobs| jobs.iter().find(|j| j.status.is_active()))
     }
-    
+
     pub fn failed_job(&self) -> Option<&Job> {
-        self.jobs.as_ref()
+        self.jobs
+            .as_ref()
             .and_then(|jobs| jobs.iter().find(|j| j.status == PipelineStatus::Failed))
     }
 
     pub fn active_job_name(&self) -> String {
-        self.active_job()
-            .map_or("".to_string(), |j| j.name.clone())
+        self.active_job().map_or("".to_string(), |j| j.name.clone())
     }
-    
+
     pub fn has_failed_jobs(&self) -> bool {
         self.failed_job().is_some()
     }
 
     pub fn failing_job_name(&self) -> Option<String> {
-        self.failed_job()
-            .map(|j| j.name.clone())
+        self.failed_job().map(|j| j.name.clone())
     }
-    
+
     pub fn job(&self, id: JobId) -> Option<&Job> {
-        self.jobs.as_ref()
+        self.jobs
+            .as_ref()
             .and_then(|jobs| jobs.iter().find(|j| j.id == id))
     }
-    
+
     /// Returns the duration of the pipeline, measured from the time it was started
     /// to the time it was finished. If the pipeline is still running, the duration
     /// is measured from the time it was started to the current time.
     pub fn duration(&self) -> Duration {
         match (&self.created_at, &self.finished_at()) {
             (begin, Some(end)) => end.signed_duration_since(begin),
-            (begin, None)      => Utc::now().signed_duration_since(begin),
+            (begin, None) => Utc::now().signed_duration_since(begin),
         }
     }
 
     fn finished_at(&self) -> Option<DateTime<Utc>> {
         match () {
             _ if self.status.is_active() => None,
-            _ => self.jobs.as_ref()
-                .and_then(|jobs| jobs.iter().map(|j| j.finished_at).max().unwrap())
+            _ => self
+                .jobs
+                .as_ref()
+                .and_then(|jobs| jobs.iter().map(|j| j.finished_at).max().unwrap()),
         }
     }
 }
 
-pub fn parse_row<'a>(
-    project: &'a Project,
-) -> Row<'a> {
+pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
     let distinct_by_branch = project.first_pipeline_per_branch(3, |p| p.status.is_active());
 
     let pipeline_to_span = |p: &'a Pipeline| -> Line<'a> {
@@ -468,34 +481,31 @@ pub fn parse_row<'a>(
                 Span::from(icon),
                 Span::from(" "),
                 Span::from(branch).style(theme().pipeline_branch),
-            ])
+            ]),
         }
     };
 
-    let pipeline_spans: Vec<Line<'a>> = distinct_by_branch.iter()
+    let pipeline_spans: Vec<Line<'a>> = distinct_by_branch
+        .iter()
         .map(|p| pipeline_to_span(p))
         .collect();
 
     let last_activity = project.last_activity_at.with_timezone(&Local);
 
     let project_path = match project.path.rfind('/') {
-        Some(i) => {
-            Text::from(vec![
-                Line::from(&project.path[i + 1..])
-                    .style(theme().project_name),
-                Line::from(&project.path[0..=i])
-                    .style(theme().project_parents),
-            ])
-        }
-        None => Text::from(Span::from(&project.path))
-            .style(theme().project_name),
+        Some(i) => Text::from(vec![
+            Line::from(&project.path[i + 1..]).style(theme().project_name),
+            Line::from(&project.path[0..=i]).style(theme().project_parents),
+        ]),
+        None => Text::from(Span::from(&project.path)).style(theme().project_name),
     };
 
     Row::new(vec![
         text_from(last_activity),
         project_path,
         Text::from(pipeline_spans),
-    ]).height(3)
+    ])
+    .height(3)
 }
 
 /// Represents types that can be associated with an icon.
@@ -509,20 +519,21 @@ pub trait IconRepresentable {
 impl IconRepresentable for PipelineStatus {
     fn icon(&self) -> String {
         match self {
-            PipelineStatus::Created            => "⚪",
+            PipelineStatus::Created => "⚪",
             PipelineStatus::WaitingForResource => "⏳",
-            PipelineStatus::Preparing          => "🟡",
-            PipelineStatus::Pending            => "🕒",
-            PipelineStatus::Running            => "🔵",
-            PipelineStatus::Success            => "🟢",
-            PipelineStatus::Failed             => "🔴",
-            PipelineStatus::Canceled           => "🚫",
-            PipelineStatus::Canceling          => "🚫",
-            PipelineStatus::Skipped            => "⚫",
-            PipelineStatus::Manual             => "🟣",
-            PipelineStatus::Scheduled          => "📅",
-            PipelineStatus::Unknown            => "❓",
-        }.to_string()
+            PipelineStatus::Preparing => "🟡",
+            PipelineStatus::Pending => "🕒",
+            PipelineStatus::Running => "🔵",
+            PipelineStatus::Success => "🟢",
+            PipelineStatus::Failed => "🔴",
+            PipelineStatus::Canceled => "🚫",
+            PipelineStatus::Canceling => "🚫",
+            PipelineStatus::Skipped => "⚫",
+            PipelineStatus::Manual => "🟣",
+            PipelineStatus::Scheduled => "📅",
+            PipelineStatus::Unknown => "❓",
+        }
+        .to_string()
     }
 }
 
@@ -534,7 +545,8 @@ impl IconRepresentable for &Vec<Job> {
 
 impl IconRepresentable for Pipeline {
     fn icon(&self) -> String {
-        self.jobs.as_ref()
+        self.jobs
+            .as_ref()
             .map(|jobs| jobs.icon())
             .unwrap_or(self.status.icon())
     }

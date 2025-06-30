@@ -1,34 +1,27 @@
-use std::sync::mpsc::Sender;
-use crossterm::event::{KeyCode, KeyEvent};
 use crate::dispatcher::Dispatcher;
 use crate::event::GlimEvent;
 use crate::id::{PipelineId, ProjectId};
 use crate::input::InputProcessor;
 use crate::ui::StatefulWidgets;
+use crossterm::event::{KeyCode, KeyEvent};
+use std::sync::mpsc::Sender;
 
 pub struct ProjectDetailsProcessor {
     sender: Sender<GlimEvent>,
     project_id: ProjectId,
-    selected: Option<PipelineId>
+    selected: Option<PipelineId>,
 }
 
 impl ProjectDetailsProcessor {
-    pub fn new(
-        sender: Sender<GlimEvent>,
-        project_id: ProjectId
-    ) -> Self {
+    pub fn new(sender: Sender<GlimEvent>, project_id: ProjectId) -> Self {
         Self {
             sender,
             project_id,
-            selected: None
+            selected: None,
         }
     }
 
-    fn process(
-        &self,
-        event: &KeyEvent,
-        ui: &mut StatefulWidgets,
-    ) {
+    fn process(&self, event: &KeyEvent, ui: &mut StatefulWidgets) {
         match event.code {
             KeyCode::Esc       => self.sender.dispatch(GlimEvent::CloseProjectDetails),
             KeyCode::Char('q') => self.sender.dispatch(GlimEvent::CloseProjectDetails),
@@ -49,13 +42,11 @@ impl InputProcessor for ProjectDetailsProcessor {
     fn apply(&mut self, event: &GlimEvent, ui: &mut StatefulWidgets) {
         match event {
             GlimEvent::SelectedPipeline(pipeline) => self.selected = Some(*pipeline),
-            GlimEvent::Key(e)                     => self.process(e, ui),
-            _ => ()
+            GlimEvent::Key(e) => self.process(e, ui),
+            _ => (),
         }
     }
 
     fn on_pop(&self) {}
     fn on_push(&self) {}
 }
-
-

@@ -3,8 +3,8 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::prelude::Line;
 use ratatui::style::Style;
-use ratatui::widgets::WidgetRef;
 use ratatui::widgets::Widget;
+use ratatui::widgets::WidgetRef;
 use tui_input::Input;
 use unicode_width::UnicodeWidthStr;
 

@@ -1,9 +1,9 @@
+use crate::theme::theme;
 use chrono::{DateTime, Local};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::prelude::{Line, Span, StatefulWidget};
-use ratatui::widgets::{Block, Borders, BorderType, Clear, List, ListState, Widget};
-use crate::theme::theme;
+use ratatui::widgets::{Block, BorderType, Borders, Clear, List, ListState, Widget};
 
 /// logs widget
 pub struct LogsWidget<'a> {
@@ -13,7 +13,8 @@ pub struct LogsWidget<'a> {
 impl<'a> LogsWidget<'a> {
     pub fn from(logs: &'a [(DateTime<Local>, &str)]) -> Self {
         Self {
-            logs: logs.iter()
+            logs: logs
+                .iter()
                 .map(|(dt, log)| {
                     Line::from(vec![
                         Span::from(dt.time().format("%H:%M:%S").to_string()).style(theme().time),
@@ -21,7 +22,7 @@ impl<'a> LogsWidget<'a> {
                         Span::from(*log).style(theme().log_message),
                     ])
                 })
-                .collect()
+                .collect(),
         }
     }
 }
