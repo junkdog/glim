@@ -31,9 +31,14 @@ impl ProjectDetailsProcessor {
     ) {
         match event.code {
             KeyCode::Esc       => self.sender.dispatch(GlimEvent::CloseProjectDetails),
+            KeyCode::Char('q') => self.sender.dispatch(GlimEvent::CloseProjectDetails),
             KeyCode::Up        => ui.handle_pipeline_selection(-1),
             KeyCode::Down      => ui.handle_pipeline_selection(1),
+            KeyCode::Char('k') => ui.handle_pipeline_selection(-1),
+            KeyCode::Char('j') => ui.handle_pipeline_selection(1),
             KeyCode::Enter if self.selected.is_some() =>
+                self.sender.dispatch(GlimEvent::OpenPipelineActions(self.project_id, self.selected.unwrap())),
+            KeyCode::Char('o') if self.selected.is_some() =>
                 self.sender.dispatch(GlimEvent::OpenPipelineActions(self.project_id, self.selected.unwrap())),
             _ => ()
         }

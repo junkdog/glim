@@ -26,6 +26,8 @@ impl NormalModeProcessor {
         if let Some(e) = match event.code {
             KeyCode::Enter if self.selected.is_some() =>
                 Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
+            KeyCode::Char('o') if self.selected.is_some() =>
+                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
             KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
             KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
             KeyCode::Char('l') => Some(GlimEvent::ToggleInternalLogs),
@@ -35,6 +37,8 @@ impl NormalModeProcessor {
             KeyCode::Char('w') => self.selected.map(GlimEvent::BrowseToProject),
             KeyCode::Up        => Some(GlimEvent::SelectPreviousProject),
             KeyCode::Down      => Some(GlimEvent::SelectNextProject),
+            KeyCode::Char('k')        => Some(GlimEvent::SelectPreviousProject),
+            KeyCode::Char('j')      => Some(GlimEvent::SelectNextProject),
             KeyCode::F(12)     => Some(GlimEvent::ToggleColorDepth),
             _ => None
         } { self.dispatch(e) }
