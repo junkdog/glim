@@ -38,4 +38,4 @@ serde_json = "1.0.135"
 thiserror = "1.0.64"
 tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "macros"] }
 tui-input = "0.10.1"
-clap = { version = "4.5.19", features = ["derive"] }
+clap = { version = "4.5.26", features = ["derive"] }
