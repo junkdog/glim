@@ -52,6 +52,9 @@ pub struct Args {
 
 
 fn main() -> Result<()> {
+    color_eyre::install()
+        .expect("failed to install color_eyre");
+
     let args = Args::parse();
     let config_path = args.config.unwrap_or_else(default_config_path);
     if args.print_config_path {
