@@ -1,3 +1,4 @@
+// GitLab API Documentation: https://docs.gitlab.com/ee/api/api_resources.html
 use chrono::{DateTime, Duration, Local, Utc};
 use itertools::Itertools;
 use ratatui::text::{Line, Span, Text};
@@ -67,7 +68,6 @@ pub struct ProjectDto {
     pub statistics: StatisticsDto
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct StatisticsDto {
     pub commit_count: u32,
@@ -75,40 +75,34 @@ pub struct StatisticsDto {
     pub repository_size: u64,
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CommitDto {
-    short_id: String,
-    title: String,
-    author_name: String,
+    pub title: String,
+    pub author_name: String,
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct JobDto {
     pub id: JobId,
-    name: String,
-    stage: String,
+    pub name: String,
+    pub stage: String,
     pub commit: CommitDto,
-    status: PipelineStatus,
-    created_at: DateTime<Utc>,
-    started_at: Option<DateTime<Utc>>,
-    finished_at: Option<DateTime<Utc>>,
+    pub status: PipelineStatus,
+    pub created_at: DateTime<Utc>,
+    pub started_at: Option<DateTime<Utc>>,
+    pub finished_at: Option<DateTime<Utc>>,
     pub web_url: String,
-    duration: Option<f32>, // seconds
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PipelineDto {
     pub id: PipelineId,
-    iid: u32,
     pub project_id: ProjectId,
     pub status: PipelineStatus,
     pub source: PipelineSource,
     #[serde(rename = "ref")]
     pub branch: String,
-    web_url: String,
+    pub web_url: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
