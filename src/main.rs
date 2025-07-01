@@ -16,11 +16,12 @@ use crate::event::{EventHandler, GlimEvent};
 use crate::glim_app::{GlimApp, GlimConfig};
 use crate::input::processor::ConfigProcessor;
 use crate::input::InputProcessor;
+use crate::logging::{init_logging, LoggingConfig};
 use crate::result::{GlimError, Result};
 use crate::theme::theme;
 use crate::tui::Tui;
 use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
-use crate::ui::widget::{LogsWidget, Notification, ProjectsTable};
+use crate::ui::widget::{Notification, ProjectsTable};
 use crate::ui::StatefulWidgets;
 
 mod client;
@@ -32,6 +33,7 @@ mod glim_app;
 mod gruvbox;
 mod id;
 mod input;
+mod logging;
 mod notice_service;
 mod result;
 mod stores;
@@ -65,6 +67,13 @@ fn main() -> Result<()> {
     // event handler
     let event_handler = EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
+
+    // Initialize logging system
+    let logging_config = LoggingConfig::from_env();
+    let _log_guard = init_logging(logging_config, Some(sender.clone()))
+        .map_err(|e| GlimError::GeneralError(format!("Failed to initialize logging: {}", e).into()))?;
+    
+    tracing::info!(version = env!("CARGO_PKG_VERSION"), "Glim TUI starting up");
 
     // tui backend
     let backend = CrosstermBackend::new(std::io::stdout());
@@ -105,45 +114,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-struct MainWindowLayout {
-    filter_input: Rect,
-    sort_input: Rect,
-    projects_table: Rect,
-}
-
-impl MainWindowLayout {
-    fn new(app: &GlimApp, area: Rect) -> Self {
-        let layout = if app.ui.show_internal_logs {
-            Layout::new(
-                Direction::Horizontal,
-                [Constraint::Percentage(65), Constraint::Percentage(35)],
-            )
-            .split(area)
-        } else {
-            Layout::new(Direction::Horizontal, [Constraint::Percentage(100)]).split(area)
-        };
-
-        let _main_area = layout[0];
-
-        Self {
-            filter_input: layout[0],
-            sort_input: layout[1],
-            projects_table: layout[2],
-        }
-    }
-}
 
 fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidgets) {
     let last_tick = widget_states.last_frame;
-    let layout = if app.ui.show_internal_logs {
-        Layout::new(
-            Direction::Horizontal,
-            [Constraint::Percentage(65), Constraint::Percentage(35)],
-        )
-        .split(f.area())
-    } else {
-        Layout::new(Direction::Horizontal, [Constraint::Percentage(100)]).split(f.area())
-    };
+    let layout = Layout::new(Direction::Horizontal, [Constraint::Percentage(100)]).split(f.area());
 
     // gitlab pipelines
     let config = app.load_config().unwrap_or_default();
@@ -158,13 +132,6 @@ fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidg
     );
     f.render_stateful_widget(projects, layout[0], &mut widget_states.project_table_state);
 
-    // internal logs
-    if app.ui.show_internal_logs {
-        let raw_logs = app.logs();
-        let logs = LogsWidget::from(&raw_logs);
-        *widget_states.logs_state.selected_mut() = Some(raw_logs.len());
-        f.render_stateful_widget(logs, layout[1], &mut widget_states.logs_state);
-    }
 
     // project details popup
     if let Some(project_details) = widget_states.project_details.as_mut() {

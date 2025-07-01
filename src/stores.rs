@@ -2,11 +2,11 @@ use crate::dispatcher::Dispatcher;
 use crate::domain::{Job, Pipeline, Project};
 use crate::event::GlimEvent;
 use crate::id::ProjectId;
-use chrono::{DateTime, Local, Utc};
-use compact_str::{format_compact, CompactString, ToCompactString};
+use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::sync::mpsc::Sender;
+use tracing::{debug, info, warn};
 
 pub struct ProjectStore {
     sender: Sender<GlimEvent>,
@@ -163,96 +163,63 @@ fn is_older_than_7d(date: DateTime<Utc>) -> bool {
     Utc::now().signed_duration_since(date).num_days() > 7
 }
 
-pub struct InternalLogsStore {
-    logs: Vec<(DateTime<Local>, CompactString)>,
-}
-
-impl InternalLogsStore {
-    pub fn new() -> Self {
-        Self { logs: Vec::new() }
-    }
-
-    pub fn apply(&mut self, event: &GlimEvent) {
-        if let Some(log) = match event {
-            GlimEvent::Log(s) => Some(s.clone()),
-            GlimEvent::ToggleColorDepth => Some("toggling color depth".into()),
-            GlimEvent::Shutdown => Some("shutting down...".into()),
-            GlimEvent::RequestProject(id) => Some(format_compact!("refresh project_id={id}")),
-            GlimEvent::RequestProjects => {
-                Some("request all projects since last update".into())
-            }
-            GlimEvent::RequestActiveJobs => {
-                Some("request active pipelines for all projects".into())
-            }
-            GlimEvent::RequestPipelines(id) => {
-                Some(format_compact!("request pipelines for project_id={id}"))
-            }
-            GlimEvent::RequestJobs(project_id, pipeline_id) => Some(format_compact!(
-                "request jobs for project_id={project_id} pipeline_id={pipeline_id}"
-            )),
-            GlimEvent::ReceivedProjects(projects) => {
-                Some(format_compact!("received {:?} projects", projects.len()))
-            }
-            GlimEvent::ReceivedPipelines(pipelines) => {
-                Some(format_compact!("received {:?} pipelines", pipelines.len()))
-            }
-            GlimEvent::ReceivedJobs(project_id, _, jobs) => Some(format_compact!(
-                "received {:?} jobs for project_id={project_id}",
-                jobs.len()
-            )),
-            GlimEvent::OpenProjectDetails(id) => Some(format_compact!("showing project_id={id} details")),
-            GlimEvent::CloseProjectDetails => Some("closing project details popup".into()),
-            GlimEvent::OpenPipelineActions(id, pipeline_id) => Some(format_compact!(
-                "showing pipeline {pipeline_id}'s actions for project_id={id}"
-            )),
-            GlimEvent::Error(s) => Some(s.to_compact_string()),
-            GlimEvent::SelectedProject(id) => Some(format_compact!("selected project_id={id}")),
-            GlimEvent::SelectedPipeline(id) => Some(format_compact!("selected pipeline_id={id}")),
-            GlimEvent::BrowseToProject(id) => Some(format_compact!("open project_id={id} in browser")),
-            GlimEvent::BrowseToPipeline(_, id) => Some(format_compact!("open pipeline_id={id} in browser")),
-            GlimEvent::BrowseToJob(_, _, job_id) => {
-                Some(format_compact!("open job_id={job_id}  in browser"))
-            }
-            GlimEvent::DownloadErrorLog(_, id) => {
-                Some(format_compact!("download job log for failed pipeline_id={id}"))
-            }
-            GlimEvent::ShowFilterMenu => Some("showing filter menu".into()),
-            GlimEvent::ShowSortMenu => Some("showing sort menu".into()),
-            GlimEvent::JobLogDownloaded(_, id, _) => {
-                Some(format_compact!("downloaded log for job_id={id}"))
-            }
-            GlimEvent::DisplayConfig => Some("display config".into()),
-            GlimEvent::ApplyConfiguration => Some("applying new configuration".into()),
-            GlimEvent::UpdateConfig(_) => Some("updating configuration".into()),
-            GlimEvent::CloseConfig => None,
-            GlimEvent::ClosePipelineActions => None,
-            GlimEvent::GlitchOverride(_) => None,
-            GlimEvent::Tick => None,
-            GlimEvent::ProjectUpdated(_) => None,
-            GlimEvent::Key(_) => None,
-            GlimEvent::SelectNextProject => None,
-            GlimEvent::ShowLastNotification => None,
-            GlimEvent::SelectPreviousProject => None,
-            GlimEvent::ToggleInternalLogs => None,
-            GlimEvent::CloseFilter => Some("closing filter input".into()),
-            GlimEvent::FilterInputChar(_) => None,
-            GlimEvent::FilterInputBackspace => None,
-            GlimEvent::ApplyFilter(filter) => Some(format_compact!("applying filter: '{}'", filter)),
-            GlimEvent::ApplyTemporaryFilter(filter) => {
-                Some(format_compact!("applying temporary filter: '{:?}'", filter))
-            }
-            GlimEvent::ClearFilter => Some("clearing filter".into()),
-        } {
-            self.logs.push((Local::now(), log));
+pub fn log_event(event: &GlimEvent) {
+    match event {
+        GlimEvent::RequestProjects => info!("Requesting all projects from GitLab"),
+        GlimEvent::ReceivedProjects(projects) => {
+            info!(count = projects.len(), "Received projects from GitLab API")
         }
-
-        if self.logs.len() > 200 {
-            self.logs = self.logs.iter().dropping(150).cloned().collect();
+        GlimEvent::RequestProject(id) => debug!(project_id = %id, "Refreshing project"),
+        GlimEvent::RequestActiveJobs => debug!("Requesting active pipelines for all projects"),
+        GlimEvent::RequestPipelines(id) => {
+            debug!(project_id = %id, "Requesting pipelines for project")
         }
-    }
-
-    pub fn logs(&self) -> Vec<(DateTime<Local>, &str)> {
-        self.logs.iter().map(|(dt, s)| (*dt, s.as_str())).collect()
+        GlimEvent::RequestJobs(project_id, pipeline_id) => {
+            debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs")
+        }
+        GlimEvent::ReceivedPipelines(pipelines) => {
+            debug!(count = pipelines.len(), "Received pipelines from GitLab API")
+        }
+        GlimEvent::ReceivedJobs(project_id, pipeline_id, jobs) => {
+            debug!(project_id = %project_id, pipeline_id = %pipeline_id, count = jobs.len(), "Received jobs")
+        }
+        GlimEvent::OpenProjectDetails(id) => debug!(project_id = %id, "Opening project details"),
+        GlimEvent::CloseProjectDetails => debug!("Closing project details popup"),
+        GlimEvent::OpenPipelineActions(project_id, pipeline_id) => {
+            debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Opening pipeline actions")
+        }
+        GlimEvent::SelectedProject(id) => debug!(project_id = %id, "Selected project"),
+        GlimEvent::SelectedPipeline(id) => debug!(pipeline_id = %id, "Selected pipeline"),
+        GlimEvent::BrowseToProject(id) => info!(project_id = %id, "Opening project in browser"),
+        GlimEvent::BrowseToPipeline(project_id, pipeline_id) => {
+            info!(project_id = %project_id, pipeline_id = %pipeline_id, "Opening pipeline in browser")
+        }
+        GlimEvent::BrowseToJob(project_id, pipeline_id, job_id) => {
+            info!(project_id = %project_id, pipeline_id = %pipeline_id, job_id = %job_id, "Opening job in browser")
+        }
+        GlimEvent::DownloadErrorLog(project_id, pipeline_id) => {
+            info!(project_id = %project_id, pipeline_id = %pipeline_id, "Downloading job error log")
+        }
+        GlimEvent::JobLogDownloaded(project_id, job_id, log_content) => {
+            info!(
+                project_id = %project_id, 
+                job_id = %job_id, 
+                content_length = log_content.len(),
+                "Job log downloaded successfully"
+            )
+        }
+        GlimEvent::DisplayConfig => debug!("Displaying configuration"),
+        GlimEvent::ApplyConfiguration => info!("Applying new configuration"),
+        GlimEvent::UpdateConfig(_) => debug!("Updating configuration"),
+        GlimEvent::ApplyFilter(filter) => info!(filter = %filter, "Applying project filter"),
+        GlimEvent::ApplyTemporaryFilter(filter) => debug!(filter = ?filter, "Applying temporary filter"),
+        GlimEvent::ClearFilter => info!("Clearing project filter"),
+        GlimEvent::CloseFilter => debug!("Closing filter input"),
+        GlimEvent::ToggleColorDepth => debug!("Toggling color depth"),
+        GlimEvent::Shutdown => info!("Application shutting down"),
+        GlimEvent::Error(err) => warn!(error = %err, "Application error occurred"),
+        GlimEvent::Log(msg) => info!(message = %msg, "Application log message"),
+        _ => {} // Don't log every event
     }
 }
 

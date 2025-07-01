@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
-use chrono::{DateTime, Local};
 use compact_str::{format_compact, CompactString, ToCompactString};
 use serde::{Deserialize, Serialize};
 use tachyonfx::Duration;
@@ -16,7 +15,7 @@ use crate::input::InputMultiplexer;
 use crate::notice_service::{Notice, NoticeLevel, NoticeService};
 use crate::result::GlimError;
 use crate::save_config;
-use crate::stores::{InternalLogsStore, ProjectStore};
+use crate::stores::{log_event, ProjectStore};
 use crate::ui::widget::NotificationState;
 use crate::ui::StatefulWidgets;
 
@@ -28,7 +27,6 @@ pub struct GlimApp {
     pub sender: Sender<GlimEvent>,
     project_store: ProjectStore,
     notices: NoticeService,
-    logs_store: InternalLogsStore,
     input: InputMultiplexer,
     clipboard: arboard::Clipboard,
     pub ui: UiState,
@@ -45,7 +43,6 @@ pub struct GlimConfig {
 }
 
 pub struct UiState {
-    pub show_internal_logs: bool,
     pub use_256_colors: bool,
 }
 
@@ -73,7 +70,6 @@ impl GlimApp {
             last_tick: std::time::Instant::now(),
             sender: sender.clone(),
             project_store: ProjectStore::new(sender),
-            logs_store: InternalLogsStore::new(),
             notices: NoticeService::new(),
             input,
             clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
@@ -84,7 +80,7 @@ impl GlimApp {
     pub fn apply(&mut self, event: GlimEvent, ui: &mut StatefulWidgets) {
         self.input.apply(&event, ui);
         self.ui.apply(&event);
-        self.logs_store.apply(&event);
+        log_event(&event);
         self.notices.apply(&event);
         self.project_store.apply(&event);
 
@@ -290,9 +286,6 @@ impl GlimApp {
         (all_projects.to_vec(), (0..all_projects.len()).collect())
     }
 
-    pub fn logs(&self) -> Vec<(DateTime<Local>, &str)> {
-        self.logs_store.logs()
-    }
 
     pub fn is_running(&self) -> bool {
         self.running
@@ -310,14 +303,12 @@ impl GlimApp {
 impl UiState {
     pub fn new() -> Self {
         Self {
-            show_internal_logs: false,
             use_256_colors: false,
         }
     }
 
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
-            GlimEvent::ToggleInternalLogs => self.show_internal_logs = !self.show_internal_logs,
             GlimEvent::ToggleColorDepth => self.use_256_colors = !self.use_256_colors,
             _ => (),
         }

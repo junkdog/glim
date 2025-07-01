@@ -15,7 +15,6 @@ pub enum GlimEvent {
     Tick,
     Shutdown,
     Key(KeyEvent),
-    ToggleInternalLogs,
     Log(CompactString),
     GlitchOverride(GlitchState),
     CloseProjectDetails,

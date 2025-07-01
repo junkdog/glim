@@ -1,5 +1,4 @@
 mod input_field;
-mod internal_logs;
 mod notification;
 mod pipeline_table;
 mod projects_table;
@@ -8,7 +7,6 @@ mod shortcuts;
 use crate::theme::theme;
 use chrono::{DateTime, Local};
 pub use input_field::*;
-pub use internal_logs::*;
 pub use notification::*;
 pub use pipeline_table::*;
 pub use projects_table::*;

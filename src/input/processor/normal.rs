@@ -30,7 +30,6 @@ impl NormalModeProcessor {
             KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
             KeyCode::Char('f') => Some(GlimEvent::ShowFilterMenu),
             KeyCode::Char('/') => Some(GlimEvent::ShowFilterMenu),
-            KeyCode::Char('l') => Some(GlimEvent::ToggleInternalLogs),
             KeyCode::Char('p') => self.selected.map(GlimEvent::RequestPipelines),
             KeyCode::Char('q') => Some(GlimEvent::Shutdown),
             KeyCode::Char('r') => Some(GlimEvent::RequestProjects),

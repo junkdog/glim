@@ -16,6 +16,7 @@ use crate::glim_app::GlimConfig;
 use crate::id::{JobId, PipelineId, ProjectId};
 use crate::result::GlimError::{GeneralError, JsonDeserializeError};
 use crate::result::*;
+use tracing::{debug, error, info, instrument, warn};
 
 pub struct GitlabClient {
     sender: Sender<GlimEvent>,
@@ -68,7 +69,9 @@ impl GitlabClient {
         )
     }
 
+    #[instrument(skip(self), fields(project_id = %project_id, job_id = %job_id))]
     pub fn dispatch_download_job_log(&self, project_id: ProjectId, job_id: JobId) {
+        info!("Downloading job log from GitLab");
         let get_trace_request = self
             .client
             .get(format_compact!(
@@ -88,7 +91,9 @@ impl GitlabClient {
         });
     }
 
+    #[instrument(skip(self), fields(project_id = %project_id, pipeline_id = %pipeline_id))]
     pub fn dispatch_get_jobs(&self, project_id: ProjectId, pipeline_id: PipelineId) {
+        debug!("Fetching jobs for pipeline");
         let base_url = format_compact!(
             "{}/projects/{project_id}/pipelines/{pipeline_id}",
             self.base_url
@@ -110,6 +115,7 @@ impl GitlabClient {
             let jobs = match Self::http_json_request::<Vec<JobDto>>(get_jobs_request, debug).await {
                 Ok(t) => t,
                 Err(e) => {
+                    error!(error = %e, project_id = %project_id, pipeline_id = %pipeline_id, "Failed to fetch jobs");
                     GlimError::GitlabGetJobsError(project_id, pipeline_id, e.to_compact_string());
                     return sender.dispatch(GlimEvent::Error(e));
                 }
@@ -119,7 +125,10 @@ impl GitlabClient {
                 match Self::http_json_request::<Vec<JobDto>>(get_trigger_jobs_request, debug).await
                 {
                     Ok(t) => t,
-                    Err(e) => return sender.dispatch(GlimEvent::Error(e)),
+                    Err(e) => {
+                        warn!(error = %e, project_id = %project_id, pipeline_id = %pipeline_id, "Failed to fetch trigger jobs");
+                        return sender.dispatch(GlimEvent::Error(e));
+                    }
                 };
 
             // combine jobs, sorted by id
@@ -129,6 +138,7 @@ impl GitlabClient {
                 .sorted_by_key(|j| j.id)
                 .collect::<Vec<JobDto>>();
 
+            debug!(job_count = jobs.len(), "Successfully fetched jobs");
             sender.dispatch((project_id, pipeline_id, jobs).into_glim_event())
         });
     }
@@ -142,7 +152,9 @@ impl GitlabClient {
         self.dispatch::<Vec<PipelineDto>>(&url);
     }
 
+    #[instrument(skip(self))]
     pub fn dispatch_list_projects(&self, updated_after: Option<DateTime<Utc>>) {
+        info!(updated_after = ?updated_after, "Fetching projects from GitLab");
         self.dispatch_glitchy::<Vec<ProjectDto>>(&self.list_projects_url(updated_after, 100))
     }
 

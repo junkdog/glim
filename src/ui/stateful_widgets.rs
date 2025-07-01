@@ -9,7 +9,7 @@ use crate::id::PipelineId;
 use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
 use crate::ui::widget::NotificationState;
 use compact_str::CompactString;
-use ratatui::widgets::{ListState, TableState};
+use ratatui::widgets::TableState;
 use std::sync::mpsc::Sender;
 use tachyonfx::{Duration, Effect};
 
@@ -17,7 +17,6 @@ pub struct StatefulWidgets {
     pub last_frame: Duration,
     pub sender: Sender<GlimEvent>,
     pub project_table_state: TableState,
-    pub logs_state: ListState,
     pub config_popup_state: Option<ConfigPopupState>,
     pub table_fade_in: Option<Effect>,
     pub project_details: Option<ProjectDetailsPopupState>,
@@ -38,7 +37,6 @@ impl StatefulWidgets {
             last_frame: Duration::default(),
             sender,
             project_table_state: TableState::default().with_selected(0),
-            logs_state: ListState::default().with_selected(Some(0)),
             table_fade_in: None,
             config_popup_state: None,
             project_details: None,
