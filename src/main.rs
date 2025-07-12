@@ -60,12 +60,17 @@ fn main() -> Result<()> {
         initialize_config_ui(&config_path, debug)?
     };
 
+    // Create a shared runtime for async operations
+    let rt = tokio::runtime::Runtime::new()
+        .map_err(|e| crate::result::GlimError::GeneralError(format!("Failed to create runtime: {}", e).into()))?;
+
     let AppComponents {
         mut app,
         mut tui,
         mut widget_states,
         mut effects,
-    } = initialize_app(config_path, config, debug)?;
+        poller: _poller,
+    } = rt.block_on(async { initialize_app(config_path, config, debug).await })?;
 
     while app.is_running() {
         widget_states.last_frame = app.process_timers();

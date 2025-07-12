@@ -4,7 +4,7 @@ use compact_str::ToCompactString;
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 use crate::{
-    client::GitlabClient,
+    client::{ClientConfig, GitlabPoller, GitlabService},
     dispatcher::Dispatcher,
     effect_registry::EffectRegistry,
     event::{EventHandler, GlimEvent},
@@ -20,9 +20,10 @@ pub struct AppComponents {
     pub tui: Tui,
     pub widget_states: StatefulWidgets,
     pub effects: EffectRegistry,
+    pub poller: GitlabPoller,
 }
 
-pub fn initialize_app(
+pub async fn initialize_app(
     config_path: std::path::PathBuf,
     config: GlimConfig,
     debug: bool,
@@ -38,14 +39,14 @@ pub fn initialize_app(
     let tui = initialize_terminal(event_handler)?;
     let widget_states = StatefulWidgets::new(sender.clone());
 
-    let client = create_gitlab_client(sender.clone(), config, debug);
-    let app = GlimApp::new(sender.clone(), config_path, client);
+    let (service, poller) = create_gitlab_service_and_poller(sender.clone(), config, debug).await?;
+    let app = GlimApp::new(sender.clone(), config_path, service);
     app.dispatch(GlimEvent::RequestProjects);
 
     let mut effects = EffectRegistry::new(app.sender());
     effects.register_default_glitch_effect();
 
-    Ok(AppComponents { app, tui, widget_states, effects })
+    Ok(AppComponents { app, tui, widget_states, effects, poller })
 }
 
 fn initialize_logging(sender: Sender<GlimEvent>) -> Result<()> {
@@ -66,10 +67,22 @@ fn initialize_terminal(event_handler: EventHandler) -> Result<Tui> {
     Ok(tui)
 }
 
-fn create_gitlab_client(
+async fn create_gitlab_service_and_poller(
     sender: Sender<GlimEvent>,
     config: GlimConfig,
     debug: bool,
-) -> GitlabClient {
-    GitlabClient::new(sender, config.gitlab_url, config.gitlab_token, config.search_filter, debug)
+) -> Result<(GitlabService, GitlabPoller)> {
+    let client_config = ClientConfig::from(config)
+        .with_debug_logging(debug);
+    
+    let service = GitlabService::new(client_config.clone(), sender.clone())?;
+    
+    // Create a second service instance for the poller
+    let poller_service = GitlabService::new(client_config.clone(), sender)?;
+    let poller = GitlabPoller::new(
+        std::sync::Arc::new(poller_service), 
+        client_config.polling.clone()
+    );
+    
+    Ok((service, poller))
 }

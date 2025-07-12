@@ -4,7 +4,6 @@
 //! split into focused components following single responsibility principle.
 
 pub mod api;
-pub mod compat;
 pub mod config;
 pub mod error;
 pub mod poller;
@@ -14,7 +13,10 @@ pub mod service;
 mod tests;
 
 // Re-export main types for convenience
-pub use compat::GitlabClient; // Compatibility wrapper
+pub use api::GitlabApi;
+pub use config::ClientConfig;
 pub use error::ClientError;
+pub use poller::GitlabPoller;
+pub use service::GitlabService;
 
 pub type Result<T> = std::result::Result<T, ClientError>;

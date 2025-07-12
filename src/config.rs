@@ -6,7 +6,7 @@ use ratatui::Frame;
 use tachyonfx::Duration;
 
 use crate::{
-    client::GitlabClient,
+    client::{ClientConfig, GitlabService},
     event::GlimEvent,
     glim_app::GlimConfig,
     input::{processor::ConfigProcessor, InputProcessor},
@@ -67,22 +67,36 @@ pub fn run_config_ui_loop(
                             .to_config();
                         match config.validate() {
                             Ok(_) => {
-                                let client =
-                                    GitlabClient::new_from_config(sender.clone(), config, debug);
-                                match client.validate_configuration() {
-                                    Ok(_) => {
-                                        let state = ui.config_popup_state.as_ref().unwrap();
-                                        save_config(&config_file, state.to_config())
-                                            .expect("failed to save configuration");
+                                let client_config = ClientConfig::from(config.clone())
+                                    .with_debug_logging(debug);
+                                
+                                // Create a temporary service for validation
+                                match GitlabService::new(client_config, sender.clone()) {
+                                    Ok(service) => {
+                                        // Use async validation in blocking context
+                                        let rt = tokio::runtime::Runtime::new().unwrap();
+                                        match rt.block_on(service.validate_connection()) {
+                                            Ok(_) => {
+                                                let state = ui.config_popup_state.as_ref().unwrap();
+                                                save_config(&config_file, state.to_config())
+                                                    .expect("failed to save configuration");
 
-                                        valid_config = Some(state.to_config());
-                                        ui.config_popup_state = None;
+                                                valid_config = Some(state.to_config());
+                                                ui.config_popup_state = None;
+                                            },
+                                            Err(error) => {
+                                                ui.config_popup_state
+                                                    .as_mut()
+                                                    .unwrap()
+                                                    .error_message = Some(error.to_string().into());
+                                            },
+                                        }
                                     },
                                     Err(error) => {
                                         ui.config_popup_state
                                             .as_mut()
                                             .unwrap()
-                                            .error_message = Some(error.to_compact_string());
+                                            .error_message = Some(error.to_string().into());
                                     },
                                 }
                             },

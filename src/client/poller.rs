@@ -238,16 +238,16 @@ mod tests {
     use super::*;
     use crate::client::{config::ClientConfig, service::GitlabService};
 
-    fn test_service() -> Arc<GitlabService> {
+    async fn test_service() -> Arc<GitlabService> {
         let config = ClientConfig::new("https://gitlab.example.com", "test-token");
         let (sender, _receiver) = mpsc::channel();
         let service = GitlabService::new(config, sender).unwrap();
         Arc::new(service)
     }
 
-    #[test]
-    fn test_poller_creation() {
-        let service = test_service();
+    #[tokio::test]
+    async fn test_poller_creation() {
+        let service = test_service().await;
         let config = PollingConfig::default();
         let poller = GitlabPoller::new(service, config);
 
@@ -255,9 +255,9 @@ mod tests {
         assert_eq!(poller.config.jobs_interval, Duration::from_secs(30));
     }
 
-    #[test]
-    fn test_poller_builder() {
-        let service = test_service();
+    #[tokio::test]
+    async fn test_poller_builder() {
+        let service = test_service().await;
         let poller = GitlabPollerBuilder::new()
             .service(service)
             .projects_interval(Duration::from_secs(120))
@@ -283,7 +283,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_poller_shutdown() {
-        let service = test_service();
+        let service = test_service().await;
         let config = PollingConfig {
             projects_interval: Duration::from_millis(10),
             jobs_interval: Duration::from_millis(10),
@@ -308,7 +308,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_spawn_poller_convenience() {
-        let service = test_service();
+        let service = test_service().await;
         let config = PollingConfig {
             projects_interval: Duration::from_millis(10),
             jobs_interval: Duration::from_millis(10),

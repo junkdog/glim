@@ -34,3 +34,9 @@ impl From<reqwest::Error> for GlimError {
         GlimError::GeneralError(e.to_compact_string())
     }
 }
+
+impl From<crate::client::ClientError> for GlimError {
+    fn from(e: crate::client::ClientError) -> Self {
+        GlimError::GeneralError(e.to_string().into())
+    }
+}

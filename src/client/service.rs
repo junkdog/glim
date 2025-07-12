@@ -3,6 +3,7 @@
 use std::sync::{mpsc::Sender, Arc};
 
 use chrono::{DateTime, Utc};
+use tokio::runtime::Handle;
 use tracing::{error, info, instrument, warn};
 
 use super::{
@@ -19,22 +20,30 @@ use crate::{
 /// High-level service for GitLab operations
 ///
 /// Orchestrates API calls and handles event dispatching to the application
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct GitlabService {
     api: Arc<GitlabApi>,
     sender: Sender<GlimEvent>,
+    handle: Handle,
 }
 
 impl GitlabService {
     /// Create a new GitLab service
     pub fn new(config: ClientConfig, sender: Sender<GlimEvent>) -> Result<Self> {
         let api = Arc::new(GitlabApi::new(config)?);
-        Ok(Self { api, sender })
+        let handle = Handle::current();
+        Ok(Self { api, sender, handle })
     }
 
     /// Create service from existing API client
-    pub fn from_api(api: Arc<GitlabApi>, sender: Sender<GlimEvent>) -> Self {
-        Self { api, sender }
+    pub fn from_api(api: Arc<GitlabApi>, sender: Sender<GlimEvent>) -> Result<Self> {
+        let handle = Handle::current();
+        Ok(Self { api, sender, handle })
+    }
+
+    /// Create service from existing parts (for internal use in spawn methods)
+    fn from_existing_parts(api: Arc<GitlabApi>, sender: Sender<GlimEvent>, handle: Handle) -> Self {
+        Self { api, sender, handle }
     }
 
     /// Fetch projects and dispatch results as events
@@ -207,9 +216,12 @@ impl GitlabService {
     ///
     /// This is a convenience method for fire-and-forget project fetching
     pub fn spawn_fetch_projects(&self, updated_after: Option<DateTime<Utc>>) {
-        let service = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = service.fetch_projects(updated_after).await {
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        let handle = self.handle.clone();
+        self.handle.spawn(async move {
+            let temp_service = Self::from_existing_parts(api, sender, handle);
+            if let Err(e) = temp_service.fetch_projects(updated_after).await {
                 warn!("Background project fetch failed: {}", e);
             }
         });
@@ -221,9 +233,12 @@ impl GitlabService {
         project_id: ProjectId,
         updated_after: Option<DateTime<Utc>>,
     ) {
-        let service = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = service
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        let handle = self.handle.clone();
+        self.handle.spawn(async move {
+            let temp_service = Self::from_existing_parts(api, sender, handle);
+            if let Err(e) = temp_service
                 .fetch_pipelines(project_id, updated_after)
                 .await
             {
@@ -234,9 +249,12 @@ impl GitlabService {
 
     /// Spawn an async task to fetch jobs
     pub fn spawn_fetch_jobs(&self, project_id: ProjectId, pipeline_id: PipelineId) {
-        let service = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = service
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        let handle = self.handle.clone();
+        self.handle.spawn(async move {
+            let temp_service = Self::from_existing_parts(api, sender, handle);
+            if let Err(e) = temp_service
                 .fetch_all_jobs(project_id, pipeline_id)
                 .await
             {
@@ -247,9 +265,12 @@ impl GitlabService {
 
     /// Spawn an async task to download job log
     pub fn spawn_download_job_log(&self, project_id: ProjectId, job_id: JobId) {
-        let service = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = service.download_job_log(project_id, job_id).await {
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        let handle = self.handle.clone();
+        self.handle.spawn(async move {
+            let temp_service = Self::from_existing_parts(api, sender, handle);
+            if let Err(e) = temp_service.download_job_log(project_id, job_id).await {
                 warn!("Background job log download failed: {}", e);
             }
         });
@@ -300,24 +321,24 @@ mod tests {
         ClientConfig::new("https://gitlab.example.com", "test-token")
     }
 
-    #[test]
-    fn test_service_creation() {
+    #[tokio::test]
+    async fn test_service_creation() {
         let config = test_config();
         let (sender, _receiver) = mpsc::channel();
         let service = GitlabService::new(config, sender);
         assert!(service.is_ok());
     }
 
-    #[test]
-    fn test_service_creation_invalid_config() {
+    #[tokio::test]
+    async fn test_service_creation_invalid_config() {
         let config = ClientConfig::new("", "test-token");
         let (sender, _receiver) = mpsc::channel();
         let service = GitlabService::new(config, sender);
         assert!(service.is_err());
     }
 
-    #[test]
-    fn test_config_access() {
+    #[tokio::test]
+    async fn test_config_access() {
         let config = test_config();
         let (sender, _receiver) = mpsc::channel();
         let service = GitlabService::new(config.clone(), sender).unwrap();
