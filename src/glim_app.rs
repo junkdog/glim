@@ -7,6 +7,7 @@ use tachyonfx::{Duration, EffectManager};
 
 use crate::{
     client::GitlabClient,
+    config::save_config,
     dispatcher::Dispatcher,
     domain::Project,
     effect_registry::{EffectRegistry, FxId},
@@ -15,7 +16,6 @@ use crate::{
     input::{processor::NormalModeProcessor, InputMultiplexer},
     notice_service::{Notice, NoticeLevel, NoticeService},
     result::GlimError,
-    save_config,
     stores::{log_event, ProjectStore},
     ui::{
         widget::{NotificationState, RefRect},
