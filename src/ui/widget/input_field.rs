@@ -1,11 +1,12 @@
 use compact_str::CompactString;
 use derive_builder::Builder;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Position, Rect};
-use ratatui::prelude::Line;
-use ratatui::style::Style;
-use ratatui::widgets::Widget;
-use ratatui::widgets::WidgetRef;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    prelude::Line,
+    style::Style,
+    widgets::{Widget, WidgetRef},
+};
 use tui_input::Input;
 use unicode_width::UnicodeWidthStr;
 
@@ -28,7 +29,11 @@ impl InputField {
 
     pub fn sanitized_input_display(&self) -> CompactString {
         if self.mask_input {
-            self.input.value().chars().map(|_| '*').collect::<CompactString>()
+            self.input
+                .value()
+                .chars()
+                .map(|_| '*')
+                .collect::<CompactString>()
         } else {
             self.input.value().into()
         }
@@ -45,11 +50,17 @@ impl WidgetRef for InputField {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         if let Some(description) = &self.description {
             let mut rows = area.rows();
-            rows.next().map(|row| self.label.render_ref(row, buf));
-            rows.next().map(|row| description.render_ref(row, buf));
+            if let Some(row) = rows.next() {
+                self.label.render_ref(row, buf)
+            }
+            if let Some(row) = rows.next() {
+                description.render_ref(row, buf)
+            }
             rows.next().map(|row| {
                 let input = self.sanitized_input_display();
-                Line::from(input.to_string()).style(self.input_style).render(row, buf);
+                Line::from(input.to_string())
+                    .style(self.input_style)
+                    .render(row, buf);
             });
         } else {
             self.label.render_ref(area, buf);

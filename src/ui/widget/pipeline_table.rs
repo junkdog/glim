@@ -1,14 +1,18 @@
-use crate::domain::{IconRepresentable, Pipeline};
-use crate::id::PipelineId;
-use crate::theme::theme;
-use crate::ui::format_duration;
-use crate::ui::widget::text_from;
 use chrono::Local;
 use compact_str::ToCompactString;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Constraint, Rect};
-use ratatui::prelude::{Line, Span, StatefulWidget, Text};
-use ratatui::widgets::{Cell, Row, Table, TableState};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Alignment, Constraint, Rect},
+    prelude::{Line, Span, StatefulWidget, Text},
+    widgets::{Cell, Row, Table, TableState},
+};
+
+use crate::{
+    domain::{IconRepresentable, Pipeline},
+    id::PipelineId,
+    theme::theme,
+    ui::{format_duration, widget::text_from},
+};
 
 /// pipelines widget. used inside the project details popup.
 ///
@@ -28,16 +32,22 @@ pub struct PipelineTable {
 impl PipelineTable {
     pub fn new(pipelines: &[&Pipeline]) -> Self {
         let (max_branch, max_job_name, max_failed_job_name, max_duration) =
-            pipelines.iter().fold((5, 12, 12, 4), |(b, j, f, d), p| {
-                (
-                    b.max(p.branch.chars().count()),
-                    j.max(p.active_job_name().chars().count())
-                        .max(p.jobs.clone().map(|j| j.len() * 2).unwrap_or(0)),
-                    f.max(p.failing_job_name().map(|j| j.chars().count()).unwrap_or(0)),
-                    d.max(format_duration(p.duration()).chars().count()),
-                    // pe.max("NA%".chars().count()),
-                )
-            });
+            pipelines
+                .iter()
+                .fold((5, 12, 12, 4), |(b, j, f, d), p| {
+                    (
+                        b.max(p.branch.chars().count()),
+                        j.max(p.active_job_name().chars().count())
+                            .max(p.jobs.clone().map(|j| j.len() * 2).unwrap_or(0)),
+                        f.max(
+                            p.failing_job_name()
+                                .map(|j| j.chars().count())
+                                .unwrap_or(0),
+                        ),
+                        d.max(format_duration(p.duration()).chars().count()),
+                        // pe.max("NA%".chars().count()),
+                    )
+                });
 
         Self {
             constraints: [
@@ -63,7 +73,7 @@ impl PipelineTable {
         let comment = if let Some(commit) = &p.commit {
             commit.title.clone()
         } else {
-"".to_compact_string()
+            "".to_compact_string()
         };
 
         let branch_text = branch.to_string();

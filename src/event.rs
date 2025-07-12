@@ -1,14 +1,15 @@
-use std::fmt::Debug;
-use std::sync::mpsc;
-use std::thread;
+use std::{fmt::Debug, sync::mpsc, thread};
 
 use compact_str::CompactString;
-use crate::dispatcher::Dispatcher;
-use crate::domain::{JobDto, PipelineDto, Project, ProjectDto};
-use crate::glim_app::GlimConfig;
-use crate::id::{JobId, PipelineId, ProjectId};
-use crate::result;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind};
+
+use crate::{
+    dispatcher::Dispatcher,
+    domain::{JobDto, PipelineDto, Project, ProjectDto},
+    glim_app::GlimConfig,
+    id::{JobId, PipelineId, ProjectId},
+    result,
+};
 
 #[derive(Debug, Clone)]
 pub enum GlimEvent {
@@ -38,6 +39,7 @@ pub enum GlimEvent {
     UpdateConfig(GlimConfig),
     DisplayConfig,
     CloseConfig,
+    CloseNotification,
     BrowseToJob(ProjectId, PipelineId, JobId),
     BrowseToPipeline(ProjectId, PipelineId),
     BrowseToProject(ProjectId),
@@ -53,7 +55,6 @@ pub enum GlimEvent {
     ApplyTemporaryFilter(Option<CompactString>),
     ClearFilter,
     ShowSortMenu,
-    ToggleColorDepth,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -98,11 +99,7 @@ impl EventHandler {
             })
         };
 
-        Self {
-            sender,
-            receiver,
-            _handler: handler,
-        }
+        Self { sender, receiver, _handler: handler }
     }
 
     pub fn sender(&self) -> mpsc::Sender<GlimEvent> {
@@ -114,17 +111,14 @@ impl EventHandler {
     }
 
     pub fn try_next(&self) -> Option<GlimEvent> {
-        match self.receiver.try_recv() {
-            Ok(e) => Some(e),
-            Err(_) => None,
-        }
+        self.receiver.try_recv().ok()
     }
 
     fn apply_event(sender: &mpsc::Sender<GlimEvent>) {
         match event::read().expect("unable to read event") {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press => {
                 sender.send(GlimEvent::Key(e))
-            }
+            },
 
             _ => Ok(()),
         }

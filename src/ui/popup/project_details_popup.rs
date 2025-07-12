@@ -1,21 +1,24 @@
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
-use ratatui::prelude::{Line, StatefulWidget, Text};
-use ratatui::text::Span;
-use ratatui::widgets::{TableState, Widget};
-use tachyonfx::{Duration, EffectRenderer};
-
-use crate::domain::{Pipeline, Project};
-use crate::theme::theme;
-use crate::ui::fx::{open_window, PopupWindow};
 use compact_str::ToCompactString;
-use crate::ui::popup::utility::CenteredShrink;
-use crate::ui::widget::PipelineTable;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Direction, Layout, Margin, Rect},
+    prelude::{Line, StatefulWidget, Text},
+    text::Span,
+    widgets::{TableState, Widget},
+};
+
+use crate::{
+    domain::{Pipeline, Project},
+    theme::theme,
+    ui::{
+        fx::popup_window,
+        popup::utility::CenteredShrink,
+        widget::{PipelineTable, RefRect},
+    },
+};
 
 /// project details popup
-pub struct ProjectDetailsPopup {
-    last_frame_time: Duration,
-}
+pub struct ProjectDetailsPopup {}
 
 /// state of the project details popup
 pub struct ProjectDetailsPopupState {
@@ -24,23 +27,21 @@ pub struct ProjectDetailsPopupState {
     project_stat_summary: Text<'static>,
     pub pipelines: PipelineTable, // widget
     pub pipelines_table_state: TableState,
-    window_fx: PopupWindow,
+    popup_area: RefRect,
 }
 
 impl ProjectDetailsPopup {
-    pub fn new(last_frame_time: Duration) -> ProjectDetailsPopup {
-        Self { last_frame_time }
+    pub fn new() -> ProjectDetailsPopup {
+        Self {}
     }
 }
 
 impl ProjectDetailsPopupState {
     pub fn with_project(&self, project: Project) -> Self {
-        let mut state = Self::new(project);
-        state.window_fx = self.window_fx.clone();
-        state
+        Self::new(project, self.popup_area.clone())
     }
 
-    pub fn new(project: Project) -> ProjectDetailsPopupState {
+    pub fn new(project: Project, popup_area: RefRect) -> ProjectDetailsPopupState {
         let (namespace, name) = project.path_and_name();
         let description = match &project.description {
             Some(d) => d.to_string(),
@@ -67,14 +68,7 @@ impl ProjectDetailsPopupState {
             project_stat_summary,
             pipelines,
             pipelines_table_state: TableState::default().with_selected(0),
-            window_fx: open_window(
-                "project details",
-                Some(vec![
-                    ("ESC", "close"),
-                    ("↑ ↓", "selection"),
-                    ("↵", "actions..."),
-                ]),
-            ),
+            popup_area,
         }
     }
 
@@ -93,15 +87,17 @@ impl ProjectDetailsPopupState {
             s => (s as f32 / (1024.0 * 1024.0), "gb"),
         };
 
-        Line::from(format!("{size:.2}{unit} {label}", size = size, unit = unit, label = label)).style(theme().project_size[0])
+        Line::from(format!("{size:.2}{unit} {label}")).style(theme().project_size[0])
     }
 
-    pub fn popup_area(&self, screen: Rect) -> Rect {
+    pub fn update_popup_area(&self, screen: Rect) -> Rect {
         let pipeline_table_h = 2 * self.pipelines.rows.len() as u16;
         let project_details_h = 4;
         let total_height = 2 + project_details_h + pipeline_table_h;
 
-        screen.inner_centered(screen.width, total_height)
+        let a = screen.inner_centered(screen.width, total_height);
+        self.popup_area.set(a);
+        a
     }
 }
 
@@ -112,10 +108,13 @@ impl StatefulWidget for ProjectDetailsPopup {
         let pipeline_table_h = 2 * state.pipelines.rows.len() as u16;
         let project_details_h = 4;
 
-        let area = state.popup_area(area);
+        let area = state.update_popup_area(area);
 
-        state.window_fx.screen_area(buf.area); // for the parent window fx
-        buf.render_effect(&mut state.window_fx, area, self.last_frame_time);
+        popup_window(
+            "Project Details",
+            Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "actions...")]),
+        )
+        .render(area, buf);
 
         let content_area = area.inner(Margin::new(2, 1));
         let outer_layout = Layout::default()
@@ -145,9 +144,5 @@ impl StatefulWidget for ProjectDetailsPopup {
             buf,
             &mut state.pipelines_table_state,
         );
-
-        state
-            .window_fx
-            .process_opening(self.last_frame_time, buf, area);
     }
 }

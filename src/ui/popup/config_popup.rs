@@ -2,23 +2,26 @@ use std::vec;
 
 use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Margin, Position, Rect};
-use ratatui::prelude::{Line, StatefulWidget, Style, Text, Widget};
-use ratatui::text::Span;
-use tachyonfx::{Duration, EffectRenderer, Shader};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Margin, Position, Rect},
+    prelude::{Line, StatefulWidget, Style, Text, Widget},
+    text::Span,
+};
 use tui_input::Input;
 
-use crate::glim_app::GlimConfig;
-use crate::theme::theme;
-use crate::ui::fx::{open_window, PopupWindow};
-use crate::ui::popup::utility::CenteredShrink;
-use crate::ui::widget::InputField;
+use crate::{
+    glim_app::GlimConfig,
+    theme::theme,
+    ui::{
+        fx::popup_window,
+        popup::utility::CenteredShrink,
+        widget::{InputField, RefRect},
+    },
+};
 
 /// configuration popup
-pub struct ConfigPopup {
-    last_frame_time: Duration,
-}
+pub struct ConfigPopup {}
 
 pub struct ConfigPopupState {
     // pub duration_ms: u32,
@@ -26,17 +29,17 @@ pub struct ConfigPopupState {
     pub cursor_position: Position,
     input_fields: Vec<InputField>,
     pub error_message: Option<CompactString>,
-    window_fx: PopupWindow,
+    popup_area: RefRect,
 }
 
 impl ConfigPopup {
-    pub fn new(last_frame_time: Duration) -> Self {
-        Self { last_frame_time }
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
 impl ConfigPopupState {
-    pub fn new(config: GlimConfig) -> Self {
+    pub fn new(config: GlimConfig, popup_area: RefRect) -> Self {
         Self {
             // duration_ms: 0,
             active_input_idx: 0,
@@ -58,19 +61,16 @@ impl ConfigPopupState {
                     .label("search filter")
                     .description(Some(filter_description()))
                     .input(Input::new(
-                        config.search_filter.as_ref().map(|s| s.to_string()).unwrap_or_default(),
+                        config
+                            .search_filter
+                            .as_ref()
+                            .map(|s| s.to_string())
+                            .unwrap_or_default(),
                     ))
                     .into(),
             ],
-            window_fx: open_window(
-                "configuration",
-                Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "apply")]),
-            ),
+            popup_area,
         }
-    }
-
-    pub fn is_open_complete(&self) -> bool {
-        self.window_fx.done()
     }
 
     pub fn select_next_input(&mut self) {
@@ -78,11 +78,8 @@ impl ConfigPopupState {
     }
 
     pub fn select_previous_input(&mut self) {
-        self.active_input_idx = if self.active_input_idx == 0 {
-            2
-        } else {
-            self.active_input_idx - 1
-        };
+        self.active_input_idx =
+            if self.active_input_idx == 0 { 2 } else { self.active_input_idx - 1 };
     }
 
     pub fn input(&self) -> &Input {
@@ -130,17 +127,25 @@ impl ConfigPopupState {
             area.y + 3 + self.active_input_idx * 3, // 3 elements per input field
         );
     }
+
+    pub fn update_popup_area(&self, screen: Rect) -> Rect {
+        let area = screen.inner_centered(80, 12);
+        self.popup_area.set(area);
+        area
+    }
 }
 
 impl StatefulWidget for ConfigPopup {
     type State = ConfigPopupState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let area = area.inner_centered(80, 12);
+        let area = state.update_popup_area(area);
 
-        state.window_fx.screen_area(buf.area); // for the parent window fx
-        let last_tick = self.last_frame_time;
-        buf.render_effect(&mut state.window_fx, area, last_tick);
+        popup_window(
+            "Configuration",
+            Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "apply")]),
+        )
+        .render(area, buf);
 
         // popup content
         let content_area = area.inner(Margin::new(1, 1));
@@ -167,10 +172,6 @@ impl StatefulWidget for ConfigPopup {
 
         Widget::render(Text::from(text), content_area, buf);
 
-        // window decoration and animation
-        state
-            .window_fx
-            .process_opening(self.last_frame_time, buf, area);
         state.update_cursor_position(&area);
     }
 }
@@ -191,8 +192,6 @@ fn token_description() -> Line<'static> {
 }
 
 fn filter_description() -> Line<'static> {
-    Line::from(vec![Span::from(
-        "optional project filter, applied to project namespace",
-    )
-    .style(theme().input_description)])
+    Line::from(vec![Span::from("optional project filter, applied to project namespace")
+        .style(theme().input_description)])
 }

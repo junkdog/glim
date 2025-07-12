@@ -1,11 +1,12 @@
-use crate::dispatcher::Dispatcher;
-use crate::event::GlimEvent;
-use crate::id::ProjectId;
-use crate::input::InputProcessor;
-use crate::ui::StatefulWidgets;
+use std::sync::mpsc::Sender;
+
 use compact_str::ToCompactString;
 use crossterm::event::{KeyCode, KeyEvent};
-use std::sync::mpsc::Sender;
+
+use crate::{
+    dispatcher::Dispatcher, event::GlimEvent, id::ProjectId, input::InputProcessor,
+    ui::StatefulWidgets,
+};
 
 pub struct NormalModeProcessor {
     sender: Sender<GlimEvent>,
@@ -14,18 +15,17 @@ pub struct NormalModeProcessor {
 
 impl NormalModeProcessor {
     pub fn new(sender: Sender<GlimEvent>) -> Self {
-        Self {
-            sender,
-            selected: None,
-        }
+        Self { sender, selected: None }
     }
 
     fn process(&self, event: &KeyEvent) {
         if let Some(e) = match event.code {
-            KeyCode::Enter if self.selected.is_some() =>
-                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
-            KeyCode::Char('o') if self.selected.is_some() =>
-                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap())),
+            KeyCode::Enter if self.selected.is_some() => {
+                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap()))
+            },
+            KeyCode::Char('o') if self.selected.is_some() => {
+                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap()))
+            },
             KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
             KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
             KeyCode::Char('f') => Some(GlimEvent::ShowFilterMenu),
@@ -35,12 +35,11 @@ impl NormalModeProcessor {
             KeyCode::Char('r') => Some(GlimEvent::RequestProjects),
             KeyCode::Char('s') => Some(GlimEvent::ShowSortMenu),
             KeyCode::Char('w') => self.selected.map(GlimEvent::BrowseToProject),
-            KeyCode::Up        => Some(GlimEvent::SelectPreviousProject),
-            KeyCode::Down      => Some(GlimEvent::SelectNextProject),
+            KeyCode::Up => Some(GlimEvent::SelectPreviousProject),
+            KeyCode::Down => Some(GlimEvent::SelectNextProject),
             KeyCode::Char('k') => Some(GlimEvent::SelectPreviousProject),
             KeyCode::Char('j') => Some(GlimEvent::SelectNextProject),
             KeyCode::Esc => Some(GlimEvent::ClearFilter),
-            KeyCode::F(12)     => Some(GlimEvent::ToggleColorDepth),
             _ => None,
         } {
             self.dispatch(e)
@@ -52,19 +51,19 @@ impl NormalModeProcessor {
             KeyCode::Enter => {
                 // Filter is already applied, just close the input
                 self.dispatch(GlimEvent::CloseFilter);
-            }
+            },
             KeyCode::Esc => {
                 // Cancel filter and reset to no filter
                 self.dispatch(GlimEvent::ApplyTemporaryFilter(None));
                 self.dispatch(GlimEvent::CloseFilter);
-            }
+            },
             KeyCode::Backspace => {
                 self.dispatch(GlimEvent::FilterInputBackspace);
-            }
+            },
             KeyCode::Char(c) => {
                 self.dispatch(GlimEvent::FilterInputChar(c.to_compact_string()));
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 }
@@ -79,7 +78,7 @@ impl InputProcessor for NormalModeProcessor {
                 } else {
                     self.process(e);
                 }
-            }
+            },
             _ => (),
         }
     }

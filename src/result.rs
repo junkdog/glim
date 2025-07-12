@@ -1,7 +1,8 @@
-use crate::id::{PipelineId, ProjectId};
 use compact_str::{CompactString, ToCompactString};
 use serde_json::error::Category;
 use thiserror::Error;
+
+use crate::id::{PipelineId, ProjectId};
 
 pub type Result<T> = std::result::Result<T, GlimError>;
 
@@ -30,8 +31,6 @@ pub enum GlimError {
 
 impl From<reqwest::Error> for GlimError {
     fn from(e: reqwest::Error) -> Self {
-        match () {
-            _ => GlimError::GeneralError(e.to_compact_string()),
-        }
+        GlimError::GeneralError(e.to_compact_string())
     }
 }

@@ -1,33 +1,38 @@
+use std::{path::PathBuf, process::exit, sync::mpsc::Sender};
+
 use clap::Parser;
 use compact_str::ToCompactString;
 use directories::BaseDirs;
-use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Layout, Margin, Rect};
-use ratatui::prelude::Direction;
-use ratatui::{Frame, Terminal};
-use std::path::PathBuf;
-use std::process::exit;
-use std::sync::mpsc::Sender;
-use tachyonfx::fx::term256_colors;
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Layout, Margin, Rect},
+    prelude::Direction,
+    Frame, Terminal,
+};
 use tachyonfx::{Duration, EffectRenderer, Shader};
 
-use crate::client::GitlabClient;
-use crate::event::{EventHandler, GlimEvent};
-use crate::glim_app::{GlimApp, GlimConfig};
-use crate::input::processor::ConfigProcessor;
-use crate::input::InputProcessor;
-use crate::logging::{init_logging, LoggingConfig};
-use crate::result::{GlimError, Result};
-use crate::theme::theme;
-use crate::tui::Tui;
-use crate::ui::popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup};
-use crate::ui::widget::{Notification, ProjectsTable};
-use crate::ui::StatefulWidgets;
+use crate::{
+    client::GitlabClient,
+    dispatcher::Dispatcher,
+    effect_registry::EffectRegistry,
+    event::{EventHandler, GlimEvent},
+    glim_app::{GlimApp, GlimConfig},
+    input::{processor::ConfigProcessor, InputProcessor},
+    logging::{init_logging, LoggingConfig},
+    result::{GlimError, Result},
+    theme::theme,
+    tui::Tui,
+    ui::{
+        popup::{ConfigPopup, ConfigPopupState, PipelineActionsPopup, ProjectDetailsPopup},
+        widget::{Notification, ProjectsTable, RefRect},
+        StatefulWidgets,
+    },
+};
 
 mod client;
 mod dispatcher;
 mod domain;
-mod effects;
+mod effect_registry;
 mod event;
 mod glim_app;
 mod gruvbox;
@@ -70,15 +75,17 @@ fn main() -> Result<()> {
 
     // Initialize logging system
     let logging_config = LoggingConfig::from_env();
-    let _log_guard = init_logging(logging_config, Some(sender.clone()))
-        .map_err(|e| GlimError::GeneralError(format!("Failed to initialize logging: {}", e).into()))?;
-    
+    let _log_guard = init_logging(logging_config, Some(sender.clone())).map_err(|e| {
+        GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
+    })?;
+
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "Glim TUI starting up");
 
     // tui backend
     let backend = CrosstermBackend::new(std::io::stdout());
-    let terminal = Terminal::new(backend)
-        .map_err(|_| GlimError::GeneralError("failed to initialize terminal".to_compact_string()))?;
+    let terminal = Terminal::new(backend).map_err(|_| {
+        GlimError::GeneralError("failed to initialize terminal".to_compact_string())
+    })?;
     let mut tui = Tui::new(terminal, event_handler);
     tui.enter()?;
 
@@ -92,21 +99,22 @@ fn main() -> Result<()> {
     )?;
 
     // app state and initial setup
-    let mut app = GlimApp::new(
-        sender.clone(),
-        config_path,
-        gitlab_client(sender.clone(), config, debug),
-    );
-    app.apply(GlimEvent::RequestProjects, &mut widget_states);
+
+    let mut app =
+        GlimApp::new(sender.clone(), config_path, gitlab_client(sender.clone(), config, debug));
+    app.dispatch(GlimEvent::RequestProjects);
+
+    let mut effects = EffectRegistry::new(app.sender());
+    effects.register_default_glitch_effect();
 
     // main loop
     while app.is_running() {
         widget_states.last_frame = app.process_timers();
         tui.receive_events(|event| {
-            widget_states.apply(&app, &event);
-            app.apply(event, &mut widget_states);
+            widget_states.apply(&app, &mut effects, &event);
+            app.apply(event, &mut widget_states, &mut effects);
         });
-        tui.draw(|f| render_widgets(f, &app, &mut widget_states))?;
+        tui.draw(|f| render_widgets(f, &app, &mut widget_states, &mut effects))?;
     }
 
     tui.exit()
@@ -114,16 +122,23 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn render_widgets(
+    f: &mut Frame,
+    app: &GlimApp,
+    widget_states: &mut StatefulWidgets,
+    effects: &mut EffectRegistry,
+) {
+    effects.update_screen_area(f.area());
 
-fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidgets) {
     let last_tick = widget_states.last_frame;
-    let layout = Layout::new(Direction::Horizontal, [Constraint::Percentage(100)]).split(f.area());
+    let frame_area = f.area();
+    let layout =
+        Layout::new(Direction::Horizontal, [Constraint::Percentage(100)]).split(frame_area);
 
     // gitlab pipelines
     let config = app.load_config().unwrap_or_default();
     let effective_filter = widget_states.effective_filter(&config.search_filter);
-    let (filtered_projects, filtered_indices) =
-        app.filtered_projects(&effective_filter);
+    let (filtered_projects, filtered_indices) = app.filtered_projects(&effective_filter);
     widget_states.update_filtered_indices(filtered_indices);
     let projects = ProjectsTable::new(
         &filtered_projects,
@@ -132,10 +147,9 @@ fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidg
     );
     f.render_stateful_widget(projects, layout[0], &mut widget_states.project_table_state);
 
-
     // project details popup
     if let Some(project_details) = widget_states.project_details.as_mut() {
-        let popup = ProjectDetailsPopup::new(last_tick);
+        let popup = ProjectDetailsPopup::new();
         let popup_area = layout[0].inner(Margin::new(6, 2));
 
         // f.render_effect(popup_area, &mut project_details.fade_in, last_frame_ms);
@@ -144,15 +158,13 @@ fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidg
 
     // pipeline actions popup
     if let Some(pipeline_actions) = widget_states.pipeline_actions.as_mut() {
-        let popup = PipelineActionsPopup::from(last_tick);
+        let popup = PipelineActionsPopup::new();
 
         // render popup on top
         f.render_stateful_widget(popup, layout[0], pipeline_actions);
     }
 
     let last_tick = last_tick;
-    // glitch shader
-    f.render_effect(widget_states.glitch(), f.area(), last_tick);
 
     // fade in table
     if let Some(shader) = &mut widget_states.table_fade_in {
@@ -167,18 +179,10 @@ fn render_widgets(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidg
 
     // notification
     if let Some(notification) = &mut widget_states.notice {
-        f.render_stateful_widget(Notification::new(last_tick), layout[0], notification);
-        widget_states.notice.take_if(|n| n.is_done());
-    }
-    // shader experiment
-    if let Some(shader) = widget_states.shader_pipeline.as_mut() {
-        f.render_effect(shader, f.area(), last_tick);
-        widget_states.shader_pipeline.take_if(|s| s.done());
+        f.render_stateful_widget(Notification::new(), layout[0], notification);
     }
 
-    if app.ui.use_256_colors {
-        f.render_effect(&mut term256_colors(), f.area(), last_tick);
-    }
+    effects.process_effects(last_tick, f.buffer_mut(), frame_area);
 }
 
 fn render_config_popup(
@@ -188,11 +192,13 @@ fn render_config_popup(
     layout: Rect,
 ) {
     // render widget
-    let popup = ConfigPopup::new(last_tick);
+    let popup = ConfigPopup::new();
     f.render_stateful_widget(popup, layout, config_popup);
 
     // render cursor once UI has ~faded in
-    if config_popup.is_open_complete() {
+    // todo: refactor and fix
+    if true {
+        // config_popup.is_open_complete() {
         let cursor = config_popup.cursor_position;
         f.buffer_mut()
             .set_style(Rect::new(cursor.x, cursor.y, 1, 1), theme().input_selected);
@@ -201,13 +207,7 @@ fn render_config_popup(
 }
 
 fn gitlab_client(sender: Sender<GlimEvent>, config: GlimConfig, debug: bool) -> GitlabClient {
-    GitlabClient::new(
-        sender,
-        config.gitlab_url,
-        config.gitlab_token,
-        config.search_filter,
-        debug,
-    )
+    GitlabClient::new(sender, config.gitlab_url, config.gitlab_token, config.search_filter, debug)
 }
 
 fn default_config_path() -> PathBuf {
@@ -219,7 +219,8 @@ fn default_config_path() -> PathBuf {
 }
 
 pub fn save_config(config_file: &PathBuf, config: GlimConfig) -> Result<()> {
-    confy::store_path(config_file, &config).map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
+    confy::store_path(config_file, &config)
+        .map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
 
     Ok(())
 }
@@ -234,12 +235,13 @@ pub fn run_config_ui_loop(
     debug: bool,
 ) -> Result<GlimConfig> {
     if config_file.exists() {
-        let config: GlimConfig =
-            confy::load_path(config_file).map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
+        let config: GlimConfig = confy::load_path(config_file)
+            .map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
 
         Ok(config)
     } else {
-        ui.config_popup_state = Some(ConfigPopupState::new(GlimConfig::default()));
+        ui.config_popup_state =
+            Some(ConfigPopupState::new(GlimConfig::default(), RefRect::default()));
         let sender = sender.clone();
 
         let mut last_tick = std::time::Instant::now();
@@ -256,7 +258,11 @@ pub fn run_config_ui_loop(
                 match event {
                     // GlimEvent::CloseAlert => {}
                     GlimEvent::ApplyConfiguration => {
-                        let config = ui.config_popup_state.as_ref().unwrap().to_config();
+                        let config = ui
+                            .config_popup_state
+                            .as_ref()
+                            .unwrap()
+                            .to_config();
                         match config.validate() {
                             Ok(_) => {
                                 let client =
@@ -269,28 +275,34 @@ pub fn run_config_ui_loop(
 
                                         valid_config = Some(state.to_config());
                                         ui.config_popup_state = None;
-                                    }
+                                    },
                                     Err(error) => {
-                                        ui.config_popup_state.as_mut().unwrap().error_message =
-                                            Some(error.to_compact_string());
-                                    }
+                                        ui.config_popup_state
+                                            .as_mut()
+                                            .unwrap()
+                                            .error_message = Some(error.to_compact_string());
+                                    },
                                 }
-                            }
+                            },
                             Err(error) => {
-                                ui.config_popup_state.as_mut().unwrap().error_message =
-                                    Some(error.to_compact_string());
-                            }
+                                ui.config_popup_state
+                                    .as_mut()
+                                    .unwrap()
+                                    .error_message = Some(error.to_compact_string());
+                            },
                         }
-                    }
+                    },
                     GlimEvent::CloseConfig => {
                         ui.config_popup_state = None;
-                    }
+                    },
                     GlimEvent::Error(error) => {
-                        ui.config_popup_state.as_mut().unwrap().error_message =
-                            Some(error.to_compact_string());
-                    }
-                    GlimEvent::Shutdown => {}
-                    _ => {}
+                        ui.config_popup_state
+                            .as_mut()
+                            .unwrap()
+                            .error_message = Some(error.to_compact_string());
+                    },
+                    GlimEvent::Shutdown => {},
+                    _ => {},
                 }
             });
 

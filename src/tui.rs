@@ -1,14 +1,15 @@
 use std::{io, panic};
 
-use crate::event::{EventHandler, GlimEvent};
-use crate::result::GlimError;
-use crate::result::GlimError::GeneralError;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::layout::Size;
-use ratatui::Frame;
+use ratatui::{layout::Size, Frame};
+
+use crate::{
+    event::{EventHandler, GlimEvent},
+    result::{GlimError, GlimError::GeneralError},
+};
 
 pub type CrosstermTerminal = ratatui::Terminal<ratatui::backend::CrosstermBackend<io::Stdout>>;
 

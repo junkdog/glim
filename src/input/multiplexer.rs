@@ -1,8 +1,13 @@
-use crate::event::GlimEvent;
-use crate::input::processor::{ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor};
-use crate::input::InputProcessor;
-use crate::ui::StatefulWidgets;
 use std::sync::mpsc::Sender;
+
+use crate::{
+    event::GlimEvent,
+    input::{
+        processor::{ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor},
+        InputProcessor,
+    },
+    ui::StatefulWidgets,
+};
 
 pub struct InputMultiplexer {
     sender: Sender<GlimEvent>,
@@ -11,10 +16,7 @@ pub struct InputMultiplexer {
 
 impl InputMultiplexer {
     pub fn new(sender: Sender<GlimEvent>) -> Self {
-        Self {
-            sender,
-            processors: Vec::new(),
-        }
+        Self { sender, processors: Vec::new() }
     }
 
     pub fn push(&mut self, processor: Box<dyn InputProcessor>) {
@@ -35,23 +37,20 @@ impl InputMultiplexer {
         match event {
             // project details popup
             GlimEvent::OpenProjectDetails(id) => {
-                self.push(Box::new(ProjectDetailsProcessor::new(
-                    self.sender.clone(),
-                    *id,
-                )));
-            }
+                self.push(Box::new(ProjectDetailsProcessor::new(self.sender.clone(), *id)));
+            },
             GlimEvent::CloseProjectDetails => self.pop_processor(),
 
             // pipeline actions popup
             GlimEvent::OpenPipelineActions(_, _) => {
                 self.push(Box::new(PipelineActionsProcessor::new(self.sender.clone())));
-            }
+            },
             GlimEvent::ClosePipelineActions => self.pop_processor(),
 
             // config
             GlimEvent::DisplayConfig => {
                 self.push(Box::new(ConfigProcessor::new(self.sender.clone())));
-            }
+            },
             GlimEvent::CloseConfig => self.pop_processor(),
 
             _ => (),

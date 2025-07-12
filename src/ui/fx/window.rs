@@ -1,21 +1,18 @@
-use crate::ui::widget::Shortcuts;
 use derive_builder::Builder;
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::style::Style;
-use ratatui::text::Line;
-use ratatui::widgets::Widget;
-use ratatui::widgets::{Block, BorderType, Borders, Clear};
-use tachyonfx::{CellFilter, Duration, Effect, IntoEffect, Shader};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Style,
+    text::Line,
+    widgets::{Block, BorderType, Borders, Clear, Widget},
+};
+
+use crate::ui::widget::Shortcuts;
 
 #[derive(Builder, Clone, Debug)]
 #[builder(pattern = "owned")]
 pub struct PopupWindow {
     title: Line<'static>,
-    #[builder(default, setter(strip_option))]
-    open_window_fx: Option<Effect>,
-    #[builder(default, setter(strip_option))]
-    parent_window_fx: Option<Effect>,
     border_style: Style,
     border_type: BorderType,
     background: Style,
@@ -24,21 +21,9 @@ pub struct PopupWindow {
     shortcuts: Option<Shortcuts<'static>>,
 }
 
-impl From<PopupWindowBuilder> for Effect {
-    fn from(value: PopupWindowBuilder) -> Self {
-        value.build().unwrap().into_effect()
-    }
-}
-
 impl PopupWindow {
     pub fn builder() -> PopupWindowBuilder {
         PopupWindowBuilder::default()
-    }
-
-    pub fn screen_area(&mut self, area: Rect) {
-        if let Some(fx) = self.parent_window_fx.as_mut() {
-            fx.set_area(area);
-        }
     }
 
     fn window_block(&self) -> Block {
@@ -56,48 +41,50 @@ impl PopupWindow {
         }
     }
 
-    pub fn process_opening(&mut self, _duration: Duration, _buf: &mut Buffer, _area: Rect) {
-        // TODO: Implement opening effects - currently disabled for refactoring
-    }
+    // pub fn process_opening(&mut self, _duration: Duration, _buf: &mut Buffer, _area: Rect) {
+    //     // TODO: Implement opening effects - currently disabled for refactoring
+    // }
 }
 
-impl Shader for PopupWindow {
-    fn name(&self) -> &'static str {
-        "open_window"
-    }
-
-    fn process(&mut self, _duration: Duration, buf: &mut Buffer, area: Rect) -> Option<Duration> {
-        // TODO: Implement parent window effects - currently disabled for refactoring
+impl Widget for PopupWindow {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
         Clear.render(area, buf);
         self.window_block().render(area, buf);
-        None
-    }
-
-    fn execute(&mut self, _duration: Duration, _area: Rect, _buf: &mut Buffer) {}
-
-    fn done(&self) -> bool {
-        // TODO: Implement proper done check - currently always true for refactoring
-        true
-    }
-
-    fn clone_box(&self) -> Box<dyn Shader> {
-        Box::new(self.clone())
-    }
-
-    fn area(&self) -> Option<Rect> {
-        // TODO: Implement proper area calculation - currently returns None for refactoring
-        None
-    }
-
-    fn set_area(&mut self, _area: Rect) {
-        // TODO: Implement proper area setting - currently no-op for refactoring
-    }
-
-    fn set_cell_selection(&mut self, _strategy: CellFilter) {
-        todo!()
-    }
-
-    fn filter(&mut self, _filter: CellFilter) {
-        // TODO: Implement filter - currently no-op for refactoring
     }
 }
+
+// impl Shader for PopupWindow {
+//     fn name(&self) -> &'static str {
+//         "open_window"
+//     }
+//
+//     fn process(&mut self, _duration: Duration, buf: &mut Buffer, area: Rect) -> Option<Duration> {
+//         // TODO: Implement parent window effects - currently disabled for refactoring
+//         Clear.render(area, buf);
+//         self.window_block().render(area, buf);
+//         None
+//     }
+//
+//     fn done(&self) -> bool {
+//         // TODO: Implement proper done check - currently always true for refactoring
+//         false
+//     }
+//
+//     fn clone_box(&self) -> Box<dyn Shader> {
+//         Box::new(self.clone())
+//     }
+//
+//     fn area(&self) -> Option<Rect> {
+//         None
+//     }
+//
+//     fn set_area(&mut self, _area: Rect) {
+//     }
+//
+//     fn filter(&mut self, filter: CellFilter) {
+//         self.filter = Some(filter);
+//     }
+// }

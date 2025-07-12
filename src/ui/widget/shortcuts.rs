@@ -1,8 +1,11 @@
+use ratatui::{
+    buffer::Buffer,
+    layout::{Alignment, Offset, Rect},
+    prelude::{Line, Modifier, Span, Style, Widget},
+    widgets::Clear,
+};
+
 use crate::gruvbox::Gruvbox;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Offset, Rect};
-use ratatui::prelude::{Line, Modifier, Span, Style, Widget};
-use ratatui::widgets::Clear;
 
 /// shortcuts widget
 #[derive(Debug, Clone, Default)]

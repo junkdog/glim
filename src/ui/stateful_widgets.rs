@@ -1,17 +1,21 @@
-use crate::dispatcher::Dispatcher;
-use crate::domain::Project;
-use crate::effects::{
-    default_glitch_effect, fade_in_projects_table, make_glitch_effect, project_details_close_effect,
-};
-use crate::event::GlimEvent;
-use crate::glim_app::{GlimApp, GlimConfig, Modulo};
-use crate::id::PipelineId;
-use crate::ui::popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState};
-use crate::ui::widget::NotificationState;
+use std::sync::mpsc::Sender;
+
 use compact_str::CompactString;
 use ratatui::widgets::TableState;
-use std::sync::mpsc::Sender;
 use tachyonfx::{Duration, Effect};
+
+use crate::{
+    dispatcher::Dispatcher,
+    domain::Project,
+    effect_registry::{fade_in_projects_table, EffectRegistry},
+    event::GlimEvent,
+    glim_app::{GlimApp, GlimConfig, Modulo},
+    id::PipelineId,
+    ui::{
+        popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState},
+        widget::{NotificationState, RefRect},
+    },
+};
 
 pub struct StatefulWidgets {
     pub last_frame: Duration,
@@ -21,14 +25,11 @@ pub struct StatefulWidgets {
     pub table_fade_in: Option<Effect>,
     pub project_details: Option<ProjectDetailsPopupState>,
     pub pipeline_actions: Option<PipelineActionsPopupState>,
-    pub shader_pipeline: Option<Effect>,
     pub notice: Option<NotificationState>,
     pub filter_input_active: bool,
     pub filter_input_text: CompactString,
     pub temporary_filter: Option<CompactString>,
     current_filtered_indices: Vec<usize>,
-    glitch_override: Option<Effect>,
-    glitch: Effect,
 }
 
 impl StatefulWidgets {
@@ -41,44 +42,42 @@ impl StatefulWidgets {
             config_popup_state: None,
             project_details: None,
             pipeline_actions: None,
-            shader_pipeline: None,
-            glitch_override: None,
             notice: None,
             filter_input_active: false,
             filter_input_text: CompactString::default(),
             temporary_filter: None,
             current_filtered_indices: Vec::new(),
-            glitch: default_glitch_effect(),
         }
     }
 
-    pub fn apply(&mut self, app: &GlimApp, event: &GlimEvent) {
+    pub fn apply(&mut self, app: &GlimApp, effects: &mut EffectRegistry, event: &GlimEvent) {
         match event {
-            GlimEvent::GlitchOverride(g) => self.glitch_override = make_glitch_effect(*g),
-
             GlimEvent::SelectNextProject => self.handle_project_selection(1, app),
             GlimEvent::SelectPreviousProject => self.handle_project_selection(-1, app),
 
             GlimEvent::ReceivedProjects(_) => self.fade_in_projects_table(),
 
             GlimEvent::OpenProjectDetails(id) => {
-                self.open_project_details(app.project(*id).clone(), app.sender.clone())
-            }
-            GlimEvent::CloseProjectDetails => {
-                self.project_details = {
-                    self.shader_pipeline = Some(project_details_close_effect());
-                    None
-                }
-            }
+                let popup_area = RefRect::default();
+                effects.register_project_details(popup_area.clone());
+                self.open_project_details(app.project(*id).clone(), popup_area, app.sender())
+            },
+            GlimEvent::CloseProjectDetails => self.project_details = None,
             GlimEvent::ProjectUpdated(p) => self.refresh_project_details(p),
 
             GlimEvent::ClosePipelineActions => self.close_pipeline_actions(),
             GlimEvent::OpenPipelineActions(project_id, pipeline_id) => {
+                let popup_area = RefRect::default();
+                effects.register_pipeline_actions(popup_area.clone());
                 let project = app.project(*project_id);
-                self.open_pipeline_actions(project, *pipeline_id);
-            }
+                self.open_pipeline_actions(project, *pipeline_id, popup_area);
+            },
 
-            GlimEvent::DisplayConfig => self.open_config(app.load_config().unwrap_or_default()),
+            GlimEvent::DisplayConfig => {
+                let popup_area = RefRect::default();
+                effects.register_config_popup(popup_area.clone());
+                self.open_config(app.load_config().unwrap_or_default(), popup_area);
+            },
             GlimEvent::CloseConfig => self.config_popup_state = None,
 
             GlimEvent::ShowFilterMenu => self.show_filter_input(),
@@ -100,7 +99,7 @@ impl StatefulWidgets {
         let requires_refresh = self
             .project_details
             .as_ref()
-            .map_or(false, |pd| pd.project.id == project.id);
+            .is_some_and(|pd| pd.project.id == project.id);
 
         if requires_refresh {
             let existing = self.project_details.take().unwrap();
@@ -108,22 +107,34 @@ impl StatefulWidgets {
         }
     }
 
-    fn open_project_details(&mut self, project: Project, sender: Sender<GlimEvent>) {
+    fn open_project_details(
+        &mut self,
+        project: Project,
+        area_tracker: RefRect,
+        sender: Sender<GlimEvent>,
+    ) {
         project
             .recent_pipelines()
             .first()
             .map(|p| sender.dispatch(GlimEvent::SelectedPipeline(p.id)))
             .unwrap_or(());
 
-        self.project_details = Some(ProjectDetailsPopupState::new(project));
+        self.project_details = Some(ProjectDetailsPopupState::new(project, area_tracker));
     }
 
-    fn open_config(&mut self, config: GlimConfig) {
-        self.config_popup_state = Some(ConfigPopupState::new(config));
+    fn open_config(&mut self, config: GlimConfig, popup_area: RefRect) {
+        self.config_popup_state = Some(ConfigPopupState::new(config, popup_area));
     }
 
-    fn open_pipeline_actions(&mut self, project: &Project, pipeline_id: PipelineId) {
-        let failed_job = project.pipeline(pipeline_id).and_then(|p| p.failed_job());
+    fn open_pipeline_actions(
+        &mut self,
+        project: &Project,
+        pipeline_id: PipelineId,
+        popup_area: RefRect,
+    ) {
+        let failed_job = project
+            .pipeline(pipeline_id)
+            .and_then(|p| p.failed_job());
 
         let actions = if let Some(job) = failed_job {
             vec![
@@ -139,11 +150,8 @@ impl StatefulWidgets {
             ]
         };
 
-        self.pipeline_actions = Some(PipelineActionsPopupState::new(
-            actions,
-            project.id,
-            pipeline_id,
-        ));
+        self.pipeline_actions =
+            Some(PipelineActionsPopupState::new(actions, project.id, pipeline_id, popup_area));
     }
 
     fn close_pipeline_actions(&mut self) {
@@ -217,7 +225,9 @@ impl StatefulWidgets {
         if let Some(current) = pipelines.list_state.selected() {
             let new_index = (current as i32 + direction).modulo(pipelines.actions.len() as i32);
 
-            pipelines.list_state.select(Some(new_index as usize));
+            pipelines
+                .list_state
+                .select(Some(new_index as usize));
         }
     }
 
@@ -270,7 +280,8 @@ impl StatefulWidgets {
         self.filter_input_text.clear();
         self.filter_input_active = false;
         self.temporary_filter = None;
-        self.sender.dispatch(GlimEvent::ApplyTemporaryFilter(None));
+        self.sender
+            .dispatch(GlimEvent::ApplyTemporaryFilter(None));
     }
 
     pub fn effective_filter(&self, config_filter: &Option<CompactString>) -> Option<CompactString> {
@@ -282,12 +293,5 @@ impl StatefulWidgets {
 
     pub fn update_filtered_indices(&mut self, indices: Vec<usize>) {
         self.current_filtered_indices = indices;
-    }
-
-    pub fn glitch(&mut self) -> &mut Effect {
-        match self.glitch_override.as_mut() {
-            Some(g) => g,
-            None => &mut self.glitch,
-        }
     }
 }

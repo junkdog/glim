@@ -1,14 +1,18 @@
 // GitLab API Documentation: https://docs.gitlab.com/ee/api/api_resources.html
-use crate::id::{JobId, PipelineId, ProjectId};
-use crate::theme::theme;
-use crate::ui::format_duration;
-use crate::ui::widget::text_from;
 use chrono::{DateTime, Duration, Local, Utc};
 use compact_str::{CompactString, ToCompactString};
 use itertools::Itertools;
-use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::Row;
+use ratatui::{
+    text::{Line, Span, Text},
+    widgets::Row,
+};
 use serde::Deserialize;
+
+use crate::{
+    id::{JobId, PipelineId, ProjectId},
+    theme::theme,
+    ui::{format_duration, widget::text_from},
+};
 
 #[derive(Clone, Debug)]
 pub struct Project {
@@ -244,7 +248,7 @@ impl Project {
     }
 
     pub fn has_active_pipelines(&self) -> bool {
-        self.pipelines.as_ref().map_or(false, |ps| {
+        self.pipelines.as_ref().is_some_and(|ps| {
             ps.iter()
                 .any(|p| p.status.is_active() || p.has_active_jobs())
         })
@@ -387,7 +391,7 @@ impl Pipeline {
     pub fn has_active_jobs(&self) -> bool {
         self.jobs
             .as_ref()
-            .map_or(false, |jobs| jobs.iter().any(|j| j.status.is_active()))
+            .is_some_and(|jobs| jobs.iter().any(|j| j.status.is_active()))
     }
 
     pub fn active_job(&self) -> Option<&Job> {
@@ -397,13 +401,15 @@ impl Pipeline {
     }
 
     pub fn failed_job(&self) -> Option<&Job> {
-        self.jobs
-            .as_ref()
-            .and_then(|jobs| jobs.iter().find(|j| j.status == PipelineStatus::Failed))
+        self.jobs.as_ref().and_then(|jobs| {
+            jobs.iter()
+                .find(|j| j.status == PipelineStatus::Failed)
+        })
     }
 
     pub fn active_job_name(&self) -> CompactString {
-        self.active_job().map_or("".into(), |j| j.name.clone())
+        self.active_job()
+            .map_or("".into(), |j| j.name.clone())
     }
 
     pub fn has_failed_jobs(&self) -> bool {
@@ -501,12 +507,7 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
         None => Text::from(Span::from(&project.path)).style(theme().project_name),
     };
 
-    Row::new(vec![
-        text_from(last_activity),
-        project_path,
-        Text::from(pipeline_spans),
-    ])
-    .height(3)
+    Row::new(vec![text_from(last_activity), project_path, Text::from(pipeline_spans)]).height(3)
 }
 
 /// Represents types that can be associated with an icon.
@@ -540,7 +541,9 @@ impl IconRepresentable for PipelineStatus {
 
 impl IconRepresentable for &Vec<Job> {
     fn icon(&self) -> CompactString {
-        self.iter().map(|j| j.status.icon()).collect::<CompactString>()
+        self.iter()
+            .map(|j| j.status.icon())
+            .collect::<CompactString>()
     }
 }
 

@@ -1,22 +1,24 @@
-use std::path::Path;
-use std::sync::mpsc::Sender;
+use std::{path::Path, sync::mpsc::Sender};
 
 use chrono::{DateTime, Local, Utc};
 use compact_str::{format_compact, CompactString, ToCompactString};
 use itertools::Itertools;
 use reqwest::{Client, RequestBuilder};
 use serde::Deserialize;
-use tokio::runtime::Runtime;
-use tokio::time::sleep;
-
-use crate::dispatcher::Dispatcher;
-use crate::domain::{JobDto, PipelineDto, ProjectDto};
-use crate::event::{GlimEvent, GlitchState, IntoGlimEvent};
-use crate::glim_app::GlimConfig;
-use crate::id::{JobId, PipelineId, ProjectId};
-use crate::result::GlimError::{GeneralError, JsonDeserializeError};
-use crate::result::*;
+use tokio::{runtime::Runtime, time::sleep};
 use tracing::{debug, error, info, instrument, warn};
+
+use crate::{
+    dispatcher::Dispatcher,
+    domain::{JobDto, PipelineDto, ProjectDto},
+    event::{GlimEvent, GlitchState, IntoGlimEvent},
+    glim_app::GlimConfig,
+    id::{JobId, PipelineId, ProjectId},
+    result::{
+        GlimError::{GeneralError, JsonDeserializeError},
+        *,
+    },
+};
 
 pub struct GitlabClient {
     sender: Sender<GlimEvent>,
@@ -60,13 +62,7 @@ impl GitlabClient {
     }
 
     pub fn new_from_config(sender: Sender<GlimEvent>, config: GlimConfig, debug: bool) -> Self {
-        Self::new(
-            sender,
-            config.gitlab_url,
-            config.gitlab_token,
-            config.search_filter,
-            debug,
-        )
+        Self::new(sender, config.gitlab_url, config.gitlab_token, config.search_filter, debug)
     }
 
     #[instrument(skip(self), fields(project_id = %project_id, job_id = %job_id))]
@@ -74,10 +70,10 @@ impl GitlabClient {
         info!("Downloading job log from GitLab");
         let get_trace_request = self
             .client
-            .get(format_compact!(
-                "{}/projects/{project_id}/jobs/{job_id}/trace",
-                self.base_url
-            ).as_str())
+            .get(
+                format_compact!("{}/projects/{project_id}/jobs/{job_id}/trace", self.base_url)
+                    .as_str(),
+            )
             .header("PRIVATE-TOKEN", self.private_token.as_str());
 
         let sender = self.sender.clone();
@@ -94,10 +90,8 @@ impl GitlabClient {
     #[instrument(skip(self), fields(project_id = %project_id, pipeline_id = %pipeline_id))]
     pub fn dispatch_get_jobs(&self, project_id: ProjectId, pipeline_id: PipelineId) {
         debug!("Fetching jobs for pipeline");
-        let base_url = format_compact!(
-            "{}/projects/{project_id}/pipelines/{pipeline_id}",
-            self.base_url
-        );
+        let base_url =
+            format_compact!("{}/projects/{project_id}/pipelines/{pipeline_id}", self.base_url);
 
         let get_jobs_request = self
             .client
@@ -116,7 +110,7 @@ impl GitlabClient {
                 Ok(t) => t,
                 Err(e) => {
                     error!(error = %e, project_id = %project_id, pipeline_id = %pipeline_id, "Failed to fetch jobs");
-                    GlimError::GitlabGetJobsError(project_id, pipeline_id, e.to_compact_string());
+                    project_id;pipeline_id;e.to_compact_string();
                     return sender.dispatch(GlimEvent::Error(e));
                 }
             };
@@ -261,15 +255,12 @@ impl GitlabClient {
         }
 
         if status.is_success() {
-            serde_json::from_str(&body).map_err(|e| JsonDeserializeError(e.classify(), body.clone()))
+            serde_json::from_str(&body)
+                .map_err(|e| JsonDeserializeError(e.classify(), body.clone()))
         } else {
             let api = serde_json::from_str::<GitlabApiError>(&body);
             if let Ok(api) = api {
-                Err(GeneralError(format_compact!(
-                    "HTTP {}\n {}",
-                    api.error,
-                    api.description()
-                )))
+                Err(GeneralError(format_compact!("HTTP {}\n {}", api.error, api.description())))
             } else if let Ok(api2) = serde_json::from_str::<GitlabApiError2>(&body) {
                 Err(GeneralError(format_compact!("HTTP {}", api2.message)))
             } else {
@@ -312,6 +303,8 @@ struct GitlabApiError2 {
 
 impl GitlabApiError {
     pub fn description(&self) -> CompactString {
-        self.error_description.clone().unwrap_or("".into())
+        self.error_description
+            .clone()
+            .unwrap_or("".into())
     }
 }

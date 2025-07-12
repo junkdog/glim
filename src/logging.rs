@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-use std::sync::mpsc::Sender;
+use std::{path::PathBuf, sync::mpsc::Sender};
 
 use compact_str::CompactString;
 use tracing::{Level, Metadata};
@@ -85,11 +84,19 @@ impl<S> Layer<S> for InternalLogsLayer
 where
     S: tracing::Subscriber,
 {
-    fn enabled(&self, metadata: &Metadata<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) -> bool {
+    fn enabled(
+        &self,
+        metadata: &Metadata<'_>,
+        _ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) -> bool {
         metadata.level() <= &self.min_level
     }
 
-    fn on_event(&self, event: &tracing::Event<'_>, _ctx: tracing_subscriber::layer::Context<'_, S>) {
+    fn on_event(
+        &self,
+        event: &tracing::Event<'_>,
+        _ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) {
         // Extract the message from the event
         let mut visitor = LogMessageVisitor::new();
         event.record(&mut visitor);
@@ -115,7 +122,7 @@ impl LogMessageVisitor {
 impl tracing::field::Visit for LogMessageVisitor {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
         if field.name() == "message" {
-            self.message = Some(format!("{:?}", value).trim_matches('"').into());
+            self.message = Some(format!("{value:?}").trim_matches('"').into());
         }
     }
 

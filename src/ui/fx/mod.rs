@@ -1,12 +1,12 @@
+pub mod dynamic_area;
 mod window;
 
-pub use crate::effects::create_window_title;
+use ratatui::prelude::{Line, Span};
 pub use window::*;
 
-// TODO: Re-implement open_window function that returns PopupWindow with proper effects
-use crate::ui::widget::Shortcuts;
+use crate::{theme::theme, ui::widget::Shortcuts};
 
-pub fn open_window(
+pub fn popup_window(
     title: &'static str,
     shortcuts: Option<Vec<(&'static str, &'static str)>>,
 ) -> PopupWindow {
@@ -19,4 +19,15 @@ pub fn open_window(
         .shortcuts(shortcuts.map(Shortcuts::from))
         .build()
         .unwrap()
+}
+
+/// Creates a popup window title line with effects (TODO: integrate with proper window system)
+fn create_window_title(title: &'static str) -> Line<'static> {
+    Line::from(vec![
+        Span::from("┫").style(theme().border.config_border),
+        Span::from(" ").style(theme().border.title),
+        Span::from(title).style(theme().border.title),
+        Span::from(" ").style(theme().border.title),
+        Span::from("┣").style(theme().border.config_border),
+    ])
 }

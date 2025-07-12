@@ -1,12 +1,15 @@
-use crate::domain::{parse_row, Project};
-use crate::theme::theme;
-use crate::ui::widget::Shortcuts;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Direction, Layout, Margin, Rect};
-use ratatui::prelude::StatefulWidget;
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{
-    Block, BorderType, Borders, Clear, Paragraph, Row, Table, TableState, Widget,
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Direction, Layout, Margin, Rect},
+    prelude::StatefulWidget,
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph, Row, Table, TableState, Widget},
+};
+
+use crate::{
+    domain::{parse_row, Project},
+    theme::theme,
+    ui::widget::Shortcuts,
 };
 
 /// gitlab pipelines widget

@@ -1,9 +1,13 @@
-use crate::event::GlimEvent;
-use crate::id::{JobId, PipelineId, ProjectId};
-use crate::result::GlimError;
+use std::collections::VecDeque;
+
 use compact_str::CompactString;
 use serde_json::error::Category;
-use std::collections::VecDeque;
+
+use crate::{
+    event::GlimEvent,
+    id::{JobId, PipelineId, ProjectId},
+    result::GlimError,
+};
 
 #[derive(Debug)]
 pub struct NoticeService {
@@ -55,16 +59,16 @@ impl NoticeService {
                 GlimError::GeneralError(s) => Some(NoticeMessage::GeneralMessage(s)),
                 GlimError::JsonDeserializeError(cat, json) => {
                     Some(NoticeMessage::JsonDeserializeError(cat, json))
-                }
-                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) => Some(
-                    NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s),
-                ),
-                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) => Some(
-                    NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s),
-                ),
-                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => Some(
-                    NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s),
-                ),
+                },
+                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) => {
+                    Some(NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s))
+                },
+                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) => {
+                    Some(NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s))
+                },
+                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => {
+                    Some(NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s))
+                },
                 _ => None,
             }
             .map(|m| self.push_notice(NoticeLevel::Error, m))
@@ -73,7 +77,7 @@ impl NoticeService {
                 NoticeLevel::Info,
                 NoticeMessage::GeneralMessage("Job log downloaded".into()),
             ),
-            _ => {}
+            _ => {},
         }
     }
 
