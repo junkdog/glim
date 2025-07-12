@@ -39,7 +39,7 @@ pub fn initialize_app(
     let widget_states = StatefulWidgets::new(sender.clone());
 
     let client = create_gitlab_client(sender.clone(), config, debug);
-    let mut app = GlimApp::new(sender.clone(), config_path, client);
+    let app = GlimApp::new(sender.clone(), config_path, client);
     app.dispatch(GlimEvent::RequestProjects);
 
     let mut effects = EffectRegistry::new(app.sender());

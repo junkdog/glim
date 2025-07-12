@@ -4,12 +4,11 @@ use clap::Parser;
 use compact_str::ToCompactString;
 
 use crate::{
-    app_init::initialize_app,
+    app_init::{initialize_app, AppComponents},
     config::{default_config_path, run_config_ui_loop},
     rendering::render_main_ui,
     result::Result,
 };
-use crate::app_init::AppComponents;
 
 mod app_init;
 mod client;
@@ -53,7 +52,7 @@ fn main() -> Result<()> {
     }
 
     let debug = std::env::var("GLIM_DEBUG").is_ok();
-    
+
     let config = if config_path.exists() {
         confy::load_path(&config_path)
             .map_err(|e| crate::result::GlimError::ConfigError(e.to_compact_string()))?
@@ -61,11 +60,11 @@ fn main() -> Result<()> {
         initialize_config_ui(&config_path, debug)?
     };
 
-    let AppComponents { 
-        mut app, 
-        mut tui, 
-        mut widget_states, 
-        mut effects 
+    let AppComponents {
+        mut app,
+        mut tui,
+        mut widget_states,
+        mut effects,
     } = initialize_app(config_path, config, debug)?;
 
     while app.is_running() {
@@ -74,19 +73,14 @@ fn main() -> Result<()> {
             widget_states.apply(&app, &mut effects, &event);
             app.apply(event, &mut widget_states, &mut effects);
         });
-        tui.draw(|f| {
-            render_main_ui(f, &app, &mut widget_states, &mut effects)
-        })?;
+        tui.draw(|f| render_main_ui(f, &app, &mut widget_states, &mut effects))?;
     }
 
     tui.exit()?;
     Ok(())
 }
 
-fn initialize_config_ui(
-    config_path: &PathBuf, 
-    debug: bool
-) -> Result<crate::glim_app::GlimConfig> {
+fn initialize_config_ui(config_path: &PathBuf, debug: bool) -> Result<crate::glim_app::GlimConfig> {
     let event_handler = crate::event::EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
     let backend = ratatui::backend::CrosstermBackend::new(std::io::stdout());

@@ -104,10 +104,8 @@ fn render_config_popup(
     let popup = ConfigPopup::new();
     f.render_stateful_widget(popup, layout, config_popup);
 
-    if true {
-        let cursor = config_popup.cursor_position;
-        f.buffer_mut()
-            .set_style(Rect::new(cursor.x, cursor.y, 1, 1), theme().input_selected);
-        f.set_cursor_position(cursor);
-    }
+    let cursor = config_popup.cursor_position;
+    f.buffer_mut()
+        .set_style(Rect::new(cursor.x, cursor.y, 1, 1), theme().input_selected);
+    f.set_cursor_position(cursor);
 }

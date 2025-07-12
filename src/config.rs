@@ -134,8 +134,9 @@ fn render_config_popup(
     _last_tick: Duration,
     layout: ratatui::prelude::Rect,
 ) {
-    use crate::{theme::theme, ui::popup::ConfigPopup};
     use ratatui::prelude::Rect;
+
+    use crate::{theme::theme, ui::popup::ConfigPopup};
 
     let popup = ConfigPopup::new();
     f.render_stateful_widget(popup, layout, config_popup);
