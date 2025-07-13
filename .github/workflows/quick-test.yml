@@ -49,3 +49,25 @@ jobs:
       - name: Set success output
         id: result
         run: echo "passed=true" >> $GITHUB_OUTPUT
+
+  trigger-ci:
+    name: 🚀 Trigger CI
+    needs: quick-check
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Trigger CI workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              ref: context.ref,
+              inputs: {
+                triggered_by: 'quick-test'
+              }
+            });
+            console.log('Triggered CI workflow');
