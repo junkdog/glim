@@ -45,11 +45,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssl-dev pkg-config
 
-      - name: 🔒 Security audit
-        run: |
-          cargo install cargo-audit
-          cargo audit
-
       - name: 📚 Build documentation
         run: cargo doc --no-deps --all-features
         env:

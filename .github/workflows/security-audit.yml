@@ -1,0 +1,37 @@
+name: 🔒 Security Audit
+
+on:
+  schedule:
+    # Run twice per week: Monday and Thursday at 9 AM UTC
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  security-audit:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dtolnay/rust-toolchain@stable
+      
+      - name: 🔧 Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+      
+      - name: 📦 Install cargo-audit
+        run: cargo install cargo-audit
+      
+      - name: 🔍 Run security audit
+        run: cargo audit
+      
+      - name: 📊 Create audit report
+        if: failure()
+        run: |
+          echo "## Security Audit Failed" >> $GITHUB_STEP_SUMMARY
+          echo "The security audit found vulnerabilities in dependencies." >> $GITHUB_STEP_SUMMARY
+          echo "Please review the audit output above and update affected dependencies." >> $GITHUB_STEP_SUMMARY
