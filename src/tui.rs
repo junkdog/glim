@@ -47,9 +47,9 @@ impl Tui {
         F: FnMut(GlimEvent),
     {
         let mut apply_event = |e| match e {
-            GlimEvent::ReceivedProjects(p) if p.is_empty() => (),
-            GlimEvent::ReceivedPipelines(p) if p.is_empty() => (),
-            GlimEvent::ReceivedJobs(_, _, j) if j.is_empty() => (),
+            GlimEvent::ProjectsLoaded(p) if p.is_empty() => (),
+            GlimEvent::PipelinesLoaded(p) if p.is_empty() => (),
+            GlimEvent::JobsLoaded(_, _, j) if j.is_empty() => (),
             _ => f(e),
         };
 

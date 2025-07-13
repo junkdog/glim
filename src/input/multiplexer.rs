@@ -36,22 +36,22 @@ impl InputMultiplexer {
     pub fn apply(&mut self, event: &GlimEvent, ui: &mut StatefulWidgets) {
         match event {
             // project details popup
-            GlimEvent::OpenProjectDetails(id) => {
+            GlimEvent::ProjectDetailsOpen(id) => {
                 self.push(Box::new(ProjectDetailsProcessor::new(self.sender.clone(), *id)));
             },
-            GlimEvent::CloseProjectDetails => self.pop_processor(),
+            GlimEvent::ProjectDetailsClose => self.pop_processor(),
 
             // pipeline actions popup
-            GlimEvent::OpenPipelineActions(_, _) => {
+            GlimEvent::PipelineActionsOpen(_, _) => {
                 self.push(Box::new(PipelineActionsProcessor::new(self.sender.clone())));
             },
-            GlimEvent::ClosePipelineActions => self.pop_processor(),
+            GlimEvent::PipelineActionsClose => self.pop_processor(),
 
             // config
-            GlimEvent::DisplayConfig => {
+            GlimEvent::ConfigOpen => {
                 self.push(Box::new(ConfigProcessor::new(self.sender.clone())));
-            },
-            GlimEvent::CloseConfig => self.pop_processor(),
+            }
+            GlimEvent::ConfigClose => self.pop_processor(),
 
             _ => (),
         }

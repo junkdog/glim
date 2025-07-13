@@ -43,7 +43,7 @@ pub async fn initialize_app(
 
     let (service, poller) = create_gitlab_service_and_poller(sender.clone(), config, debug).await?;
     let app = GlimApp::new(sender.clone(), config_path, service);
-    app.dispatch(GlimEvent::RequestProjects);
+    app.dispatch(GlimEvent::ProjectsFetch);
 
     let mut effects = EffectRegistry::new(app.sender());
     effects.register_default_glitch_effect();

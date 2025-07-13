@@ -26,7 +26,6 @@ use crate::{
 
 pub struct GlimApp {
     running: bool,
-    effect_manager: EffectManager<FxId>,
     config_path: PathBuf,
     gitlab: GitlabService,
     last_tick: std::time::Instant,
@@ -76,7 +75,6 @@ impl GlimApp {
             notices: NoticeService::new(),
             input,
             clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
-            effect_manager: EffectManager::<FxId>::default(),
         }
     }
 
@@ -94,14 +92,14 @@ impl GlimApp {
         self.project_store.apply(&event);
 
         match event {
-            GlimEvent::Shutdown => self.running = false,
+            GlimEvent::AppExit => self.running = false,
 
             // www
-            GlimEvent::BrowseToProject(id) => {
+            GlimEvent::ProjectOpenUrl(id) => {
                 debug!(project_id = %id, "Opening project in browser");
                 open::that(&self.project(id).url).expect("unable to open browser")
             },
-            GlimEvent::BrowseToPipeline(project_id, pipeline_id) => {
+            GlimEvent::PipelineOpenUrl(project_id, pipeline_id) => {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Opening pipeline in browser");
                 let project = self.project(project_id);
                 let pipeline = project
@@ -110,7 +108,7 @@ impl GlimApp {
 
                 open::that(&pipeline.url).expect("unable to open browser");
             },
-            GlimEvent::BrowseToJob(project_id, pipeline_id, job_id) => {
+            GlimEvent::JobOpenUrl(project_id, pipeline_id, job_id) => {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, job_id = %job_id, "Opening job in browser");
                 let project = self.project(project_id);
                 let job_url = project
@@ -122,7 +120,7 @@ impl GlimApp {
                 open::that(job_url).expect("unable to open browser");
             },
 
-            GlimEvent::DownloadErrorLog(project_id, pipeline_id) => {
+            GlimEvent::JobLogFetch(project_id, pipeline_id) => {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Downloading error log");
                 let project = self.project(project_id);
                 let pipeline = project
@@ -141,7 +139,7 @@ impl GlimApp {
                 self.clipboard.set_text(trace).unwrap();
             },
 
-            GlimEvent::RequestActiveJobs => {
+            GlimEvent::JobsActiveFetch => {
                 debug!("Requesting active jobs for all projects");
                 self.projects()
                     .iter()
@@ -149,12 +147,12 @@ impl GlimApp {
                     .flatten()
                     .filter(|p| p.status.is_active() || p.has_active_jobs())
                     .for_each(|p| self.gitlab.spawn_fetch_jobs(p.project_id, p.id));
-            },
-            GlimEvent::RequestPipelines(id) => {
+            }
+            GlimEvent::PipelinesFetch(id) => {
                 debug!(project_id = %id, "Requesting pipelines for project");
                 self.gitlab.spawn_fetch_pipelines(id, None)
             },
-            GlimEvent::RequestProjects => {
+            GlimEvent::ProjectsFetch => {
                 let latest_activity = self
                     .projects()
                     .iter()
@@ -171,19 +169,19 @@ impl GlimApp {
 
                 self.gitlab.spawn_fetch_projects(updated_after)
             },
-            GlimEvent::RequestJobs(project_id, pipeline_id) => {
+            GlimEvent::JobsFetch(project_id, pipeline_id) => {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs for pipeline");
                 self.gitlab
                     .spawn_fetch_jobs(project_id, pipeline_id)
             },
 
             // configuration
-            GlimEvent::UpdateConfig(config) => {
+            GlimEvent::ConfigUpdate(config) => {
                 let client_config = ClientConfig::from(config)
                     .with_debug_logging(self.gitlab.config().debug.log_responses);
                 let _ = self.gitlab.update_config(client_config);
             },
-            GlimEvent::ApplyConfiguration => {
+            GlimEvent::ConfigApply => {
                 if let Some(config_popup) = ui.config_popup_state.as_ref() {
                     let config = config_popup.to_config();
                     let client_config = ClientConfig::from(config.clone())
@@ -196,18 +194,18 @@ impl GlimApp {
                             // as validation is already done in config.rs
                             save_config(&self.config_path, config.clone())
                                 .expect("failed to save config");
-                            self.dispatch(GlimEvent::UpdateConfig(config));
-                            self.dispatch(GlimEvent::CloseConfig);
+                            self.dispatch(GlimEvent::ConfigUpdate(config));
+                            self.dispatch(GlimEvent::ConfigClose);
                         },
                         Err(e) => {
                             let glim_error = GlimError::GeneralError(e.to_string().into());
-                            self.dispatch(GlimEvent::Error(glim_error));
+                            self.dispatch(GlimEvent::AppError(glim_error));
                         },
                     }
                 }
-            },
+            }
 
-            GlimEvent::ShowLastNotification => {
+            GlimEvent::NotificationLast => {
                 if let Some(notice) = self.notices.last_notification() {
                     let content_area = RefRect::new(Rect::default());
                     effects.register_notification_effect(content_area.clone());
@@ -217,27 +215,17 @@ impl GlimApp {
                         content_area,
                     ));
                 }
-            },
+            }
 
-            GlimEvent::CloseNotification => {
+            GlimEvent::NotificationDismiss => {
                 ui.notice = None;
-            },
+            }
 
-            GlimEvent::ShowFilterMenu => {
+            GlimEvent::FilterMenuShow => {
                 // Initialize filter input with the current temporary filter
                 // The show_filter_input method will handle initialization
                 ui.filter_input_active = true;
-            },
-
-            GlimEvent::ApplyFilter(filter_text) => {
-                let mut config = self.load_config().unwrap_or_default();
-                config.search_filter =
-                    if filter_text.is_empty() { None } else { Some(filter_text) };
-
-                save_config(&self.config_path, config.clone()).expect("failed to save config");
-                self.dispatch(GlimEvent::UpdateConfig(config));
-                self.dispatch(GlimEvent::RequestProjects);
-            },
+            }
 
             _ => {},
         }
@@ -331,10 +319,6 @@ impl GlimApp {
         }
 
         (all_projects.to_vec(), (0..all_projects.len()).collect())
-    }
-
-    pub fn effect_manager_mut(&mut self) -> &mut EffectManager<FxId> {
-        &mut self.effect_manager
     }
 
     pub fn sender(&self) -> Sender<GlimEvent> {

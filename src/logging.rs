@@ -118,7 +118,7 @@ where
 
         if let Some(message) = visitor.message {
             // Send the log message to the internal logs system
-            let _ = self.sender.send(GlimEvent::Log(message));
+            let _ = self.sender.send(GlimEvent::LogEntry(message));
         }
     }
 }

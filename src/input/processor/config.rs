@@ -17,13 +17,13 @@ impl ConfigProcessor {
 
 impl InputProcessor for ConfigProcessor {
     fn apply(&mut self, event: &GlimEvent, widgets: &mut StatefulWidgets) {
-        if let GlimEvent::Key(code) = event {
+        if let GlimEvent::InputKey(code) = event {
             let popup = widgets.config_popup_state.as_mut().unwrap();
             match code.code {
                 KeyCode::Enter => self
                     .sender
-                    .dispatch(GlimEvent::ApplyConfiguration),
-                KeyCode::Esc => self.sender.dispatch(GlimEvent::CloseConfig),
+                    .dispatch(GlimEvent::ConfigApply),
+                KeyCode::Esc => self.sender.dispatch(GlimEvent::ConfigClose),
                 KeyCode::Down => popup.select_next_input(),
                 KeyCode::Up => popup.select_previous_input(),
                 KeyCode::Char('j') => popup.select_next_input(),

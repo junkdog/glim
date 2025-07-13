@@ -59,7 +59,7 @@ pub fn run_config_ui_loop(
             tui.receive_events(|event| {
                 input_processor.apply(&event, ui);
                 match event {
-                    GlimEvent::ApplyConfiguration => {
+                    GlimEvent::ConfigApply => {
                         let config = ui
                             .config_popup_state
                             .as_ref()
@@ -107,17 +107,17 @@ pub fn run_config_ui_loop(
                                     .error_message = Some(error.to_compact_string());
                             },
                         }
-                    },
-                    GlimEvent::CloseConfig => {
+                    }
+                    GlimEvent::ConfigClose => {
                         ui.config_popup_state = None;
-                    },
-                    GlimEvent::Error(error) => {
+                    }
+                    GlimEvent::AppError(error) => {
                         ui.config_popup_state
                             .as_mut()
                             .unwrap()
                             .error_message = Some(error.to_compact_string());
                     },
-                    GlimEvent::Shutdown => {},
+                    GlimEvent::AppExit => {}
                     _ => {},
                 }
             });

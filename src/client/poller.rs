@@ -146,7 +146,7 @@ impl GitlabPoller {
                     // Dispatch event to request active jobs refresh
                     // The main application will handle which jobs to fetch
                     use crate::dispatcher::Dispatcher;
-                    service.sender().dispatch(GlimEvent::RequestActiveJobs);
+                    service.sender().dispatch(GlimEvent::JobsActiveFetch);
                 }
                 _ = shutdown_rx.recv() => {
                     debug!("Active jobs polling received shutdown signal");

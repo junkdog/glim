@@ -21,25 +21,25 @@ impl NormalModeProcessor {
     fn process(&self, event: &KeyEvent) {
         if let Some(e) = match event.code {
             KeyCode::Enter if self.selected.is_some() => {
-                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap()))
+                Some(GlimEvent::ProjectDetailsOpen(self.selected.unwrap()))
             },
             KeyCode::Char('o') if self.selected.is_some() => {
-                Some(GlimEvent::OpenProjectDetails(self.selected.unwrap()))
+                Some(GlimEvent::ProjectDetailsOpen(self.selected.unwrap()))
             },
-            KeyCode::Char('a') => Some(GlimEvent::ShowLastNotification),
-            KeyCode::Char('c') => Some(GlimEvent::DisplayConfig),
-            KeyCode::Char('f') => Some(GlimEvent::ShowFilterMenu),
-            KeyCode::Char('/') => Some(GlimEvent::ShowFilterMenu),
-            KeyCode::Char('p') => self.selected.map(GlimEvent::RequestPipelines),
-            KeyCode::Char('q') => Some(GlimEvent::Shutdown),
-            KeyCode::Char('r') => Some(GlimEvent::RequestProjects),
+            KeyCode::Char('a') => Some(GlimEvent::NotificationLast),
+            KeyCode::Char('c') => Some(GlimEvent::ConfigOpen),
+            KeyCode::Char('f') => Some(GlimEvent::FilterMenuShow),
+            KeyCode::Char('/') => Some(GlimEvent::FilterMenuShow),
+            KeyCode::Char('p') => self.selected.map(GlimEvent::PipelinesFetch),
+            KeyCode::Char('q') => Some(GlimEvent::AppExit),
+            KeyCode::Char('r') => Some(GlimEvent::ProjectsFetch),
             KeyCode::Char('s') => Some(GlimEvent::ShowSortMenu),
-            KeyCode::Char('w') => self.selected.map(GlimEvent::BrowseToProject),
-            KeyCode::Up => Some(GlimEvent::SelectPreviousProject),
-            KeyCode::Down => Some(GlimEvent::SelectNextProject),
-            KeyCode::Char('k') => Some(GlimEvent::SelectPreviousProject),
-            KeyCode::Char('j') => Some(GlimEvent::SelectNextProject),
-            KeyCode::Esc => Some(GlimEvent::ClearFilter),
+            KeyCode::Char('w') => self.selected.map(GlimEvent::ProjectOpenUrl),
+            KeyCode::Up => Some(GlimEvent::ProjectPrevious),
+            KeyCode::Down => Some(GlimEvent::ProjectNext),
+            KeyCode::Char('k') => Some(GlimEvent::ProjectPrevious),
+            KeyCode::Char('j') => Some(GlimEvent::ProjectNext),
+            KeyCode::Esc => Some(GlimEvent::FilterClear),
             _ => None,
         } {
             self.dispatch(e)
@@ -50,12 +50,12 @@ impl NormalModeProcessor {
         match event.code {
             KeyCode::Enter => {
                 // Filter is already applied, just close the input
-                self.dispatch(GlimEvent::CloseFilter);
+                self.dispatch(GlimEvent::FilterMenuClose);
             },
             KeyCode::Esc => {
                 // Cancel filter and reset to no filter
                 self.dispatch(GlimEvent::ApplyTemporaryFilter(None));
-                self.dispatch(GlimEvent::CloseFilter);
+                self.dispatch(GlimEvent::FilterMenuClose);
             },
             KeyCode::Backspace => {
                 self.dispatch(GlimEvent::FilterInputBackspace);
@@ -71,8 +71,8 @@ impl NormalModeProcessor {
 impl InputProcessor for NormalModeProcessor {
     fn apply(&mut self, event: &GlimEvent, ui: &mut StatefulWidgets) {
         match event {
-            GlimEvent::SelectedProject(id) => self.selected = Some(*id),
-            GlimEvent::Key(e) => {
+            GlimEvent::ProjectSelected(id) => self.selected = Some(*id),
+            GlimEvent::InputKey(e) => {
                 if ui.filter_input_active {
                     self.process_filter_input(e, ui);
                 } else {

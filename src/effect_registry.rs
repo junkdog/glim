@@ -124,11 +124,11 @@ impl EffectRegistry {
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             GlimEvent::GlitchOverride(g) => self.register_ramped_up_glitch_effect(*g),
-            GlimEvent::CloseProjectDetails => self.register_close_popup(FxId::ProjectDetailsPopup),
-            GlimEvent::ClosePipelineActions => {
+            GlimEvent::ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
+            GlimEvent::PipelineActionsClose => {
                 self.register_close_popup(FxId::PipelineActionsPopup)
-            },
-            GlimEvent::CloseConfig => self.register_close_popup(FxId::ConfigPopup),
+            }
+            GlimEvent::ConfigClose => self.register_close_popup(FxId::ConfigPopup),
             _ => (),
         }
     }
@@ -329,7 +329,7 @@ impl EffectRegistry {
             // dynamically track area size in case of window resizing
             dynamic_area(content_area, main_fx),
             // lastly, dispatch a close notification event
-            self.dispatch(GlimEvent::CloseNotification),
+            self.dispatch(GlimEvent::NotificationDismiss),
         ]);
 
         self.add_unique(FxId::Notification, fx);

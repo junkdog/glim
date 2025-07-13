@@ -17,10 +17,10 @@ impl PipelineActionsProcessor {
         match event.code {
             KeyCode::Esc => self
                 .sender
-                .dispatch(GlimEvent::ClosePipelineActions),
+                .dispatch(GlimEvent::PipelineActionsClose),
             KeyCode::Char('q') => self
                 .sender
-                .dispatch(GlimEvent::ClosePipelineActions),
+                .dispatch(GlimEvent::PipelineActionsClose),
             KeyCode::Up => ui.handle_pipeline_action_selection(-1),
             KeyCode::Down => ui.handle_pipeline_action_selection(1),
             KeyCode::Char('k') => ui.handle_pipeline_action_selection(-1),
@@ -36,7 +36,7 @@ impl PipelineActionsProcessor {
                 }
 
                 self.sender
-                    .dispatch(GlimEvent::ClosePipelineActions)
+                    .dispatch(GlimEvent::PipelineActionsClose)
             },
             KeyCode::Char('o') => {
                 let state = ui.pipeline_actions.as_ref().unwrap();
@@ -49,7 +49,7 @@ impl PipelineActionsProcessor {
                 }
 
                 self.sender
-                    .dispatch(GlimEvent::ClosePipelineActions)
+                    .dispatch(GlimEvent::PipelineActionsClose)
             },
             _ => (),
         }
@@ -58,7 +58,7 @@ impl PipelineActionsProcessor {
 
 impl InputProcessor for PipelineActionsProcessor {
     fn apply(&mut self, event: &GlimEvent, ui: &mut StatefulWidgets) {
-        if let GlimEvent::Key(e) = event {
+        if let GlimEvent::InputKey(e) = event {
             self.process(e, ui)
         }
     }

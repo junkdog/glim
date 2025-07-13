@@ -52,7 +52,7 @@ impl NoticeService {
 
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
-            GlimEvent::Error(e) => match e.clone() {
+            GlimEvent::AppError(e) => match e.clone() {
                 // GlimError::InvalidGitlabToken => {}
                 // GlimError::ExpiredGitlabToken => {}
                 GlimError::ConfigError(s) => Some(NoticeMessage::ConfigError(s)),

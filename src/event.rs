@@ -13,47 +13,46 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum GlimEvent {
-    Tick,
-    Shutdown,
-    Key(KeyEvent),
-    Log(CompactString),
-    GlitchOverride(GlitchState),
-    CloseProjectDetails,
-    OpenProjectDetails(ProjectId),
-    OpenPipelineActions(ProjectId, PipelineId),
-    ClosePipelineActions,
-    RequestProject(ProjectId),
-    RequestProjects,
-    RequestJobs(ProjectId, PipelineId),
-    RequestActiveJobs,
-    RequestPipelines(ProjectId),
-    ReceivedProjects(Vec<ProjectDto>),
-    ReceivedPipelines(Vec<PipelineDto>),
-    ReceivedJobs(ProjectId, PipelineId, Vec<JobDto>),
-    SelectedProject(ProjectId),
-    SelectedPipeline(PipelineId),
-    Error(result::GlimError),
-    SelectNextProject,
-    SelectPreviousProject,
-    ApplyConfiguration,
-    UpdateConfig(GlimConfig),
-    DisplayConfig,
-    CloseConfig,
-    CloseNotification,
-    BrowseToJob(ProjectId, PipelineId, JobId),
-    BrowseToPipeline(ProjectId, PipelineId),
-    BrowseToProject(ProjectId),
-    DownloadErrorLog(ProjectId, PipelineId),
-    JobLogDownloaded(ProjectId, JobId, CompactString),
-    ProjectUpdated(Box<Project>),
-    ShowLastNotification,
-    ShowFilterMenu,
-    CloseFilter,
-    FilterInputChar(CompactString),
-    FilterInputBackspace,
-    ApplyFilter(CompactString),
+    AppError(result::GlimError),
+    AppExit,
+    AppTick,
     ApplyTemporaryFilter(Option<CompactString>),
-    ClearFilter,
+    ConfigApply,
+    ConfigClose,
+    ConfigOpen,
+    ConfigUpdate(GlimConfig),
+    FilterClear,
+    FilterInputBackspace,
+    FilterInputChar(CompactString),
+    FilterMenuClose,
+    FilterMenuShow,
+    GlitchOverride(GlitchState),
+    InputKey(KeyEvent),
+    JobLogDownloaded(ProjectId, JobId, CompactString),
+    JobLogFetch(ProjectId, PipelineId),
+    JobOpenUrl(ProjectId, PipelineId, JobId),
+    JobsActiveFetch,
+    JobsFetch(ProjectId, PipelineId),
+    JobsLoaded(ProjectId, PipelineId, Vec<JobDto>),
+    LogEntry(CompactString),
+    NotificationDismiss,
+    NotificationLast,
+    PipelineActionsClose,
+    PipelineActionsOpen(ProjectId, PipelineId),
+    PipelineOpenUrl(ProjectId, PipelineId),
+    PipelineSelected(PipelineId),
+    PipelinesFetch(ProjectId),
+    PipelinesLoaded(Vec<PipelineDto>),
+    ProjectDetailsClose,
+    ProjectDetailsOpen(ProjectId),
+    ProjectFetch(ProjectId),
+    ProjectNext,
+    ProjectOpenUrl(ProjectId),
+    ProjectPrevious,
+    ProjectSelected(ProjectId),
+    ProjectUpdated(Box<Project>),
+    ProjectsFetch,
+    ProjectsLoaded(Vec<ProjectDto>),
     ShowSortMenu,
 }
 
@@ -92,7 +91,7 @@ impl EventHandler {
                     }
 
                     if last_tick.elapsed() >= tick_rate {
-                        sender.dispatch(GlimEvent::Tick);
+                        sender.dispatch(GlimEvent::AppTick);
                         last_tick = std::time::Instant::now();
                     }
                 }
@@ -117,7 +116,7 @@ impl EventHandler {
     fn apply_event(sender: &mpsc::Sender<GlimEvent>) {
         match event::read().expect("unable to read event") {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press => {
-                sender.send(GlimEvent::Key(e))
+                sender.send(GlimEvent::InputKey(e))
             },
 
             _ => Ok(()),
@@ -128,38 +127,38 @@ impl EventHandler {
 
 impl From<Vec<ProjectDto>> for GlimEvent {
     fn from(projects: Vec<ProjectDto>) -> Self {
-        GlimEvent::ReceivedProjects(projects)
+        GlimEvent::ProjectsLoaded(projects)
     }
 }
 
 impl From<Vec<PipelineDto>> for GlimEvent {
     fn from(pipelines: Vec<PipelineDto>) -> Self {
-        GlimEvent::ReceivedPipelines(pipelines)
+        GlimEvent::PipelinesLoaded(pipelines)
     }
 }
 
 impl From<(ProjectId, PipelineId, Vec<JobDto>)> for GlimEvent {
     fn from(value: (ProjectId, PipelineId, Vec<JobDto>)) -> Self {
         let (project_id, pipeline_id, jobs) = value;
-        GlimEvent::ReceivedJobs(project_id, pipeline_id, jobs)
+        GlimEvent::JobsLoaded(project_id, pipeline_id, jobs)
     }
 }
 
 impl IntoGlimEvent for Vec<ProjectDto> {
     fn into_glim_event(self) -> GlimEvent {
-        GlimEvent::ReceivedProjects(self)
+        GlimEvent::ProjectsLoaded(self)
     }
 }
 
 impl IntoGlimEvent for Vec<PipelineDto> {
     fn into_glim_event(self) -> GlimEvent {
-        GlimEvent::ReceivedPipelines(self)
+        GlimEvent::PipelinesLoaded(self)
     }
 }
 
 impl IntoGlimEvent for (ProjectId, PipelineId, Vec<JobDto>) {
     fn into_glim_event(self) -> GlimEvent {
         let (project_id, pipeline_id, jobs) = self;
-        GlimEvent::ReceivedJobs(project_id, pipeline_id, jobs)
+        GlimEvent::JobsLoaded(project_id, pipeline_id, jobs)
     }
 }

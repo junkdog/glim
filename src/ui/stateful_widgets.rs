@@ -52,39 +52,39 @@ impl StatefulWidgets {
 
     pub fn apply(&mut self, app: &GlimApp, effects: &mut EffectRegistry, event: &GlimEvent) {
         match event {
-            GlimEvent::SelectNextProject => self.handle_project_selection(1, app),
-            GlimEvent::SelectPreviousProject => self.handle_project_selection(-1, app),
+            GlimEvent::ProjectNext => self.handle_project_selection(1, app),
+            GlimEvent::ProjectPrevious => self.handle_project_selection(-1, app),
 
-            GlimEvent::ReceivedProjects(_) => self.fade_in_projects_table(),
+            GlimEvent::ProjectsLoaded(_) => self.fade_in_projects_table(),
 
-            GlimEvent::OpenProjectDetails(id) => {
+            GlimEvent::ProjectDetailsOpen(id) => {
                 let popup_area = RefRect::default();
                 effects.register_project_details(popup_area.clone());
                 self.open_project_details(app.project(*id).clone(), popup_area, app.sender())
             },
-            GlimEvent::CloseProjectDetails => self.project_details = None,
+            GlimEvent::ProjectDetailsClose => self.project_details = None,
             GlimEvent::ProjectUpdated(p) => self.refresh_project_details(p),
 
-            GlimEvent::ClosePipelineActions => self.close_pipeline_actions(),
-            GlimEvent::OpenPipelineActions(project_id, pipeline_id) => {
+            GlimEvent::PipelineActionsClose => self.close_pipeline_actions(),
+            GlimEvent::PipelineActionsOpen(project_id, pipeline_id) => {
                 let popup_area = RefRect::default();
                 effects.register_pipeline_actions(popup_area.clone());
                 let project = app.project(*project_id);
                 self.open_pipeline_actions(project, *pipeline_id, popup_area);
             },
 
-            GlimEvent::DisplayConfig => {
+            GlimEvent::ConfigOpen => {
                 let popup_area = RefRect::default();
                 effects.register_config_popup(popup_area.clone());
                 self.open_config(app.load_config().unwrap_or_default(), popup_area);
-            },
-            GlimEvent::CloseConfig => self.config_popup_state = None,
+            }
+            GlimEvent::ConfigClose => self.config_popup_state = None,
 
-            GlimEvent::ShowFilterMenu => self.show_filter_input(),
-            GlimEvent::CloseFilter => self.close_filter_input(),
+            GlimEvent::FilterMenuShow => self.show_filter_input(),
+            GlimEvent::FilterMenuClose => self.close_filter_input(),
             GlimEvent::FilterInputChar(c) => self.add_filter_char(c),
             GlimEvent::FilterInputBackspace => self.remove_filter_char(),
-            GlimEvent::ClearFilter => self.clear_filter(),
+            GlimEvent::FilterClear => self.clear_filter(),
             GlimEvent::ApplyTemporaryFilter(filter) => self.apply_temporary_filter(filter.clone()),
 
             _ => (),
@@ -116,7 +116,7 @@ impl StatefulWidgets {
         project
             .recent_pipelines()
             .first()
-            .map(|p| sender.dispatch(GlimEvent::SelectedPipeline(p.id)))
+            .map(|p| sender.dispatch(GlimEvent::PipelineSelected(p.id)))
             .unwrap_or(());
 
         self.project_details = Some(ProjectDetailsPopupState::new(project, area_tracker));
@@ -138,15 +138,15 @@ impl StatefulWidgets {
 
         let actions = if let Some(job) = failed_job {
             vec![
-                GlimEvent::BrowseToJob(project.id, pipeline_id, job.id),
-                GlimEvent::BrowseToPipeline(project.id, pipeline_id),
-                GlimEvent::BrowseToProject(project.id),
-                GlimEvent::DownloadErrorLog(project.id, pipeline_id),
+                GlimEvent::JobOpenUrl(project.id, pipeline_id, job.id),
+                GlimEvent::PipelineOpenUrl(project.id, pipeline_id),
+                GlimEvent::ProjectOpenUrl(project.id),
+                GlimEvent::JobLogFetch(project.id, pipeline_id),
             ]
         } else {
             vec![
-                GlimEvent::BrowseToPipeline(project.id, pipeline_id),
-                GlimEvent::BrowseToProject(project.id),
+                GlimEvent::PipelineOpenUrl(project.id, pipeline_id),
+                GlimEvent::ProjectOpenUrl(project.id),
             ]
         };
 
@@ -187,7 +187,7 @@ impl StatefulWidgets {
             };
 
             let project = &all_projects[project_index];
-            app.dispatch(GlimEvent::SelectedProject(project.id));
+            app.dispatch(GlimEvent::ProjectSelected(project.id));
         } else {
             self.project_table_state.select(Some(0));
         }
@@ -210,7 +210,7 @@ impl StatefulWidgets {
                 pd.pipelines_table_state.select(Some(new_index));
                 let pipeline = &pipelines[new_index];
                 self.sender
-                    .dispatch(GlimEvent::SelectedPipeline(pipeline.id));
+                    .dispatch(GlimEvent::PipelineSelected(pipeline.id));
             }
         }
     }
