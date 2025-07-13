@@ -41,7 +41,7 @@ tokio = { version = "1.46.1", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-appender = "0.2"
-tui-input = "0.10.1"
+tui-input = "0.14.0"
 clap = { version = "4.5.26", features = ["derive"] }
 unicode-width = "0.2"
 color-eyre = "0.6.5"
