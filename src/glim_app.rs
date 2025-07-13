@@ -141,7 +141,8 @@ impl GlimApp {
 
             GlimEvent::JobsActiveFetch => {
                 debug!("Requesting active jobs for all projects");
-                self.projects()
+                self.project_store
+                    .sorted_projects()
                     .iter()
                     .flat_map(|p| p.pipelines.iter())
                     .flatten()
@@ -154,13 +155,15 @@ impl GlimApp {
             },
             GlimEvent::ProjectsFetch => {
                 let latest_activity = self
-                    .projects()
+                    .project_store
+                    .sorted_projects()
                     .iter()
                     .max_by_key(|p| p.last_activity_at)
                     .map(|p| p.last_activity_at);
 
                 let updated_after = self
-                    .projects()
+                    .project_store
+                    .sorted_projects()
                     .iter()
                     .filter(|p| p.has_active_pipelines())
                     .min_by_key(|p| p.last_activity_at)
@@ -303,14 +306,14 @@ impl GlimApp {
     }
 
     pub fn projects(&self) -> &[Project] {
-        self.project_store.projects()
+        self.project_store.sorted_projects()
     }
 
     pub fn filtered_projects(
         &self,
         temporary_filter: &Option<CompactString>,
     ) -> (Vec<Project>, Vec<usize>) {
-        let all_projects = self.project_store.projects();
+        let all_projects = self.project_store.sorted_projects();
 
         if let Some(filter) = temporary_filter {
             if !filter.trim().is_empty() {

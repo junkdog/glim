@@ -1,38 +1,12 @@
 //! Test utilities and common test fixtures for client modules
 
-use std::{sync::mpsc, time::Duration};
-
 use chrono::{DateTime, Utc};
 use serde_json::json;
 
 use crate::{
-    client::{
-        config::{ClientConfig, PollingConfig},
-        service::GitlabService,
-    },
     domain::{CommitDto, JobDto, PipelineDto, ProjectDto, StatisticsDto},
     id::{JobId, PipelineId, ProjectId},
 };
-
-/// Create a test client configuration
-pub fn test_config() -> ClientConfig {
-    ClientConfig::new("https://gitlab.example.com", "test-token").with_debug_logging(false)
-}
-
-/// Create a test GitLab service
-pub fn test_service() -> GitlabService {
-    let config = test_config();
-    let (sender, _receiver) = mpsc::channel();
-    GitlabService::new(config, sender).unwrap()
-}
-
-/// Create test polling configuration
-pub fn test_polling_config() -> PollingConfig {
-    PollingConfig {
-        projects_interval: Duration::from_millis(100),
-        jobs_interval: Duration::from_millis(50),
-    }
-}
 
 /// Create a sample ProjectDto for testing
 pub fn sample_project_dto() -> ProjectDto {
@@ -100,11 +74,6 @@ pub fn sample_job_dto() -> JobDto {
     }
 }
 
-/// Create JSON response for projects endpoint
-pub fn projects_json_response() -> serde_json::Value {
-    json!([sample_project_dto_json()])
-}
-
 /// Create JSON representation of a project DTO
 pub fn sample_project_dto_json() -> serde_json::Value {
     json!({
@@ -123,11 +92,6 @@ pub fn sample_project_dto_json() -> serde_json::Value {
     })
 }
 
-/// Create JSON response for pipelines endpoint
-pub fn pipelines_json_response() -> serde_json::Value {
-    json!([sample_pipeline_dto_json()])
-}
-
 /// Create JSON representation of a pipeline DTO
 pub fn sample_pipeline_dto_json() -> serde_json::Value {
     json!({
@@ -140,11 +104,6 @@ pub fn sample_pipeline_dto_json() -> serde_json::Value {
         "created_at": "2023-01-01T00:00:00Z",
         "updated_at": "2023-01-01T01:00:00Z"
     })
-}
-
-/// Create JSON response for jobs endpoint
-pub fn jobs_json_response() -> serde_json::Value {
-    json!([sample_job_dto_json()])
 }
 
 /// Create JSON representation of a job DTO
@@ -187,11 +146,13 @@ pub fn gitlab_error_response_2(message: &str) -> serde_json::Value {
 
 /// Mock HTTP server for testing
 #[cfg(test)]
+#[allow(dead_code)]
 pub struct MockServer {
     pub server: wiremock::MockServer,
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 impl MockServer {
     /// Start a new mock server
     pub async fn start() -> Self {
@@ -205,12 +166,13 @@ impl MockServer {
     }
 
     /// Create a test config pointing to this mock server
-    pub fn test_config(&self) -> ClientConfig {
-        ClientConfig::new(self.base_url(), "test-token")
+    pub fn test_config(&self) -> crate::client::config::ClientConfig {
+        crate::client::config::ClientConfig::new(self.base_url(), "test-token")
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use super::*;
 

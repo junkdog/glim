@@ -18,4 +18,5 @@ pub use error::ClientError;
 pub use poller::GitlabPoller;
 pub use service::GitlabService;
 
+#[allow(dead_code)]
 pub type Result<T> = std::result::Result<T, ClientError>;

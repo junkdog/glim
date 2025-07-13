@@ -4,7 +4,7 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{layout::Size, Frame};
+use ratatui::Frame;
 
 use crate::{
     event::{EventHandler, GlimEvent},
@@ -34,10 +34,6 @@ impl Tui {
             .draw(render_ui)
             .map_err(|_| GeneralError("failed to draw UI".into()))?;
         Ok(())
-    }
-
-    pub fn size(&self) -> Size {
-        self.terminal.size().unwrap()
     }
 
     /// iterates over all currently available events; waits

@@ -26,6 +26,7 @@ pub enum GlimEvent {
     FilterInputChar(CompactString),
     FilterMenuClose,
     FilterMenuShow,
+    #[allow(dead_code)]
     GlitchOverride(GlitchState),
     InputKey(KeyEvent),
     JobLogDownloaded(ProjectId, JobId, CompactString),
@@ -45,6 +46,7 @@ pub enum GlimEvent {
     PipelinesLoaded(Vec<PipelineDto>),
     ProjectDetailsClose,
     ProjectDetailsOpen(ProjectId),
+    #[allow(dead_code)]
     ProjectFetch(ProjectId),
     ProjectNext,
     ProjectOpenUrl(ProjectId),
@@ -59,7 +61,9 @@ pub enum GlimEvent {
 
 #[derive(Debug, Clone, Copy)]
 pub enum GlitchState {
+    #[allow(dead_code)]
     Active,
+    #[allow(dead_code)]
     Inactive,
 }
 

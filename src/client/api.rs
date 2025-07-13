@@ -136,6 +136,7 @@ impl GitlabApi {
     }
 
     /// Update configuration
+    #[allow(dead_code)]
     pub fn update_config(&mut self, config: ClientConfig) -> Result<()> {
         config.validate()?;
         self.config = config;

@@ -31,14 +31,18 @@ pub enum NoticeLevel {
 #[derive(Debug, Clone)]
 pub enum NoticeMessage {
     GeneralMessage(CompactString),
+    #[allow(dead_code)]
     JobLogDownloaded(ProjectId, PipelineId, JobId),
     ScreenCaptured,
     // InvalidGitlabToken,
     // ExpiredGitlabToken,
     ConfigError(CompactString),
     JsonDeserializeError(Category, CompactString),
+    #[allow(dead_code)]
     GitlabGetJobsError(ProjectId, PipelineId, CompactString),
+    #[allow(dead_code)]
     GitlabGetTriggerJobsError(ProjectId, PipelineId, CompactString),
+    #[allow(dead_code)]
     GitlabGetPipelinesError(ProjectId, PipelineId, CompactString),
 }
 

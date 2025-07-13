@@ -101,12 +101,12 @@ impl WidgetRef for InputField {
             if let Some(row) = rows.next() {
                 description.render_ref(row, buf)
             }
-            rows.next().map(|row| {
+            if let Some(row) = rows.next() {
                 let input = self.sanitized_input_display();
                 Line::from(input.to_string())
                     .style(self.input_style)
                     .render(row, buf);
-            });
+            }
         } else {
             self.label.render_ref(area, buf);
             let label_width = self.label.width();

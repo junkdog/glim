@@ -27,6 +27,7 @@ pub struct ClientConfig {
 
 /// Polling intervals configuration
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PollingConfig {
     /// Interval for fetching projects
     pub projects_interval: Duration,
@@ -36,6 +37,7 @@ pub struct PollingConfig {
 
 /// HTTP request configuration
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RequestConfig {
     /// Number of items per page for paginated requests
     pub per_page: u32,
@@ -56,6 +58,7 @@ pub struct DebugConfig {
 
 /// Query parameters for fetching projects
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct ProjectQuery {
     /// Search filter for project names
     pub search_filter: Option<CompactString>,
@@ -75,6 +78,7 @@ pub struct ProjectQuery {
 
 /// Query parameters for fetching pipelines
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct PipelineQuery {
     /// Only fetch pipelines updated after this time
     pub updated_after: Option<DateTime<Utc>>,
@@ -88,6 +92,7 @@ pub struct PipelineQuery {
 
 /// Pipeline scope for filtering
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum PipelineScope {
     Running,
     Pending,
@@ -98,6 +103,7 @@ pub enum PipelineScope {
 
 /// Pipeline status for filtering
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum PipelineStatus {
     Created,
     WaitingForResource,
@@ -156,11 +162,6 @@ impl ClientConfig {
         }
     }
 
-    /// Create a builder for fluent configuration
-    pub fn builder() -> ClientConfigBuilder {
-        ClientConfigBuilder::default()
-    }
-
     /// Validate the configuration
     pub fn validate(&self) -> Result<()> {
         if self.base_url.is_empty() {
@@ -214,6 +215,7 @@ impl From<GlimConfig> for ClientConfig {
     }
 }
 
+#[allow(dead_code)]
 impl ClientConfig {
     /// Set search filter
     pub fn with_search_filter(mut self, filter: Option<CompactString>) -> Self {
@@ -246,127 +248,17 @@ impl ClientConfig {
     }
 }
 
-/// Builder for ClientConfig
-#[derive(Debug, Default)]
-pub struct ClientConfigBuilder {
-    base_url: Option<CompactString>,
-    private_token: Option<CompactString>,
-    search_filter: Option<CompactString>,
-    polling: Option<PollingConfig>,
-    request: Option<RequestConfig>,
-    debug: Option<DebugConfig>,
-}
-
-impl ClientConfigBuilder {
-    /// Set base URL
-    pub fn base_url(mut self, url: impl Into<CompactString>) -> Self {
-        self.base_url = Some(url.into());
-        self
-    }
-
-    /// Set private token
-    pub fn private_token(mut self, token: impl Into<CompactString>) -> Self {
-        self.private_token = Some(token.into());
-        self
-    }
-
-    /// Set search filter
-    pub fn search_filter(mut self, filter: impl Into<CompactString>) -> Self {
-        self.search_filter = Some(filter.into());
-        self
-    }
-
-    /// Set polling configuration
-    pub fn polling(mut self, polling: PollingConfig) -> Self {
-        self.polling = Some(polling);
-        self
-    }
-
-    /// Set request configuration
-    pub fn request(mut self, request: RequestConfig) -> Self {
-        self.request = Some(request);
-        self
-    }
-
-    /// Set debug configuration
-    pub fn debug(mut self, debug: DebugConfig) -> Self {
-        self.debug = Some(debug);
-        self
-    }
-
-    /// Enable debug logging
-    pub fn debug_logging(mut self, enabled: bool) -> Self {
-        let mut debug = self.debug.unwrap_or_default();
-        debug.log_responses = enabled;
-        self.debug = Some(debug);
-        self
-    }
-
-    /// Set polling interval for projects
-    pub fn projects_interval(mut self, interval: Duration) -> Self {
-        let mut polling = self.polling.unwrap_or_default();
-        polling.projects_interval = interval;
-        self.polling = Some(polling);
-        self
-    }
-
-    /// Set polling interval for jobs
-    pub fn jobs_interval(mut self, interval: Duration) -> Self {
-        let mut polling = self.polling.unwrap_or_default();
-        polling.jobs_interval = interval;
-        self.polling = Some(polling);
-        self
-    }
-
-    /// Set items per page
-    pub fn per_page(mut self, per_page: u32) -> Self {
-        let mut request = self.request.unwrap_or_default();
-        request.per_page = per_page;
-        self.request = Some(request);
-        self
-    }
-
-    /// Set request timeout
-    pub fn timeout(mut self, timeout: Duration) -> Self {
-        let mut request = self.request.unwrap_or_default();
-        request.timeout = timeout;
-        self.request = Some(request);
-        self
-    }
-
-    /// Build the configuration
-    pub fn build(self) -> Result<ClientConfig> {
-        let base_url = self
-            .base_url
-            .ok_or_else(|| ClientError::config("Base URL is required"))?;
-        let private_token = self
-            .private_token
-            .ok_or_else(|| ClientError::config("Private token is required"))?;
-
-        let config = ClientConfig {
-            base_url,
-            private_token,
-            search_filter: self.search_filter,
-            polling: self.polling.unwrap_or_default(),
-            request: self.request.unwrap_or_default(),
-            debug: self.debug.unwrap_or_default(),
-        };
-
-        config.validate()?;
-        Ok(config)
-    }
-}
-
 impl ProjectQuery {
-    /// Create a new project query
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Set search filter
+    #[allow(dead_code)] // Used in tests and may be used by API
     pub fn with_search_filter(mut self, filter: Option<CompactString>) -> Self {
         self.search_filter = filter;
         self
+    }
+
+    /// Create a new project query
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Set updated after filter
@@ -384,6 +276,7 @@ impl ProjectQuery {
 
 impl PipelineQuery {
     /// Create a new pipeline query
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -395,6 +288,7 @@ impl PipelineQuery {
     }
 
     /// Set per page limit
+    #[allow(dead_code)]
     pub fn with_per_page(mut self, per_page: u32) -> Self {
         self.per_page = per_page;
         self
@@ -404,22 +298,6 @@ impl PipelineQuery {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_config_builder() {
-        let config = ClientConfig::builder()
-            .base_url("https://gitlab.example.com")
-            .private_token("test-token")
-            .search_filter("frontend")
-            .debug_logging(true)
-            .build()
-            .unwrap();
-
-        assert_eq!(config.base_url, "https://gitlab.example.com");
-        assert_eq!(config.private_token, "test-token");
-        assert_eq!(config.search_filter, Some("frontend".into()));
-        assert!(config.debug.log_responses);
-    }
 
     #[test]
     fn test_config_validation() {

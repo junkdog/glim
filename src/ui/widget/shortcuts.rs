@@ -46,7 +46,7 @@ impl Shortcuts<'_> {
         Line::from(shortcuts).alignment(self.alignment)
     }
 
-    fn spans_from_shortcut<'a>(&'a self, key: &'a str, label: &'a str) -> Vec<Span> {
+    fn spans_from_shortcut<'a>(&self, key: &'a str, label: &'a str) -> Vec<Span<'a>> {
         vec![
             Span::from(" "),
             Span::from(key).style(self.shortcut_key_style),

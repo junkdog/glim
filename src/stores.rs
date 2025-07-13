@@ -143,7 +143,7 @@ impl ProjectStore {
             .map(|idx| &self.projects[idx])
     }
 
-    pub fn projects(&self) -> &[Project] {
+    pub fn sorted_projects(&self) -> &[Project] {
         &self.sorted
     }
 
@@ -240,8 +240,8 @@ pub fn log_event(event: &GlimEvent) {
         GlimEvent::AppError(err) => {
             warn!(error = %err, error_type = ?std::mem::discriminant(err), "Application error occurred")
         },
-        GlimEvent::LogEntry(msg) => info!(message = %msg, "Application log message"),
-        _ => {}, // Don't log every event
+        GlimEvent::LogEntry(_msg) => {}, // Don't log LogEntry events to prevent infinite loop
+        _ => {},                         // Don't log every event
     }
 }
 

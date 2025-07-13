@@ -31,11 +31,14 @@ impl GitlabService {
     /// Create a new GitLab service
     pub fn new(config: ClientConfig, sender: Sender<GlimEvent>) -> Result<Self> {
         let api = Arc::new(GitlabApi::new(config)?);
-        let handle = Handle::current();
+        let handle = Handle::try_current().map_err(|_| {
+            ClientError::config("GitlabService must be created within a Tokio runtime context")
+        })?;
         Ok(Self { api, sender, handle })
     }
 
     /// Create service from existing API client
+    #[allow(dead_code)]
     pub fn from_api(api: Arc<GitlabApi>, sender: Sender<GlimEvent>) -> Result<Self> {
         let handle = Handle::current();
         Ok(Self { api, sender, handle })
@@ -207,6 +210,7 @@ impl GitlabService {
     }
 
     /// Get reference to the underlying API client
+    #[allow(dead_code)]
     pub fn api(&self) -> &GitlabApi {
         &self.api
     }
@@ -300,12 +304,6 @@ impl From<&ClientError> for crate::result::GlimError {
             ClientError::Config(msg) => crate::result::GlimError::GeneralError(msg.into()),
             ClientError::Authentication => {
                 crate::result::GlimError::GeneralError("Authentication failed".into())
-            },
-            ClientError::Timeout => {
-                crate::result::GlimError::GeneralError("Request timeout".into())
-            },
-            ClientError::InvalidUrl { url } => {
-                crate::result::GlimError::GeneralError(format!("Invalid URL: {url}").into())
             },
             ClientError::NotFound { resource } => {
                 crate::result::GlimError::GeneralError(format!("Not found: {resource}").into())

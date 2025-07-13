@@ -9,8 +9,10 @@ pub type Result<T> = std::result::Result<T, GlimError>;
 #[derive(Debug, Clone, Error)]
 pub enum GlimError {
     #[error("The provided Gitlab token is invalid.")]
+    #[allow(dead_code)]
     InvalidGitlabToken,
     #[error("The provided Gitlab token has expired.")]
+    #[allow(dead_code)]
     ExpiredGitlabToken,
     #[error("{0}")]
     ConfigError(CompactString),
@@ -18,14 +20,18 @@ pub enum GlimError {
     #[error("{0}")]
     GeneralError(CompactString),
 
-    #[error("{:0} - JSON: {1}")]
+    #[error("{0:?} - JSON: {1}")]
+    #[allow(dead_code)]
     JsonDeserializeError(Category, CompactString),
 
     #[error("project_id={0}/pipeline_id={1}: {2}")]
+    #[allow(dead_code)]
     GitlabGetJobsError(ProjectId, PipelineId, CompactString),
     #[error("project_id={0}/pipeline_id={1}: {2}")]
+    #[allow(dead_code)]
     GitlabGetTriggerJobsError(ProjectId, PipelineId, CompactString),
     #[error("project_id={0}/pipeline_id={1}: {2}")]
+    #[allow(dead_code)]
     GitlabGetPipelinesError(ProjectId, PipelineId, CompactString),
 }
 

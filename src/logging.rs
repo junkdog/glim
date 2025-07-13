@@ -22,6 +22,7 @@ pub struct LoggingConfig {
     /// Whether to enable JSON formatted logs for structured output
     pub json_format: bool,
     /// Maximum number of log files to keep for rotation
+    #[allow(dead_code)]
     pub max_files: Option<usize>,
 }
 
@@ -151,7 +152,7 @@ impl tracing::field::Visit for LogMessageVisitor {
 /// Initialize the logging system with the given configuration
 pub fn init_logging(
     config: LoggingConfig,
-    _event_sender: Option<Sender<GlimEvent>>,
+    event_sender: Option<Sender<GlimEvent>>,
 ) -> Result<Option<WorkerGuard>, Box<dyn std::error::Error>> {
     let mut layers = vec![];
     let mut guard = None;
@@ -206,15 +207,10 @@ pub fn init_logging(
     }
 
     // Create internal logs bridge layer if event sender is provided
-    // Note: This layer sends log events to the UI system, but there's no UI component
-    // to display them anymore after removing the internal logs widget.
-    // Keeping it commented out to avoid unnecessary event processing.
-    /*
     if let Some(sender) = event_sender {
         let internal_layer = InternalLogsLayer::new(sender, Level::INFO).boxed();
         layers.push(internal_layer);
     }
-    */
 
     // Initialize the subscriber with all layers
     let subscriber = tracing_subscriber::registry().with(layers);

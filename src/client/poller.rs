@@ -12,6 +12,7 @@ use crate::event::GlimEvent;
 ///
 /// Manages periodic fetching of projects and active jobs with configurable intervals
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GitlabPoller {
     service: Arc<GitlabService>,
     config: PollingConfig,
@@ -19,6 +20,7 @@ pub struct GitlabPoller {
     shutdown_rx: broadcast::Receiver<()>,
 }
 
+#[allow(dead_code)]
 impl GitlabPoller {
     /// Create a new GitLab poller
     pub fn new(service: Arc<GitlabService>, config: PollingConfig) -> Self {
@@ -161,11 +163,13 @@ impl GitlabPoller {
 
 /// Builder for GitlabPoller with fluent API
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GitlabPollerBuilder {
     service: Option<Arc<GitlabService>>,
     config: PollingConfig,
 }
 
+#[allow(dead_code)]
 impl GitlabPollerBuilder {
     /// Create a new poller builder
     pub fn new() -> Self {
@@ -215,6 +219,7 @@ impl Default for GitlabPollerBuilder {
 /// Spawn a GitLab poller as a background task
 ///
 /// This is a convenience function for quickly starting background polling
+#[allow(dead_code)]
 pub async fn spawn_poller(
     service: Arc<GitlabService>,
     config: PollingConfig,

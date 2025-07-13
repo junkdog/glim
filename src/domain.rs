@@ -46,6 +46,7 @@ pub struct Pipeline {
 #[derive(Clone, Debug)]
 pub struct Commit {
     pub title: CompactString,
+    #[allow(dead_code)]
     pub author_name: CompactString,
 }
 
@@ -54,7 +55,9 @@ pub struct Job {
     pub id: JobId,
     pub name: CompactString,
     pub status: PipelineStatus,
+    #[allow(dead_code)]
     pub stage: CompactString,
+    #[allow(dead_code)]
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub finished_at: Option<DateTime<Utc>>,
@@ -184,21 +187,22 @@ impl PipelineStatus {
 
 impl PipelineSource {
     pub(crate) fn is_interesting(&self) -> bool {
-        match self {
+        matches!(
+            self,
             PipelineSource::Api
-            | PipelineSource::Chat
-            | PipelineSource::ParentPipeline
-            | PipelineSource::Push
-            | PipelineSource::Schedule
-            | PipelineSource::Trigger
-            | PipelineSource::Web
-            | PipelineSource::Webide => true,
-            _ => false,
-        }
+                | PipelineSource::Chat
+                | PipelineSource::ParentPipeline
+                | PipelineSource::Push
+                | PipelineSource::Schedule
+                | PipelineSource::Trigger
+                | PipelineSource::Web
+                | PipelineSource::Webide
+        )
     }
 }
 
 impl Project {
+    #[allow(dead_code)]
     pub fn row(&self) -> Row<'_> {
         Row::new(vec![
             Span::from(self.last_activity_at.to_compact_string()),
@@ -412,6 +416,7 @@ impl Pipeline {
             .map_or("".into(), |j| j.name.clone())
     }
 
+    #[allow(dead_code)]
     pub fn has_failed_jobs(&self) -> bool {
         self.failed_job().is_some()
     }

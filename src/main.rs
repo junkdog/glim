@@ -87,7 +87,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn initialize_config_ui(config_path: &PathBuf, debug: bool) -> Result<crate::glim_app::GlimConfig> {
+fn initialize_config_ui(
+    config_path: &std::path::Path,
+    debug: bool,
+) -> Result<crate::glim_app::GlimConfig> {
     let event_handler = crate::event::EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
     let backend = ratatui::backend::CrosstermBackend::new(std::io::stdout());
@@ -97,7 +100,7 @@ fn initialize_config_ui(config_path: &PathBuf, debug: bool) -> Result<crate::gli
     let mut widget_states = crate::ui::StatefulWidgets::new(sender.clone());
 
     let config =
-        run_config_ui_loop(&mut tui, &mut widget_states, sender, config_path.clone(), debug)?;
+        run_config_ui_loop(&mut tui, &mut widget_states, sender, config_path.to_path_buf(), debug)?;
     tui.exit()?;
     Ok(config)
 }
