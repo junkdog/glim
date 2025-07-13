@@ -270,7 +270,10 @@ impl GitlabService {
         let handle = self.handle.clone();
         self.handle.spawn(async move {
             let temp_service = Self::from_existing_parts(api, sender, handle);
-            if let Err(e) = temp_service.download_job_log(project_id, job_id).await {
+            if let Err(e) = temp_service
+                .download_job_log(project_id, job_id)
+                .await
+            {
                 warn!("Background job log download failed: {}", e);
             }
         });

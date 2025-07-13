@@ -22,10 +22,7 @@ pub struct PipelineActionsPopupState {
 }
 
 impl PipelineActionsPopupState {
-    pub fn new(
-        actions: Vec<GlimEvent>,
-        popup_area: RefRect,
-    ) -> Self {
+    pub fn new(actions: Vec<GlimEvent>, popup_area: RefRect) -> Self {
         Self {
             actions,
             list_state: ListState::default().with_selected(Some(0)),

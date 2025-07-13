@@ -67,9 +67,9 @@ pub fn run_config_ui_loop(
                             .to_config();
                         match config.validate() {
                             Ok(_) => {
-                                let client_config = ClientConfig::from(config.clone())
-                                    .with_debug_logging(debug);
-                                
+                                let client_config =
+                                    ClientConfig::from(config.clone()).with_debug_logging(debug);
+
                                 // Create a temporary service for validation
                                 match GitlabService::new(client_config, sender.clone()) {
                                     Ok(service) => {

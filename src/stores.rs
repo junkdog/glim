@@ -29,7 +29,7 @@ impl ProjectStore {
         }
     }
 
-    #[instrument(skip(self, event), fields(event_type = ?std::mem::discriminant(event)))]    
+    #[instrument(skip(self, event), fields(event_type = ?std::mem::discriminant(event)))]
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             // requests jobs for pipelines that have not been loaded yet
@@ -238,7 +238,9 @@ pub fn log_event(event: &GlimEvent) {
         GlimEvent::ClearFilter => info!("Clearing project filter"),
         GlimEvent::CloseFilter => debug!("Closing filter input"),
         GlimEvent::Shutdown => info!("Application shutting down"),
-        GlimEvent::Error(err) => warn!(error = %err, error_type = ?std::mem::discriminant(err), "Application error occurred"),
+        GlimEvent::Error(err) => {
+            warn!(error = %err, error_type = ?std::mem::discriminant(err), "Application error occurred")
+        },
         GlimEvent::Log(msg) => info!(message = %msg, "Application log message"),
         _ => {}, // Don't log every event
     }

@@ -2,6 +2,7 @@ use std::sync::mpsc::Sender;
 
 use compact_str::ToCompactString;
 use ratatui::{backend::CrosstermBackend, Terminal};
+use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::{
     client::{ClientConfig, GitlabPoller, GitlabService},
@@ -14,7 +15,6 @@ use crate::{
     tui::Tui,
     ui::StatefulWidgets,
 };
-use tracing_appender::non_blocking::WorkerGuard;
 
 pub struct AppComponents {
     pub app: GlimApp,
@@ -48,25 +48,35 @@ pub async fn initialize_app(
     let mut effects = EffectRegistry::new(app.sender());
     effects.register_default_glitch_effect();
 
-    Ok(AppComponents { app, tui, widget_states, effects, poller, _log_guard: log_guard })
+    Ok(AppComponents {
+        app,
+        tui,
+        widget_states,
+        effects,
+        poller,
+        _log_guard: log_guard,
+    })
 }
 
-fn initialize_logging(sender: Sender<GlimEvent>, glim_config: &GlimConfig) -> Result<Option<WorkerGuard>> {
+fn initialize_logging(
+    sender: Sender<GlimEvent>,
+    glim_config: &GlimConfig,
+) -> Result<Option<WorkerGuard>> {
     let mut logging_config = LoggingConfig::from_env();
-    
+
     // Override with config if specified
     if let Some(log_level) = &glim_config.log_level {
         if let Ok(level) = log_level.parse() {
             logging_config.console_level = level;
             logging_config.file_level = level;
         }
-        
+
         // Disable logging if set to "Off"
         if log_level == "Off" {
             logging_config.log_dir = None;
         }
     }
-    
+
     let log_guard = init_logging(logging_config, Some(sender)).map_err(|e| {
         GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
     })?;
@@ -88,17 +98,14 @@ async fn create_gitlab_service_and_poller(
     config: GlimConfig,
     debug: bool,
 ) -> Result<(GitlabService, GitlabPoller)> {
-    let client_config = ClientConfig::from(config)
-        .with_debug_logging(debug);
-    
+    let client_config = ClientConfig::from(config).with_debug_logging(debug);
+
     let service = GitlabService::new(client_config.clone(), sender.clone())?;
-    
+
     // Create a second service instance for the poller
     let poller_service = GitlabService::new(client_config.clone(), sender)?;
-    let poller = GitlabPoller::new(
-        std::sync::Arc::new(poller_service), 
-        client_config.polling.clone()
-    );
-    
+    let poller =
+        GitlabPoller::new(std::sync::Arc::new(poller_service), client_config.polling.clone());
+
     Ok((service, poller))
 }

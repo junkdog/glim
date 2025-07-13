@@ -40,14 +40,7 @@ impl ConfigPopup {
 
 impl ConfigPopupState {
     pub fn new(config: GlimConfig, popup_area: RefRect) -> Self {
-        let log_level_options = vec![
-            "Trace",
-            "Debug",
-            "Info",
-            "Warn",
-            "Error",
-            "Off",
-        ];
+        let log_level_options = vec!["Trace", "Debug", "Info", "Warn", "Error", "Off"];
 
         let current_log_level = config
             .log_level
@@ -148,8 +141,16 @@ impl ConfigPopupState {
             .map(|field| field.input.value())
             .collect();
 
-        let gitlab_url = values.get(0).unwrap_or(&"").trim().to_compact_string();
-        let gitlab_token = values.get(1).unwrap_or(&"").trim().to_compact_string();
+        let gitlab_url = values
+            .get(0)
+            .unwrap_or(&"")
+            .trim()
+            .to_compact_string();
+        let gitlab_token = values
+            .get(1)
+            .unwrap_or(&"")
+            .trim()
+            .to_compact_string();
         let search_filter_value = values.get(2).unwrap_or(&"").trim();
         let log_level_value = values.get(3).unwrap_or(&"Off").trim();
 

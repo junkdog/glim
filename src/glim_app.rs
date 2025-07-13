@@ -173,7 +173,8 @@ impl GlimApp {
             },
             GlimEvent::RequestJobs(project_id, pipeline_id) => {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs for pipeline");
-                self.gitlab.spawn_fetch_jobs(project_id, pipeline_id)
+                self.gitlab
+                    .spawn_fetch_jobs(project_id, pipeline_id)
             },
 
             // configuration
@@ -187,7 +188,7 @@ impl GlimApp {
                     let config = config_popup.to_config();
                     let client_config = ClientConfig::from(config.clone())
                         .with_debug_logging(self.gitlab.config().debug.log_responses);
-                    
+
                     // Create a temporary service for validation
                     match GitlabService::new(client_config, self.sender.clone()) {
                         Ok(_service) => {

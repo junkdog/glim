@@ -297,6 +297,7 @@ impl GitlabApi {
 #[cfg(test)]
 mod tests {
     use chrono::{DateTime, Utc};
+
     use super::*;
 
     fn test_config() -> ClientConfig {
