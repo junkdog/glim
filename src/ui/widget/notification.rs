@@ -88,9 +88,9 @@ impl StatefulWidget for Notification {
                 Span::from("Finished downloading job log for "),
                 Span::from(project).style(theme().notification_project),
             ]),
-            NoticeMessage::ScreenCaptured => Line::from(vec![
-                Span::from("Screen contents copied to clipboard"),
-            ]),
+            NoticeMessage::ScreenCaptured => {
+                Line::from(vec![Span::from("Screen contents copied to clipboard")])
+            },
         };
 
         let text_len = (text.width() as u16).min(area.width - 2);

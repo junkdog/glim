@@ -20,9 +20,7 @@ impl InputProcessor for ConfigProcessor {
         if let GlimEvent::InputKey(code) = event {
             let popup = widgets.config_popup_state.as_mut().unwrap();
             match code.code {
-                KeyCode::Enter => self
-                    .sender
-                    .dispatch(GlimEvent::ConfigApply),
+                KeyCode::Enter => self.sender.dispatch(GlimEvent::ConfigApply),
                 KeyCode::Esc => self.sender.dispatch(GlimEvent::ConfigClose),
                 KeyCode::Down => popup.select_next_input(),
                 KeyCode::Up => popup.select_previous_input(),
@@ -56,7 +54,6 @@ impl InputProcessor for ConfigProcessor {
                             .handle_event(&CrosstermEvent::Key(*code));
                     }
                 },
-
             }
         }
     }

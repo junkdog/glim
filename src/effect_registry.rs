@@ -127,7 +127,7 @@ impl EffectRegistry {
             GlimEvent::ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
             GlimEvent::PipelineActionsClose => {
                 self.register_close_popup(FxId::PipelineActionsPopup)
-            }
+            },
             GlimEvent::ConfigClose => self.register_close_popup(FxId::ConfigPopup),
             _ => (),
         }

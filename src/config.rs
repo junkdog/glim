@@ -107,17 +107,17 @@ pub fn run_config_ui_loop(
                                     .error_message = Some(error.to_compact_string());
                             },
                         }
-                    }
+                    },
                     GlimEvent::ConfigClose => {
                         ui.config_popup_state = None;
-                    }
+                    },
                     GlimEvent::AppError(error) => {
                         ui.config_popup_state
                             .as_mut()
                             .unwrap()
                             .error_message = Some(error.to_compact_string());
                     },
-                    GlimEvent::AppExit => {}
+                    GlimEvent::AppExit => {},
                     _ => {},
                 }
             });

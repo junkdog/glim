@@ -78,10 +78,9 @@ impl NoticeService {
                 NoticeLevel::Info,
                 NoticeMessage::GeneralMessage("Job log downloaded".into()),
             ),
-            GlimEvent::ScreenCaptureToClipboard(_) => self.push_notice(
-                NoticeLevel::Info,
-                NoticeMessage::ScreenCaptured,
-            ),
+            GlimEvent::ScreenCaptureToClipboard(_) => {
+                self.push_notice(NoticeLevel::Info, NoticeMessage::ScreenCaptured)
+            },
             _ => {},
         }
     }

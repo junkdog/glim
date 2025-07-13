@@ -66,7 +66,8 @@ impl GitlabService {
             Err(e) => {
                 error!(error = %e, "Failed to fetch projects");
                 let glim_error = crate::result::GlimError::from(&e);
-                self.sender.dispatch(GlimEvent::AppError(glim_error));
+                self.sender
+                    .dispatch(GlimEvent::AppError(glim_error));
                 Err(e)
             },
         }
@@ -102,7 +103,8 @@ impl GitlabService {
                     "Failed to fetch pipelines"
                 );
                 let glim_error = crate::result::GlimError::from(&e);
-                self.sender.dispatch(GlimEvent::AppError(glim_error));
+                self.sender
+                    .dispatch(GlimEvent::AppError(glim_error));
                 Err(e)
             },
         }
@@ -135,7 +137,8 @@ impl GitlabService {
                     "Failed to fetch jobs"
                 );
                 let glim_error = crate::result::GlimError::from(&e);
-                self.sender.dispatch(GlimEvent::AppError(glim_error));
+                self.sender
+                    .dispatch(GlimEvent::AppError(glim_error));
                 Err(e)
             },
         }
@@ -166,7 +169,8 @@ impl GitlabService {
                     "Failed to download job log"
                 );
                 let glim_error = crate::result::GlimError::from(&e);
-                self.sender.dispatch(GlimEvent::AppError(glim_error));
+                self.sender
+                    .dispatch(GlimEvent::AppError(glim_error));
                 Err(e)
             },
         }

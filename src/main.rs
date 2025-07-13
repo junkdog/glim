@@ -62,7 +62,7 @@ fn main() -> Result<()> {
 
     // Create a shared runtime for async operations
     let rt = tokio::runtime::Runtime::new().map_err(|e| {
-        crate::result::GlimError::GeneralError(format!("Failed to create runtime: {}", e).into())
+        crate::result::GlimError::GeneralError(format!("Failed to create runtime: {e}").into())
     })?;
 
     let AppComponents {

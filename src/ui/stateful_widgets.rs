@@ -79,7 +79,7 @@ impl StatefulWidgets {
                 let popup_area = RefRect::default();
                 effects.register_config_popup(popup_area.clone());
                 self.open_config(app.load_config().unwrap_or_default(), popup_area);
-            }
+            },
             GlimEvent::ConfigClose => self.config_popup_state = None,
 
             GlimEvent::FilterMenuShow => self.show_filter_input(),

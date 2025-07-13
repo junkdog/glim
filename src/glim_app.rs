@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::mpsc::Sender};
 use compact_str::{format_compact, CompactString, ToCompactString};
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
-use tachyonfx::{Duration, EffectManager};
+use tachyonfx::Duration;
 use tracing::{debug, info, instrument, warn};
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     config::save_config,
     dispatcher::Dispatcher,
     domain::Project,
-    effect_registry::{EffectRegistry, FxId},
+    effect_registry::EffectRegistry,
     event::GlimEvent,
     id::ProjectId,
     input::{processor::NormalModeProcessor, InputMultiplexer},
@@ -147,7 +147,7 @@ impl GlimApp {
                     .flatten()
                     .filter(|p| p.status.is_active() || p.has_active_jobs())
                     .for_each(|p| self.gitlab.spawn_fetch_jobs(p.project_id, p.id));
-            }
+            },
             GlimEvent::PipelinesFetch(id) => {
                 debug!(project_id = %id, "Requesting pipelines for project");
                 self.gitlab.spawn_fetch_pipelines(id, None)
@@ -203,7 +203,7 @@ impl GlimApp {
                         },
                     }
                 }
-            }
+            },
 
             GlimEvent::NotificationLast => {
                 if let Some(notice) = self.notices.last_notification() {
@@ -215,24 +215,24 @@ impl GlimApp {
                         content_area,
                     ));
                 }
-            }
+            },
 
             GlimEvent::NotificationDismiss => {
                 ui.notice = None;
-            }
+            },
 
             GlimEvent::FilterMenuShow => {
                 // Initialize filter input with the current temporary filter
                 // The show_filter_input method will handle initialization
                 ui.filter_input_active = true;
-            }
+            },
 
             GlimEvent::ScreenCapture => {
                 debug!("Screen capture requested");
                 // The actual screen capture will be handled in the rendering loop
                 // where we have access to the frame buffer
                 ui.capture_screen_requested = true;
-            }
+            },
 
             GlimEvent::ScreenCaptureToClipboard(ansi_string) => {
                 debug!("Copying screen capture to clipboard");
@@ -242,9 +242,9 @@ impl GlimApp {
                     },
                     Err(e) => {
                         warn!(error = %e, "Failed to copy screen capture to clipboard");
-                    }
+                    },
                 }
-            }
+            },
 
             _ => {},
         }

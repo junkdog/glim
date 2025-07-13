@@ -13,7 +13,6 @@ pub mod service;
 mod tests;
 
 // Re-export main types for convenience
-pub use api::GitlabApi;
 pub use config::ClientConfig;
 pub use error::ClientError;
 pub use poller::GitlabPoller;
