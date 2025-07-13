@@ -141,7 +141,8 @@ impl ConfigPopupState {
             .map(|field| field.input.value())
             .collect();
 
-        let gitlab_url = values.first()
+        let gitlab_url = values
+            .first()
             .unwrap_or(&"")
             .trim()
             .to_compact_string();
