@@ -70,6 +70,7 @@ fn main() -> Result<()> {
         mut widget_states,
         mut effects,
         poller: _poller,
+        _log_guard,
     } = rt.block_on(async { initialize_app(config_path, config, debug).await })?;
 
     while app.is_running() {

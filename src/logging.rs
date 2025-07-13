@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::mpsc::Sender};
 
 use compact_str::CompactString;
+use directories::ProjectDirs;
 use tracing::{Level, Metadata};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
@@ -29,7 +30,7 @@ impl Default for LoggingConfig {
         Self {
             console_level: Level::INFO,
             file_level: Level::DEBUG,
-            log_dir: Some(PathBuf::from("glim-logs")),
+            log_dir: Some(Self::default_log_dir()),
             json_format: false,
             max_files: Some(10),
         }
@@ -37,6 +38,20 @@ impl Default for LoggingConfig {
 }
 
 impl LoggingConfig {
+    /// Get the OS-appropriate default log directory
+    pub fn default_log_dir() -> PathBuf {
+        if let Some(proj_dirs) = ProjectDirs::from("", "", "glim") {
+            // Use the cache directory for logs (more appropriate for temporary/log files)
+            // On Linux: ~/.cache/glim
+            // On macOS: ~/Library/Caches/glim
+            // On Windows: %LOCALAPPDATA%\glim\cache
+            proj_dirs.cache_dir().to_path_buf()
+        } else {
+            // Fallback to current directory if we can't determine OS directories
+            PathBuf::from("glim-logs")
+        }
+    }
+
     /// Create logging configuration from environment variables
     pub fn from_env() -> Self {
         let mut config = Self::default();

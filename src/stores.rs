@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::mpsc::Sender};
 
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, instrument, warn};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -29,10 +29,12 @@ impl ProjectStore {
         }
     }
 
+    #[instrument(skip(self, event), fields(event_type = ?std::mem::discriminant(event)))]    
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             // requests jobs for pipelines that have not been loaded yet
             GlimEvent::OpenProjectDetails(id) => {
+                debug!(project_id = %id, "Opening project details and requesting missing jobs");
                 let project = self.find(*id).unwrap();
                 project
                     .recent_pipelines()
@@ -43,6 +45,7 @@ impl ProjectStore {
 
             // updates the projects in the store
             GlimEvent::ReceivedProjects(projects) => {
+                debug!(project_count = projects.len(), "Processing received projects");
                 let first_projects = self.sorted.is_empty();
                 projects
                     .iter()
@@ -63,6 +66,7 @@ impl ProjectStore {
             // updates the pipelines for a project
             GlimEvent::ReceivedPipelines(pipelines) => {
                 let project_id = pipelines[0].project_id;
+                debug!(project_id = %project_id, pipeline_count = pipelines.len(), "Processing received pipelines");
                 let sender = self.sender.clone();
 
                 if let Some(project) = self.find_mut(project_id) {
@@ -84,6 +88,7 @@ impl ProjectStore {
             },
 
             GlimEvent::ReceivedJobs(project_id, pipeline_id, job_dtos) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, job_count = job_dtos.len(), "Processing received jobs");
                 let jobs: Vec<Job> = job_dtos
                     .iter()
                     .map(|j| Job::from(j.clone()))
@@ -108,6 +113,7 @@ impl ProjectStore {
 
             // requests pipelines for a project if they are not already loaded
             GlimEvent::SelectedProject(id) => {
+                debug!(project_id = %id, "Project selected");
                 let mut request_pipelines = false;
                 if let Some(project) = self.find_mut(*id) {
                     if project.pipelines.is_none() {
@@ -150,6 +156,7 @@ impl ProjectStore {
         self.project_id_lookup.get(&id).copied()
     }
 
+    #[instrument(skip(self, project), fields(project_id = %project.id, project_path = %project.path))]
     fn sync_project(&mut self, mut project: Project) {
         let sender = self.sender.clone();
         match self.find_mut(project.id) {
@@ -174,6 +181,7 @@ fn is_older_than_7d(date: DateTime<Utc>) -> bool {
     Utc::now().signed_duration_since(date).num_days() > 7
 }
 
+#[instrument(skip(event), fields(event_type = ?std::mem::discriminant(event)))]
 pub fn log_event(event: &GlimEvent) {
     match event {
         GlimEvent::RequestProjects => info!("Requesting all projects from GitLab"),
@@ -189,7 +197,8 @@ pub fn log_event(event: &GlimEvent) {
             debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs")
         },
         GlimEvent::ReceivedPipelines(pipelines) => {
-            debug!(count = pipelines.len(), "Received pipelines from GitLab API")
+            let project_id = pipelines.first().map(|p| p.project_id);
+            debug!(count = pipelines.len(), project_id = ?project_id, "Received pipelines from GitLab API")
         },
         GlimEvent::ReceivedJobs(project_id, pipeline_id, jobs) => {
             debug!(project_id = %project_id, pipeline_id = %pipeline_id, count = jobs.len(), "Received jobs")
@@ -229,7 +238,7 @@ pub fn log_event(event: &GlimEvent) {
         GlimEvent::ClearFilter => info!("Clearing project filter"),
         GlimEvent::CloseFilter => debug!("Closing filter input"),
         GlimEvent::Shutdown => info!("Application shutting down"),
-        GlimEvent::Error(err) => warn!(error = %err, "Application error occurred"),
+        GlimEvent::Error(err) => warn!(error = %err, error_type = ?std::mem::discriminant(err), "Application error occurred"),
         GlimEvent::Log(msg) => info!(message = %msg, "Application log message"),
         _ => {}, // Don't log every event
     }

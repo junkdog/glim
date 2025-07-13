@@ -8,6 +8,6 @@ pub trait Dispatcher {
 
 impl Dispatcher for mpsc::Sender<GlimEvent> {
     fn dispatch(&self, event: GlimEvent) {
-        self.send(event).expect("unable to send event");
+        let _ = self.send(event);
     }
 }

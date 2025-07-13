@@ -20,6 +20,10 @@ pub struct InputField {
     input_style: Style,
     #[builder(default)]
     mask_input: bool,
+    #[builder(default)]
+    dropdown_options: Option<Vec<&'static str>>,
+    #[builder(default)]
+    selected_option_index: usize,
 }
 
 impl InputField {
@@ -34,8 +38,49 @@ impl InputField {
                 .chars()
                 .map(|_| '*')
                 .collect::<CompactString>()
+        } else if let Some(options) = &self.dropdown_options {
+            if self.selected_option_index < options.len() {
+                format!("{} (←→ to change)", options[self.selected_option_index]).into()
+            } else {
+                "Invalid selection".into()
+            }
         } else {
             self.input.value().into()
+        }
+    }
+
+    pub fn is_dropdown(&self) -> bool {
+        self.dropdown_options.is_some()
+    }
+
+    pub fn cycle_dropdown_next(&mut self) {
+        if let Some(options) = &self.dropdown_options {
+            self.selected_option_index = (self.selected_option_index + 1) % options.len();
+            if let Some(selected_value) = options.get(self.selected_option_index) {
+                self.input = Input::new(selected_value.to_string());
+            }
+        }
+    }
+
+    pub fn cycle_dropdown_prev(&mut self) {
+        if let Some(options) = &self.dropdown_options {
+            self.selected_option_index = if self.selected_option_index == 0 {
+                options.len() - 1
+            } else {
+                self.selected_option_index - 1
+            };
+            if let Some(selected_value) = options.get(self.selected_option_index) {
+                self.input = Input::new(selected_value.to_string());
+            }
+        }
+    }
+
+    pub fn set_dropdown_value(&mut self, value: &str) {
+        if let Some(options) = &self.dropdown_options {
+            if let Some(index) = options.iter().position(|&option| option == value) {
+                self.selected_option_index = index;
+                self.input = Input::new(value.to_string());
+            }
         }
     }
 }

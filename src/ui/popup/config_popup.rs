@@ -1,7 +1,6 @@
 use std::vec;
 
 use compact_str::{CompactString, ToCompactString};
-use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Margin, Position, Rect},
@@ -12,6 +11,7 @@ use tui_input::Input;
 
 use crate::{
     glim_app::GlimConfig,
+    logging::LoggingConfig,
     theme::theme,
     ui::{
         fx::popup_window,
@@ -40,6 +40,36 @@ impl ConfigPopup {
 
 impl ConfigPopupState {
     pub fn new(config: GlimConfig, popup_area: RefRect) -> Self {
+        let log_level_options = vec![
+            "Trace",
+            "Debug",
+            "Info",
+            "Warn",
+            "Error",
+            "Off",
+        ];
+
+        let current_log_level = config
+            .log_level
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("Off");
+        let log_level_index = log_level_options
+            .iter()
+            .position(|&level| level == current_log_level)
+            .unwrap_or(5); // Default to "Off"
+
+        let mut log_level_field = InputField::builder()
+            .label("log level")
+            .description(Some(log_level_description()))
+            .input(Input::new(current_log_level.to_string()))
+            .dropdown_options(Some(log_level_options))
+            .selected_option_index(log_level_index)
+            .build()
+            .unwrap();
+
+        log_level_field.set_dropdown_value(current_log_level);
+
         Self {
             // duration_ms: 0,
             active_input_idx: 0,
@@ -68,18 +98,39 @@ impl ConfigPopupState {
                             .unwrap_or_default(),
                     ))
                     .into(),
+                log_level_field,
             ],
             popup_area,
         }
     }
 
     pub fn select_next_input(&mut self) {
-        self.active_input_idx = (self.active_input_idx + 1) % 3;
+        self.active_input_idx = (self.active_input_idx + 1) % 4;
     }
 
     pub fn select_previous_input(&mut self) {
         self.active_input_idx =
-            if self.active_input_idx == 0 { 2 } else { self.active_input_idx - 1 };
+            if self.active_input_idx == 0 { 3 } else { self.active_input_idx - 1 };
+    }
+
+    pub fn cycle_dropdown_next(&mut self) {
+        if (self.active_input_idx as usize) < self.input_fields.len() {
+            self.input_fields[self.active_input_idx as usize].cycle_dropdown_next();
+        }
+    }
+
+    pub fn cycle_dropdown_prev(&mut self) {
+        if (self.active_input_idx as usize) < self.input_fields.len() {
+            self.input_fields[self.active_input_idx as usize].cycle_dropdown_prev();
+        }
+    }
+
+    pub fn is_current_field_dropdown(&self) -> bool {
+        if (self.active_input_idx as usize) < self.input_fields.len() {
+            self.input_fields[self.active_input_idx as usize].is_dropdown()
+        } else {
+            false
+        }
     }
 
     pub fn input(&self) -> &Input {
@@ -91,23 +142,34 @@ impl ConfigPopupState {
     }
 
     pub fn to_config(&self) -> GlimConfig {
-        let (gitlab_url, gitlab_token, search_filter) = self
+        let values: Vec<&str> = self
             .input_fields
             .iter()
             .map(|field| field.input.value())
-            .collect_tuple()
-            .unwrap();
+            .collect();
 
-        let search_filter = if search_filter.trim().is_empty() {
+        let gitlab_url = values.get(0).unwrap_or(&"").trim().to_compact_string();
+        let gitlab_token = values.get(1).unwrap_or(&"").trim().to_compact_string();
+        let search_filter_value = values.get(2).unwrap_or(&"").trim();
+        let log_level_value = values.get(3).unwrap_or(&"Off").trim();
+
+        let search_filter = if search_filter_value.is_empty() {
             None
         } else {
-            Some(search_filter.trim().to_compact_string())
+            Some(search_filter_value.to_compact_string())
+        };
+
+        let log_level = if log_level_value == "Off" || log_level_value.is_empty() {
+            None
+        } else {
+            Some(log_level_value.to_compact_string())
         };
 
         GlimConfig {
-            gitlab_url: gitlab_url.trim().to_compact_string(),
-            gitlab_token: gitlab_token.trim().to_compact_string(),
+            gitlab_url,
+            gitlab_token,
             search_filter,
+            log_level,
         }
     }
 
@@ -129,7 +191,7 @@ impl ConfigPopupState {
     }
 
     pub fn update_popup_area(&self, screen: Rect) -> Rect {
-        let area = screen.inner_centered(80, 12);
+        let area = screen.inner_centered(80, 15);
         self.popup_area.set(area);
         area
     }
@@ -143,7 +205,7 @@ impl StatefulWidget for ConfigPopup {
 
         popup_window(
             "Configuration",
-            Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "apply")]),
+            Some(vec![("ESC", "close"), ("↑ ↓", "navigate"), ("← →", "change"), ("↵", "apply")]),
         )
         .render(area, buf);
 
@@ -194,4 +256,13 @@ fn token_description() -> Line<'static> {
 fn filter_description() -> Line<'static> {
     Line::from(vec![Span::from("optional project filter, applied to project namespace")
         .style(theme().input_description)])
+}
+
+fn log_level_description() -> Line<'static> {
+    let log_dir = LoggingConfig::default_log_dir();
+    let log_path = log_dir.to_string_lossy().into_owned();
+    Line::from(vec![
+        Span::from("logs saved to ").style(theme().input_description),
+        Span::from(log_path).style(theme().input_description_em),
+    ])
 }

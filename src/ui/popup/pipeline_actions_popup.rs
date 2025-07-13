@@ -7,7 +7,6 @@ use ratatui::{
 
 use crate::{
     event::GlimEvent,
-    id::{PipelineId, ProjectId},
     theme::theme,
     ui::{fx::popup_window, popup::utility::CenteredShrink, widget::RefRect},
 };
@@ -18,8 +17,6 @@ pub struct PipelineActionsPopup {}
 /// state of the pipeline actions popup
 pub struct PipelineActionsPopupState {
     pub actions: Vec<GlimEvent>,
-    pub project_id: ProjectId,
-    pub pipeline_id: PipelineId,
     pub list_state: ListState,
     popup_area: RefRect,
 }
@@ -27,14 +24,10 @@ pub struct PipelineActionsPopupState {
 impl PipelineActionsPopupState {
     pub fn new(
         actions: Vec<GlimEvent>,
-        project_id: ProjectId,
-        pipeline_id: PipelineId,
         popup_area: RefRect,
     ) -> Self {
         Self {
             actions,
-            project_id,
-            pipeline_id,
             list_state: ListState::default().with_selected(Some(0)),
             popup_area,
         }

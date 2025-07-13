@@ -446,6 +446,7 @@ mod tests {
             gitlab_url: "https://gitlab.example.com".into(),
             gitlab_token: "test-token".into(),
             search_filter: Some("test".into()),
+            log_level: Some("Off".into()),
         };
 
         let client_config = ClientConfig::from(glim_config);

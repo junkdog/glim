@@ -28,10 +28,32 @@ impl InputProcessor for ConfigProcessor {
                 KeyCode::Up => popup.select_previous_input(),
                 KeyCode::Char('j') => popup.select_next_input(),
                 KeyCode::Char('k') => popup.select_previous_input(),
+                KeyCode::Tab => popup.select_next_input(),
+                KeyCode::BackTab => popup.select_previous_input(),
+                KeyCode::Left => {
+                    if popup.is_current_field_dropdown() {
+                        popup.cycle_dropdown_prev();
+                    } else {
+                        popup
+                            .input_mut()
+                            .handle_event(&CrosstermEvent::Key(*code));
+                    }
+                },
+                KeyCode::Right => {
+                    if popup.is_current_field_dropdown() {
+                        popup.cycle_dropdown_next();
+                    } else {
+                        popup
+                            .input_mut()
+                            .handle_event(&CrosstermEvent::Key(*code));
+                    }
+                },
                 _ => {
-                    popup
-                        .input_mut()
-                        .handle_event(&CrosstermEvent::Key(*code));
+                    if !popup.is_current_field_dropdown() {
+                        popup
+                            .input_mut()
+                            .handle_event(&CrosstermEvent::Key(*code));
+                    }
                 },
             }
         }

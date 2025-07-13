@@ -14,6 +14,7 @@
 - Updated to use CompactString for better performance
 - Migrated to color-eyre for error handling
 - Updated tachyonfx and ratatui dependencies
+- Log files now saved to OS-appropriate cache directories (Linux: ~/.cache/glim, macOS: ~/Library/Caches/glim, Windows: %LOCALAPPDATA%\glim\cache)
 
 ### Fixed
 - Fixed application panic issues

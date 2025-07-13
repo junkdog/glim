@@ -9,7 +9,6 @@ use ratatui::{
 
 use crate::{
     domain::{IconRepresentable, Pipeline},
-    id::PipelineId,
     theme::theme,
     ui::{format_duration, widget::text_from},
 };
@@ -26,7 +25,6 @@ use crate::{
 pub struct PipelineTable {
     pub constraints: [Constraint; 5],
     pub rows: Vec<Row<'static>>,
-    pub ids: Vec<PipelineId>,
 }
 
 impl PipelineTable {
@@ -63,7 +61,6 @@ impl PipelineTable {
                 .enumerate()
                 .map(|(idx, r)| r.style(theme().table_row(idx)))
                 .collect(),
-            ids: pipelines.iter().map(|p| p.id).collect(),
         }
     }
 

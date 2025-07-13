@@ -151,7 +151,7 @@ impl StatefulWidgets {
         };
 
         self.pipeline_actions =
-            Some(PipelineActionsPopupState::new(actions, project.id, pipeline_id, popup_area));
+            Some(PipelineActionsPopupState::new(actions, popup_area));
     }
 
     fn close_pipeline_actions(&mut self) {

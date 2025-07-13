@@ -24,7 +24,6 @@ pub struct Theme {
     pub pipeline_action_selected: Style,
     pub background: Style,
     pub border_title: Style,
-    pub log_message: Style,
     pub notification: Style,
     pub notification_project: Style,
     pub input: Style,
@@ -89,7 +88,6 @@ impl Theme {
             highlight_symbol: Style::default()
                 .bg(Gruvbox::Dark1.into())
                 .add_modifier(Modifier::BOLD),
-            log_message: Style::default().fg(Gruvbox::Light4.into()),
             notification: Style::default()
                 .bg(Gruvbox::Dark0.into())
                 .fg(Gruvbox::Orange.into())

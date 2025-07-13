@@ -4,6 +4,7 @@ use compact_str::{format_compact, CompactString, ToCompactString};
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use tachyonfx::{Duration, EffectManager};
+use tracing::{debug, info, instrument, warn};
 
 use crate::{
     client::{ClientConfig, GitlabService},
@@ -44,6 +45,8 @@ pub struct GlimConfig {
     pub gitlab_token: CompactString,
     /// Filter applied to the projects list
     pub search_filter: Option<CompactString>,
+    /// Logging level: Off, Error, Warn, Info, Debug, Trace
+    pub log_level: Option<CompactString>,
 }
 
 impl GlimConfig {
@@ -77,6 +80,7 @@ impl GlimApp {
         }
     }
 
+    #[instrument(skip(self, event, ui, effects), fields(event_type = ?std::mem::discriminant(&event)))]
     pub fn apply(
         &mut self,
         event: GlimEvent,
@@ -94,9 +98,11 @@ impl GlimApp {
 
             // www
             GlimEvent::BrowseToProject(id) => {
+                debug!(project_id = %id, "Opening project in browser");
                 open::that(&self.project(id).url).expect("unable to open browser")
             },
             GlimEvent::BrowseToPipeline(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Opening pipeline in browser");
                 let project = self.project(project_id);
                 let pipeline = project
                     .pipeline(pipeline_id)
@@ -105,6 +111,7 @@ impl GlimApp {
                 open::that(&pipeline.url).expect("unable to open browser");
             },
             GlimEvent::BrowseToJob(project_id, pipeline_id, job_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, job_id = %job_id, "Opening job in browser");
                 let project = self.project(project_id);
                 let job_url = project
                     .pipeline(pipeline_id)
@@ -116,6 +123,7 @@ impl GlimApp {
             },
 
             GlimEvent::DownloadErrorLog(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Downloading error log");
                 let project = self.project(project_id);
                 let pipeline = project
                     .pipeline(pipeline_id)
@@ -128,11 +136,13 @@ impl GlimApp {
                 self.gitlab
                     .spawn_download_job_log(project_id, job.id);
             },
-            GlimEvent::JobLogDownloaded(_, _, trace) => {
+            GlimEvent::JobLogDownloaded(project_id, job_id, trace) => {
+                info!(project_id = %project_id, job_id = %job_id, trace_length = trace.len(), "Job log downloaded and copied to clipboard");
                 self.clipboard.set_text(trace).unwrap();
             },
 
             GlimEvent::RequestActiveJobs => {
+                debug!("Requesting active jobs for all projects");
                 self.projects()
                     .iter()
                     .flat_map(|p| p.pipelines.iter())
@@ -140,7 +150,10 @@ impl GlimApp {
                     .filter(|p| p.status.is_active() || p.has_active_jobs())
                     .for_each(|p| self.gitlab.spawn_fetch_jobs(p.project_id, p.id));
             },
-            GlimEvent::RequestPipelines(id) => self.gitlab.spawn_fetch_pipelines(id, None),
+            GlimEvent::RequestPipelines(id) => {
+                debug!(project_id = %id, "Requesting pipelines for project");
+                self.gitlab.spawn_fetch_pipelines(id, None)
+            },
             GlimEvent::RequestProjects => {
                 let latest_activity = self
                     .projects()
@@ -158,9 +171,10 @@ impl GlimApp {
 
                 self.gitlab.spawn_fetch_projects(updated_after)
             },
-            GlimEvent::RequestJobs(project_id, pipeline_id) => self
-                .gitlab
-                .spawn_fetch_jobs(project_id, pipeline_id),
+            GlimEvent::RequestJobs(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs for pipeline");
+                self.gitlab.spawn_fetch_jobs(project_id, pipeline_id)
+            },
 
             // configuration
             GlimEvent::UpdateConfig(config) => {

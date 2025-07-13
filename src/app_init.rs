@@ -14,6 +14,7 @@ use crate::{
     tui::Tui,
     ui::StatefulWidgets,
 };
+use tracing_appender::non_blocking::WorkerGuard;
 
 pub struct AppComponents {
     pub app: GlimApp,
@@ -21,6 +22,7 @@ pub struct AppComponents {
     pub widget_states: StatefulWidgets,
     pub effects: EffectRegistry,
     pub poller: GitlabPoller,
+    pub _log_guard: Option<WorkerGuard>,
 }
 
 pub async fn initialize_app(
@@ -33,7 +35,7 @@ pub async fn initialize_app(
     let event_handler = EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
 
-    initialize_logging(sender.clone())?;
+    let log_guard = initialize_logging(sender.clone(), &config)?;
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "Glim TUI starting up");
 
     let tui = initialize_terminal(event_handler)?;
@@ -46,15 +48,29 @@ pub async fn initialize_app(
     let mut effects = EffectRegistry::new(app.sender());
     effects.register_default_glitch_effect();
 
-    Ok(AppComponents { app, tui, widget_states, effects, poller })
+    Ok(AppComponents { app, tui, widget_states, effects, poller, _log_guard: log_guard })
 }
 
-fn initialize_logging(sender: Sender<GlimEvent>) -> Result<()> {
-    let logging_config = LoggingConfig::from_env();
-    let _log_guard = init_logging(logging_config, Some(sender)).map_err(|e| {
+fn initialize_logging(sender: Sender<GlimEvent>, glim_config: &GlimConfig) -> Result<Option<WorkerGuard>> {
+    let mut logging_config = LoggingConfig::from_env();
+    
+    // Override with config if specified
+    if let Some(log_level) = &glim_config.log_level {
+        if let Ok(level) = log_level.parse() {
+            logging_config.console_level = level;
+            logging_config.file_level = level;
+        }
+        
+        // Disable logging if set to "Off"
+        if log_level == "Off" {
+            logging_config.log_dir = None;
+        }
+    }
+    
+    let log_guard = init_logging(logging_config, Some(sender)).map_err(|e| {
         GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
     })?;
-    Ok(())
+    Ok(log_guard)
 }
 
 fn initialize_terminal(event_handler: EventHandler) -> Result<Tui> {

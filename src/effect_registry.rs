@@ -74,8 +74,6 @@ pub enum FxId {
     PipelineActionsPopup,
     /// Project details popup dialog effects
     ProjectDetailsPopup,
-    /// Full screen area effects
-    Screen,
 }
 
 /// Central registry for managing visual effects in the Glim TUI application.
