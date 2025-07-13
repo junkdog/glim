@@ -1,0 +1,65 @@
+name: 🧪 CI
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      triggered_by:
+        description: 'Triggered by workflow'
+        required: false
+        default: 'manual'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # Wait for quick-test to pass on PRs
+  quick-test:
+    name: ⚡ Quick Test Gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Wait for quick-test
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          check-name: '⚡ Quick Check'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+  # Additional validation (after quick-test passes)
+  extended-checks:
+    name: 🔍 Extended Checks
+    runs-on: ubuntu-latest
+    needs: [quick-test]
+    if: always() && (needs.quick-test.result == 'success' || github.event_name != 'pull_request')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      
+      - name: 🔧 Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      - name: 🔒 Security audit
+        run: |
+          cargo install cargo-audit
+          cargo audit
+
+      - name: 📚 Build documentation
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      - name: 📦 Package verification
+        run: cargo package --allow-dirty
+
+      - name: 📤 Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: target/doc/

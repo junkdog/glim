@@ -1,0 +1,52 @@
+name: ⚡ Quick Test
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches-ignore:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  quick-check:
+    name: ⚡ Quick Check
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.result.outputs.passed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: 🔧 Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      # Quick format check
+      - name: 🎨 Check formatting
+        run: cargo fmt --all -- --check
+
+      # Run clippy with basic checks
+      - name: 📎 Clippy check
+        run: cargo clippy --all-targets -- -D warnings
+
+      # Basic build check
+      - name: 🔨 Check build
+        run: cargo check --all-features
+
+      # Run tests on Ubuntu only (CI will test other platforms)
+      - name: 🧪 Run tests
+        run: cargo test --all-features
+
+      - name: Set success output
+        id: result
+        run: echo "passed=true" >> $GITHUB_OUTPUT

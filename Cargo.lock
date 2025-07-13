@@ -826,7 +826,6 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
- "colorsys",
  "compact_str 0.8.0",
  "confy",
  "crossterm",
