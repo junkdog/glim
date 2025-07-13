@@ -48,6 +48,7 @@ impl InputProcessor for ConfigProcessor {
                             .handle_event(&CrosstermEvent::Key(*code));
                     }
                 },
+                KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
                 _ => {
                     if !popup.is_current_field_dropdown() {
                         popup
@@ -55,6 +56,7 @@ impl InputProcessor for ConfigProcessor {
                             .handle_event(&CrosstermEvent::Key(*code));
                     }
                 },
+
             }
         }
     }

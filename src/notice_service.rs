@@ -32,6 +32,7 @@ pub enum NoticeLevel {
 pub enum NoticeMessage {
     GeneralMessage(CompactString),
     JobLogDownloaded(ProjectId, PipelineId, JobId),
+    ScreenCaptured,
     // InvalidGitlabToken,
     // ExpiredGitlabToken,
     ConfigError(CompactString),
@@ -76,6 +77,10 @@ impl NoticeService {
             GlimEvent::JobLogDownloaded(_project_id, _job_id, _) => self.push_notice(
                 NoticeLevel::Info,
                 NoticeMessage::GeneralMessage("Job log downloaded".into()),
+            ),
+            GlimEvent::ScreenCaptureToClipboard(_) => self.push_notice(
+                NoticeLevel::Info,
+                NoticeMessage::ScreenCaptured,
             ),
             _ => {},
         }

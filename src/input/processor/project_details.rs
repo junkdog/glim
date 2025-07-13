@@ -39,6 +39,7 @@ impl ProjectDetailsProcessor {
             KeyCode::Char('o') if self.selected.is_some() => self
                 .sender
                 .dispatch(GlimEvent::PipelineActionsOpen(self.project_id, self.selected.unwrap())),
+            KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
             _ => (),
         }
     }

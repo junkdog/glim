@@ -227,6 +227,25 @@ impl GlimApp {
                 ui.filter_input_active = true;
             }
 
+            GlimEvent::ScreenCapture => {
+                debug!("Screen capture requested");
+                // The actual screen capture will be handled in the rendering loop
+                // where we have access to the frame buffer
+                ui.capture_screen_requested = true;
+            }
+
+            GlimEvent::ScreenCaptureToClipboard(ansi_string) => {
+                debug!("Copying screen capture to clipboard");
+                match self.clipboard.set_text(ansi_string) {
+                    Ok(_) => {
+                        info!("Screen buffer captured and copied to clipboard");
+                    },
+                    Err(e) => {
+                        warn!(error = %e, "Failed to copy screen capture to clipboard");
+                    }
+                }
+            }
+
             _ => {},
         }
 

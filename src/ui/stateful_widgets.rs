@@ -29,6 +29,7 @@ pub struct StatefulWidgets {
     pub filter_input_active: bool,
     pub filter_input_text: CompactString,
     pub temporary_filter: Option<CompactString>,
+    pub capture_screen_requested: bool,
     current_filtered_indices: Vec<usize>,
 }
 
@@ -46,6 +47,7 @@ impl StatefulWidgets {
             filter_input_active: false,
             filter_input_text: CompactString::default(),
             temporary_filter: None,
+            capture_screen_requested: false,
             current_filtered_indices: Vec::new(),
         }
     }

@@ -53,7 +53,8 @@ pub enum GlimEvent {
     ProjectUpdated(Box<Project>),
     ProjectsFetch,
     ProjectsLoaded(Vec<ProjectDto>),
-    ShowSortMenu,
+    ScreenCapture,
+    ScreenCaptureToClipboard(String),
 }
 
 #[derive(Debug, Clone, Copy)]

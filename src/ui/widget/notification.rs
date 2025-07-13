@@ -28,7 +28,8 @@ impl NotificationState {
         let project_name = match notice.message {
             NoticeMessage::GeneralMessage(_)
             | NoticeMessage::ConfigError(_)
-            | NoticeMessage::JsonDeserializeError(_, _) => None,
+            | NoticeMessage::JsonDeserializeError(_, _)
+            | NoticeMessage::ScreenCaptured => None,
 
             NoticeMessage::JobLogDownloaded(id, _, _)
             | NoticeMessage::GitlabGetJobsError(id, _, _)
@@ -86,6 +87,9 @@ impl StatefulWidget for Notification {
             NoticeMessage::JobLogDownloaded(_, _, _) => Line::from(vec![
                 Span::from("Finished downloading job log for "),
                 Span::from(project).style(theme().notification_project),
+            ]),
+            NoticeMessage::ScreenCaptured => Line::from(vec![
+                Span::from("Screen contents copied to clipboard"),
             ]),
         };
 

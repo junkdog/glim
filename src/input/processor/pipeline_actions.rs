@@ -51,6 +51,7 @@ impl PipelineActionsProcessor {
                 self.sender
                     .dispatch(GlimEvent::PipelineActionsClose)
             },
+            KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
             _ => (),
         }
     }

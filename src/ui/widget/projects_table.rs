@@ -50,7 +50,6 @@ impl StatefulWidget for ProjectsTable<'_> {
                 ("a", "last notification"),
                 ("f/", "filter"),
                 ("r", "refresh"),
-                ("s", "sort"),
                 ("p", "pipeline refresh"),
                 ("↑↓", "selection"),
                 ("↵", "details"),

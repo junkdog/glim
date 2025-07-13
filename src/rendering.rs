@@ -4,8 +4,10 @@ use ratatui::{
     Frame,
 };
 use tachyonfx::{Duration, EffectRenderer, Shader};
+use tracing::debug;
 
 use crate::{
+    dispatcher::Dispatcher,
     effect_registry::EffectRegistry,
     glim_app::GlimApp,
     theme::theme,
@@ -32,6 +34,11 @@ pub fn render_main_ui(
     render_projects_table(f, app, widget_states, layout[0]);
     render_popups(f, widget_states, layout[0], last_tick);
     render_effects(f, widget_states, effects, last_tick, layout[0], frame_area);
+    
+    // Handle screen capture if requested
+    if widget_states.capture_screen_requested {
+        handle_screen_capture(f, app, widget_states);
+    }
 }
 
 fn render_projects_table(
@@ -108,4 +115,16 @@ fn render_config_popup(
     f.buffer_mut()
         .set_style(Rect::new(cursor.x, cursor.y, 1, 1), theme().input_selected);
     f.set_cursor_position(cursor);
+}
+
+fn handle_screen_capture(f: &mut Frame, app: &GlimApp, widget_states: &mut StatefulWidgets) {
+    widget_states.capture_screen_requested = false;
+    
+    debug!("Converting screen buffer to ANSI string using tachyonfx");
+    
+    // Use tachyonfx's built-in function to convert buffer to ANSI string
+    let ansi_output = tachyonfx::render_as_ansi_string(f.buffer_mut());
+    
+    // Dispatch event to copy to clipboard since we can't access app's clipboard here
+    app.dispatch(crate::event::GlimEvent::ScreenCaptureToClipboard(ansi_output));
 }
