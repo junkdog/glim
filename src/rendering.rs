@@ -3,7 +3,7 @@ use ratatui::{
     prelude::{Direction, Rect},
     Frame,
 };
-use tachyonfx::{Duration, EffectRenderer, Shader};
+use tachyonfx::Duration;
 use tracing::debug;
 
 use crate::{
@@ -33,7 +33,7 @@ pub fn render_main_ui(
 
     render_projects_table(f, app, widget_states, layout[0]);
     render_popups(f, widget_states, layout[0], last_tick);
-    render_effects(f, widget_states, effects, last_tick, layout[0], frame_area);
+    render_effects(f, effects, last_tick, frame_area);
 
     // Handle screen capture if requested
     if widget_states.capture_screen_requested {
@@ -88,17 +88,10 @@ fn render_popups(
 
 fn render_effects(
     f: &mut Frame,
-    widget_states: &mut StatefulWidgets,
     effects: &mut EffectRegistry,
     last_tick: Duration,
-    layout_area: Rect,
     frame_area: Rect,
 ) {
-    if let Some(shader) = &mut widget_states.table_fade_in {
-        f.render_effect(shader, layout_area, last_tick);
-        widget_states.table_fade_in.take_if(|s| s.done());
-    }
-
     effects.process_effects(last_tick, f.buffer_mut(), frame_area);
 }
 

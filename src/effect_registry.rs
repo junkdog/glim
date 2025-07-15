@@ -106,47 +106,6 @@ pub struct EffectRegistry {
 }
 
 impl EffectRegistry {
-    /// Applies visual effects in response to application events.
-    ///
-    /// This method serves as the main event handler for the effect system,
-    /// translating application events into appropriate visual effects.
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The application event that may trigger visual effects
-    ///
-    /// # Supported Events
-    ///
-    /// - `GlitchOverride`: Triggers ramped-up glitch effects
-    /// - `CloseProjectDetails`: Initiates project details popup close animation
-    /// - `ClosePipelineActions`: Initiates pipeline actions popup close animation
-    /// - `CloseConfig`: Initiates config popup close animation
-    pub fn apply(&mut self, event: &GlimEvent) {
-        match event {
-            GlimEvent::GlitchOverride(g) => self.register_ramped_up_glitch_effect(*g),
-            GlimEvent::ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
-            GlimEvent::PipelineActionsClose => {
-                self.register_close_popup(FxId::PipelineActionsPopup)
-            },
-            GlimEvent::ConfigClose => self.register_close_popup(FxId::ConfigPopup),
-            _ => (),
-        }
-    }
-
-    /// Updates the screen area reference for layout-aware effects.
-    ///
-    /// This method should be called whenever the terminal is resized or the
-    /// screen layout changes to ensure effects render correctly.
-    ///
-    /// # Arguments
-    ///
-    /// * `screen_area` - The new screen dimensions
-    pub fn update_screen_area(&self, screen_area: Rect) {
-        self.screen_area.set(screen_area);
-    }
-}
-
-impl EffectRegistry {
     /// Creates a new effect registry with the specified event sender.
     ///
     /// # Arguments
@@ -164,6 +123,45 @@ impl EffectRegistry {
         }
     }
 
+    /// Applies visual effects in response to application events.
+    ///
+    /// This method serves as the main event handler for the effect system,
+    /// translating application events into appropriate visual effects.
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The application event that may trigger visual effects
+    ///
+    /// # Supported Events
+    ///
+    /// - `GlitchOverride`: Triggers ramped-up glitch effects
+    /// - `CloseProjectDetails`: Initiates project details popup close animation
+    /// - `ClosePipelineActions`: Initiates pipeline actions popup close animation
+    /// - `CloseConfig`: Initiates config popup close animation
+    pub fn apply(&mut self, event: &GlimEvent) {
+        use GlimEvent::*;
+        match event {
+            GlitchOverride(g) => self.register_ramped_up_glitch_effect(*g),
+            ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
+            PipelineActionsClose => self.register_close_popup(FxId::PipelineActionsPopup),
+
+            ConfigClose => self.register_close_popup(FxId::ConfigPopup),
+            _ => (),
+        }
+    }
+
+    /// Updates the screen area reference for layout-aware effects.
+    ///
+    /// This method should be called whenever the terminal is resized or the
+    /// screen layout changes to ensure effects render correctly.
+    ///
+    /// # Arguments
+    ///
+    /// * `screen_area` - The new screen dimensions
+    pub fn update_screen_area(&self, screen_area: Rect) {
+        self.screen_area.set(screen_area);
+    }
+
     /// Processes all active effects for the current frame.
     ///
     /// This method should be called once per frame to update and render
@@ -176,6 +174,23 @@ impl EffectRegistry {
     /// * `area` - The screen area to render effects within
     pub fn process_effects(&mut self, duration: Duration, buf: &mut Buffer, area: Rect) {
         self.effects.process_effects(duration, buf, area);
+    }
+
+    /// Creates a table fade-in effect for the projects table.
+    ///
+    /// This effect provides a smooth entrance animation when the projects
+    /// table is first displayed or refreshed.
+    ///
+    /// # Returns
+    ///
+    /// A parallel effect combining coalescing and left-to-right sweep animation
+    pub fn register_projects_table_new_data(&mut self) {
+        let fx = parallel(&[
+            coalesce(550),
+            sweep_in(Motion::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn)),
+        ]);
+
+        self.effects.add_effect(fx);
     }
 
     /// Creates a glitch effect based on the specified glitch state.
@@ -480,21 +495,6 @@ fn dim_screen_behind_popup(screen_area: RefRect, popup_area: RefRect) -> Effect 
 /// A `CellFilter` that matches cells within the specified rectangle
 fn ref_rect_filter(ref_rect: RefRect) -> CellFilter {
     CellFilter::PositionFn(ref_count(Box::new(move |pos| ref_rect.contains(pos))))
-}
-
-/// Creates a table fade-in effect for the projects table.
-///
-/// This effect provides a smooth entrance animation when the projects
-/// table is first displayed or refreshed.
-///
-/// # Returns
-///
-/// A parallel effect combining coalescing and left-to-right sweep animation
-pub fn fade_in_projects_table() -> Effect {
-    parallel(&[
-        coalesce(550),
-        sweep_in(Motion::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn)),
-    ])
 }
 
 /// Helper function for drawing notification border.

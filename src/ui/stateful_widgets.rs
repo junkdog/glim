@@ -2,12 +2,12 @@ use std::sync::mpsc::Sender;
 
 use compact_str::CompactString;
 use ratatui::widgets::TableState;
-use tachyonfx::{Duration, Effect};
+use tachyonfx::Duration;
 
 use crate::{
     dispatcher::Dispatcher,
     domain::Project,
-    effect_registry::{fade_in_projects_table, EffectRegistry},
+    effect_registry::EffectRegistry,
     event::GlimEvent,
     glim_app::{GlimApp, GlimConfig, Modulo},
     id::PipelineId,
@@ -22,7 +22,6 @@ pub struct StatefulWidgets {
     pub sender: Sender<GlimEvent>,
     pub project_table_state: TableState,
     pub config_popup_state: Option<ConfigPopupState>,
-    pub table_fade_in: Option<Effect>,
     pub project_details: Option<ProjectDetailsPopupState>,
     pub pipeline_actions: Option<PipelineActionsPopupState>,
     pub notice: Option<NotificationState>,
@@ -39,7 +38,6 @@ impl StatefulWidgets {
             last_frame: Duration::default(),
             sender,
             project_table_state: TableState::default().with_selected(0),
-            table_fade_in: None,
             config_popup_state: None,
             project_details: None,
             pipeline_actions: None,
@@ -56,9 +54,7 @@ impl StatefulWidgets {
         match event {
             GlimEvent::ProjectNext => self.handle_project_selection(1, app),
             GlimEvent::ProjectPrevious => self.handle_project_selection(-1, app),
-
-            GlimEvent::ProjectsLoaded(_) => self.fade_in_projects_table(),
-
+            GlimEvent::ProjectsLoaded(_) => effects.register_projects_table_new_data(),
             GlimEvent::ProjectDetailsOpen(id) => {
                 let popup_area = RefRect::default();
                 effects.register_project_details(popup_area.clone());
@@ -91,10 +87,6 @@ impl StatefulWidgets {
 
             _ => (),
         }
-    }
-
-    fn fade_in_projects_table(&mut self) {
-        self.table_fade_in = Some(fade_in_projects_table());
     }
 
     fn refresh_project_details(&mut self, project: &Project) {
