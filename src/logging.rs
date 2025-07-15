@@ -5,7 +5,7 @@ use directories::ProjectDirs;
 use tracing::{Level, Metadata};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
-    filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer, reload,
+    filter::EnvFilter, fmt, layer::SubscriberExt, reload, util::SubscriberInitExt, Layer,
 };
 
 use crate::event::GlimEvent;
@@ -41,7 +41,7 @@ impl LoggingReloadHandle {
                 .with_default_directive(file_level.into())
                 .from_env_lossy();
             if let Err(e) = handle.reload(filter) {
-                eprintln!("Failed to reload file log level: {}", e);
+                eprintln!("Failed to reload file log level: {e}");
             }
         }
 
@@ -51,7 +51,7 @@ impl LoggingReloadHandle {
                 .with_default_directive(console_level.into())
                 .from_env_lossy();
             if let Err(e) = handle.reload(filter) {
-                eprintln!("Failed to reload console log level: {}", e);
+                eprintln!("Failed to reload console log level: {e}");
             }
         }
     }
@@ -155,7 +155,6 @@ where
     }
 }
 
-
 /// Visitor to extract log messages from tracing events
 struct LogMessageVisitor {
     message: Option<CompactString>,
@@ -205,7 +204,7 @@ pub fn init_logging(
         let file_filter = EnvFilter::builder()
             .with_default_directive(config.file_level.into())
             .from_env_lossy();
-        
+
         let (file_layer, file_reload) = reload::Layer::new(file_filter);
         reload_handle.file_reload_handle = Some(file_reload);
 
@@ -230,7 +229,7 @@ pub fn init_logging(
         let console_filter = EnvFilter::builder()
             .with_default_directive(config.console_level.into())
             .from_env_lossy();
-        
+
         let (console_layer_filter, console_reload) = reload::Layer::new(console_filter);
         reload_handle.console_reload_handle = Some(console_reload);
 

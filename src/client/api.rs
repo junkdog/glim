@@ -37,21 +37,6 @@ struct GitlabApiError2 {
 }
 
 impl GitlabApi {
-    /// Create a new GitLab API client
-    pub fn new(config: ClientConfig) -> Result<Self> {
-        config.validate()?;
-
-        let client = Client::builder()
-            .timeout(config.request.timeout)
-            .build()
-            .map_err(ClientError::Http)?;
-
-        Ok(Self {
-            client: RwLock::new(client),
-            config: RwLock::new(config),
-        })
-    }
-
     pub fn force_new(config: ClientConfig) -> Result<Self> {
         let client = Client::builder()
             .timeout(config.request.timeout)
@@ -127,25 +112,6 @@ impl GitlabApi {
         let response = self.authenticated_request(&url).send().await?;
         let body = response.text().await?;
         Ok(body.into())
-    }
-
-    /// Validate API connection and credentials
-    #[instrument(skip(self))]
-    pub async fn validate_connection(&self) -> Result<()> {
-        let query = ProjectQuery::new().with_per_page(1);
-        let url = self.build_projects_url(&query);
-
-        let response: serde_json::Value = self.get_json(&url).await?;
-
-        if response.is_array() {
-            debug!("Connection validation successful");
-            Ok(())
-        } else {
-            Err(ClientError::gitlab_api(format_compact!(
-                "Invalid response format: {}",
-                response
-            )))
-        }
     }
 
     /// Update configuration
@@ -337,6 +303,23 @@ mod tests {
 
     use super::*;
 
+    impl GitlabApi {
+        /// Create a new GitLab API client
+        pub fn new(config: ClientConfig) -> Result<Self> {
+            config.validate()?;
+
+            let client = Client::builder()
+                .timeout(config.request.timeout)
+                .build()
+                .map_err(ClientError::Http)?;
+
+            Ok(Self {
+                client: RwLock::new(client),
+                config: RwLock::new(config),
+            })
+        }
+    }
+
     fn test_config() -> ClientConfig {
         ClientConfig::new("https://gitlab.example.com", "test-token")
     }
@@ -377,7 +360,7 @@ mod tests {
         let config = test_config().with_search_filter(Some("frontend".into()));
         let api = GitlabApi::new(config).unwrap();
 
-        let mut query = ProjectQuery::new()
+        let mut query = ProjectQuery::default()
             .with_search_filter(Some("frontend".into()))
             .with_per_page(50);
         query.include_statistics = true;

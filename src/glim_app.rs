@@ -51,7 +51,12 @@ pub struct GlimConfig {
 }
 
 impl GlimApp {
-    pub fn new(sender: Sender<GlimEvent>, config_path: PathBuf, gitlab: GitlabService, log_reload_handle: LoggingReloadHandle) -> Self {
+    pub fn new(
+        sender: Sender<GlimEvent>,
+        config_path: PathBuf,
+        gitlab: GitlabService,
+        log_reload_handle: LoggingReloadHandle,
+    ) -> Self {
         let mut input = InputMultiplexer::new(sender.clone());
         input.push(Box::new(NormalModeProcessor::new(sender.clone())));
 
@@ -174,7 +179,7 @@ impl GlimApp {
                 let client_config = ClientConfig::from(config.clone())
                     .with_debug_logging(self.gitlab.config().debug.log_responses);
                 let _ = self.gitlab.update_config(client_config);
-                
+
                 // Update logging level if specified
                 if let Some(ref log_level_str) = config.log_level {
                     self.update_logging_level(log_level_str);
@@ -361,7 +366,7 @@ impl GlimApp {
             _ => {
                 warn!("Invalid log level: {}, keeping current level", log_level_str);
                 return;
-            }
+            },
         };
 
         info!("Updating log level to: {}", level);

@@ -43,7 +43,7 @@ pub async fn initialize_app(
 
     let (service, poller) =
         create_gitlab_service_and_poller(sender.clone(), config.clone(), debug).await?;
-    
+
     // We need to move the log_reload_handle into the app, so we can't use it in AppComponents
     // Instead, we'll create a separate handle for the app and keep one for external use
     let app = GlimApp::new(sender.clone(), config_path, service, log_reload_handle);
@@ -84,9 +84,10 @@ fn initialize_logging(
         }
     }
 
-    let (log_guard, log_reload_handle) = init_logging(logging_config, Some(sender)).map_err(|e| {
-        GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
-    })?;
+    let (log_guard, log_reload_handle) =
+        init_logging(logging_config, Some(sender)).map_err(|e| {
+            GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
+        })?;
     Ok((log_guard, log_reload_handle))
 }
 

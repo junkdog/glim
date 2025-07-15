@@ -256,11 +256,6 @@ impl ProjectQuery {
         self
     }
 
-    /// Create a new project query
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Set updated after filter
     pub fn with_updated_after(mut self, updated_after: Option<DateTime<Utc>>) -> Self {
         self.updated_after = updated_after;
@@ -268,6 +263,7 @@ impl ProjectQuery {
     }
 
     /// Set per page limit
+    #[allow(dead_code)]
     pub fn with_per_page(mut self, per_page: u32) -> Self {
         self.per_page = per_page;
         self

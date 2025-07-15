@@ -29,15 +29,6 @@ pub struct GitlabService {
 }
 
 impl GitlabService {
-    /// Create a new GitLab service
-    pub fn new(config: ClientConfig, sender: Sender<GlimEvent>) -> Result<Self> {
-        let api = Arc::new(GitlabApi::new(config)?);
-        let handle = Handle::try_current().map_err(|_| {
-            ClientError::config("GitlabService must be created within a Tokio runtime context")
-        })?;
-        Ok(Self { api, sender, handle })
-    }
-
     /// Create service from existing API client
     pub fn from_api(api: Arc<GitlabApi>, sender: Sender<GlimEvent>) -> Result<Self> {
         let handle = Handle::try_current().map_err(|_| {
@@ -192,23 +183,6 @@ impl GitlabService {
         }
     }
 
-    /// Validate GitLab connection and credentials
-    #[instrument(skip(self))]
-    pub async fn validate_connection(&self) -> Result<()> {
-        info!("Validating GitLab connection");
-
-        match self.api.validate_connection().await {
-            Ok(()) => {
-                info!("GitLab connection validation successful");
-                Ok(())
-            },
-            Err(e) => {
-                error!(error = %e, "GitLab connection validation failed");
-                Err(e)
-            },
-        }
-    }
-
     /// Update service configuration
     pub fn update_config(&self, config: ClientConfig) -> Result<()> {
         self.api.update_config(config)
@@ -223,11 +197,6 @@ impl GitlabService {
     #[allow(dead_code)]
     pub fn api(&self) -> &GitlabApi {
         &self.api
-    }
-
-    /// Get reference to the event sender
-    pub fn sender(&self) -> &Sender<GlimEvent> {
-        &self.sender
     }
 
     /// Spawn an async task to fetch projects
@@ -319,6 +288,18 @@ mod tests {
 
     use super::*;
     use crate::client::config::ClientConfig;
+
+    impl GitlabService {
+        /// Create a new GitLab service
+        pub fn new(config: ClientConfig, sender: Sender<GlimEvent>) -> Result<Self> {
+            let api = Arc::new(GitlabApi::new(config)?);
+            let handle = Handle::try_current().map_err(|_| {
+                ClientError::config("GitlabService must be created within a Tokio runtime context")
+            })?;
+
+            Ok(Self { api, sender, handle })
+        }
+    }
 
     fn test_config() -> ClientConfig {
         ClientConfig::new("https://gitlab.example.com", "test-token")
