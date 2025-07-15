@@ -66,7 +66,7 @@ impl GlimApp {
         }
     }
 
-    #[instrument(skip(self, event, ui, effects), fields(event_type = ?std::mem::discriminant(&event)))]
+    #[instrument(skip(self, event, ui, effects), fields(event_type = %event.variant_name()))]
     pub fn apply(
         &mut self,
         event: GlimEvent,

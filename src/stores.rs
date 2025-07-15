@@ -29,7 +29,7 @@ impl ProjectStore {
         }
     }
 
-    #[instrument(skip(self, event), fields(event_type = ?std::mem::discriminant(event)))]
+    #[instrument(skip(self, event), fields(event_type = %event.variant_name()))]
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             // requests jobs for pipelines that have not been loaded yet
@@ -181,7 +181,7 @@ fn is_older_than_7d(date: DateTime<Utc>) -> bool {
     Utc::now().signed_duration_since(date).num_days() > 7
 }
 
-#[instrument(skip(event), fields(event_type = ?std::mem::discriminant(event)))]
+#[instrument(skip(event))]
 pub fn log_event(event: &GlimEvent) {
     match event {
         GlimEvent::ProjectsFetch => info!("Requesting all projects from GitLab"),

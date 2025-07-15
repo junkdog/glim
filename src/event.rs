@@ -59,6 +59,56 @@ pub enum GlimEvent {
     ScreenCaptureToClipboard(String),
 }
 
+impl GlimEvent {
+    /// Get the variant name as a string slice (without "GlimEvent::" prefix)
+    pub fn variant_name(&self) -> &'static str {
+        match self {
+            GlimEvent::AppError(_) => "AppError",
+            GlimEvent::AppExit => "AppExit",
+            GlimEvent::AppTick => "AppTick",
+            GlimEvent::ApplyTemporaryFilter(_) => "ApplyTemporaryFilter",
+            GlimEvent::ConfigApply => "ConfigApply",
+            GlimEvent::ConfigClose => "ConfigClose",
+            GlimEvent::ConfigOpen => "ConfigOpen",
+            GlimEvent::ConfigUpdate(_) => "ConfigUpdate",
+            GlimEvent::FilterClear => "FilterClear",
+            GlimEvent::FilterInputBackspace => "FilterInputBackspace",
+            GlimEvent::FilterInputChar(_) => "FilterInputChar",
+            GlimEvent::FilterMenuClose => "FilterMenuClose",
+            GlimEvent::FilterMenuShow => "FilterMenuShow",
+            GlimEvent::GlitchOverride(_) => "GlitchOverride",
+            GlimEvent::InputKey(_) => "InputKey",
+            GlimEvent::JobLogDownloaded(_, _, _) => "JobLogDownloaded",
+            GlimEvent::JobLogFetch(_, _) => "JobLogFetch",
+            GlimEvent::JobOpenUrl(_, _, _) => "JobOpenUrl",
+            GlimEvent::JobsActiveFetch => "JobsActiveFetch",
+            GlimEvent::JobsFetch(_, _) => "JobsFetch",
+            GlimEvent::JobsLoaded(_, _, _) => "JobsLoaded",
+            GlimEvent::LogEntry(_) => "LogEntry",
+            GlimEvent::NotificationDismiss => "NotificationDismiss",
+            GlimEvent::NotificationLast => "NotificationLast",
+            GlimEvent::PipelineActionsClose => "PipelineActionsClose",
+            GlimEvent::PipelineActionsOpen(_, _) => "PipelineActionsOpen",
+            GlimEvent::PipelineOpenUrl(_, _) => "PipelineOpenUrl",
+            GlimEvent::PipelineSelected(_) => "PipelineSelected",
+            GlimEvent::PipelinesFetch(_) => "PipelinesFetch",
+            GlimEvent::PipelinesLoaded(_) => "PipelinesLoaded",
+            GlimEvent::ProjectDetailsClose => "ProjectDetailsClose",
+            GlimEvent::ProjectDetailsOpen(_) => "ProjectDetailsOpen",
+            GlimEvent::ProjectFetch(_) => "ProjectFetch",
+            GlimEvent::ProjectNext => "ProjectNext",
+            GlimEvent::ProjectOpenUrl(_) => "ProjectOpenUrl",
+            GlimEvent::ProjectPrevious => "ProjectPrevious",
+            GlimEvent::ProjectSelected(_) => "ProjectSelected",
+            GlimEvent::ProjectUpdated(_) => "ProjectUpdated",
+            GlimEvent::ProjectsFetch => "ProjectsFetch",
+            GlimEvent::ProjectsLoaded(_) => "ProjectsLoaded",
+            GlimEvent::ScreenCapture => "ScreenCapture",
+            GlimEvent::ScreenCaptureToClipboard(_) => "ScreenCaptureToClipboard",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum GlitchState {
     #[allow(dead_code)]

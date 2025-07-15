@@ -4,7 +4,7 @@ use std::sync::{mpsc::Sender, Arc};
 
 use chrono::{DateTime, Utc};
 use tokio::runtime::Handle;
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use super::{
     api::GitlabApi,
@@ -63,7 +63,7 @@ impl GitlabService {
 
         match self.api.get_projects(&query).await {
             Ok(projects) => {
-                info!(project_count = projects.len(), "Successfully fetched projects");
+                debug!(project_count = projects.len(), "Successfully fetched projects");
                 self.sender.dispatch(projects.into_glim_event());
                 Ok(())
             },
@@ -96,7 +96,7 @@ impl GitlabService {
 
         match self.api.get_pipelines(project_id, &query).await {
             Ok(pipelines) => {
-                info!(
+                debug!(
                     pipeline_count = pipelines.len(),
                     project_id = %project_id,
                     "Successfully fetched pipelines"
@@ -131,7 +131,7 @@ impl GitlabService {
 
         match self.api.get_jobs(project_id, pipeline_id).await {
             Ok(jobs) => {
-                info!(
+                debug!(
                     job_count = jobs.len(),
                     project_id = %project_id,
                     pipeline_id = %pipeline_id,
