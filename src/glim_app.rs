@@ -198,6 +198,7 @@ impl GlimApp {
                                 .expect("failed to save config");
                             self.dispatch(GlimEvent::ConfigUpdate(config));
                             self.dispatch(GlimEvent::ConfigClose);
+                            self.dispatch(GlimEvent::ProjectsFetch);
                         },
                         Err(e) => {
                             let glim_error = GlimError::GeneralError(e.to_string().into());
