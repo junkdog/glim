@@ -15,6 +15,7 @@ use crate::{
     event::GlimEvent,
     id::ProjectId,
     input::{processor::NormalModeProcessor, InputMultiplexer},
+    logging::LoggingReloadHandle,
     notice_service::{Notice, NoticeLevel, NoticeService},
     result::GlimError,
     stores::{log_event, ProjectStore},
@@ -34,6 +35,7 @@ pub struct GlimApp {
     notices: NoticeService,
     input: InputMultiplexer,
     clipboard: arboard::Clipboard,
+    log_reload_handle: LoggingReloadHandle,
 }
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -49,7 +51,7 @@ pub struct GlimConfig {
 }
 
 impl GlimApp {
-    pub fn new(sender: Sender<GlimEvent>, config_path: PathBuf, gitlab: GitlabService) -> Self {
+    pub fn new(sender: Sender<GlimEvent>, config_path: PathBuf, gitlab: GitlabService, log_reload_handle: LoggingReloadHandle) -> Self {
         let mut input = InputMultiplexer::new(sender.clone());
         input.push(Box::new(NormalModeProcessor::new(sender.clone())));
 
@@ -63,6 +65,7 @@ impl GlimApp {
             notices: NoticeService::new(),
             input,
             clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
+            log_reload_handle,
         }
     }
 
@@ -168,9 +171,14 @@ impl GlimApp {
 
             // configuration
             GlimEvent::ConfigUpdate(config) => {
-                let client_config = ClientConfig::from(config)
+                let client_config = ClientConfig::from(config.clone())
                     .with_debug_logging(self.gitlab.config().debug.log_responses);
                 let _ = self.gitlab.update_config(client_config);
+                
+                // Update logging level if specified
+                if let Some(ref log_level_str) = config.log_level {
+                    self.update_logging_level(log_level_str);
+                }
             },
             GlimEvent::ConfigApply => {
                 if let Some(config_popup) = ui.config_popup_state.as_ref() {
@@ -339,6 +347,25 @@ impl GlimApp {
 
     pub fn pop_notice(&mut self) -> Option<Notice> {
         self.notices.pop_notice()
+    }
+
+    /// Update the logging level at runtime
+    fn update_logging_level(&self, log_level_str: &str) {
+        let level = match log_level_str.to_lowercase().as_str() {
+            "off" => return, // Don't update if logging is off
+            "error" => tracing::Level::ERROR,
+            "warn" => tracing::Level::WARN,
+            "info" => tracing::Level::INFO,
+            "debug" => tracing::Level::DEBUG,
+            "trace" => tracing::Level::TRACE,
+            _ => {
+                warn!("Invalid log level: {}, keeping current level", log_level_str);
+                return;
+            }
+        };
+
+        info!("Updating log level to: {}", level);
+        self.log_reload_handle.update_levels(level, level);
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{
     effect_registry::EffectRegistry,
     event::{EventHandler, GlimEvent},
     glim_app::{GlimApp, GlimConfig},
-    logging::{init_logging, LoggingConfig},
+    logging::{init_logging, LoggingConfig, LoggingReloadHandle},
     result::{GlimError, Result},
     tui::Tui,
     ui::StatefulWidgets,
@@ -35,7 +35,7 @@ pub async fn initialize_app(
     let event_handler = EventHandler::new(std::time::Duration::from_millis(33));
     let sender = event_handler.sender();
 
-    let log_guard = initialize_logging(sender.clone(), &config)?;
+    let (log_guard, log_reload_handle) = initialize_logging(sender.clone(), &config)?;
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "Glim TUI starting up");
 
     let tui = initialize_terminal(event_handler)?;
@@ -43,7 +43,10 @@ pub async fn initialize_app(
 
     let (service, poller) =
         create_gitlab_service_and_poller(sender.clone(), config.clone(), debug).await?;
-    let app = GlimApp::new(sender.clone(), config_path, service);
+    
+    // We need to move the log_reload_handle into the app, so we can't use it in AppComponents
+    // Instead, we'll create a separate handle for the app and keep one for external use
+    let app = GlimApp::new(sender.clone(), config_path, service, log_reload_handle);
     app.dispatch(GlimEvent::ProjectsFetch);
     if config == GlimConfig::default() {
         app.dispatch(GlimEvent::ConfigOpen);
@@ -65,7 +68,7 @@ pub async fn initialize_app(
 fn initialize_logging(
     sender: Sender<GlimEvent>,
     glim_config: &GlimConfig,
-) -> Result<Option<WorkerGuard>> {
+) -> Result<(Option<WorkerGuard>, LoggingReloadHandle)> {
     let mut logging_config = LoggingConfig::from_env();
 
     // Override with config if specified
@@ -81,10 +84,10 @@ fn initialize_logging(
         }
     }
 
-    let log_guard = init_logging(logging_config, Some(sender)).map_err(|e| {
+    let (log_guard, log_reload_handle) = init_logging(logging_config, Some(sender)).map_err(|e| {
         GlimError::GeneralError(format!("Failed to initialize logging: {e}").into())
     })?;
-    Ok(log_guard)
+    Ok((log_guard, log_reload_handle))
 }
 
 fn initialize_terminal(event_handler: EventHandler) -> Result<Tui> {

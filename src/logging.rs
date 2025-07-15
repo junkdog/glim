@@ -5,7 +5,7 @@ use directories::ProjectDirs;
 use tracing::{Level, Metadata};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
-    filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
+    filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer, reload,
 };
 
 use crate::event::GlimEvent;
@@ -24,6 +24,37 @@ pub struct LoggingConfig {
     /// Maximum number of log files to keep for rotation
     #[allow(dead_code)]
     pub max_files: Option<usize>,
+}
+
+/// Handle for dynamically updating log levels
+pub struct LoggingReloadHandle {
+    file_reload_handle: Option<reload::Handle<EnvFilter, tracing_subscriber::Registry>>,
+    console_reload_handle: Option<reload::Handle<EnvFilter, tracing_subscriber::Registry>>,
+}
+
+impl LoggingReloadHandle {
+    /// Update log levels at runtime
+    pub fn update_levels(&self, file_level: Level, console_level: Level) {
+        // Update file logging level
+        if let Some(ref handle) = self.file_reload_handle {
+            let filter = EnvFilter::builder()
+                .with_default_directive(file_level.into())
+                .from_env_lossy();
+            if let Err(e) = handle.reload(filter) {
+                eprintln!("Failed to reload file log level: {}", e);
+            }
+        }
+
+        // Update console logging level
+        if let Some(ref handle) = self.console_reload_handle {
+            let filter = EnvFilter::builder()
+                .with_default_directive(console_level.into())
+                .from_env_lossy();
+            if let Err(e) = handle.reload(filter) {
+                eprintln!("Failed to reload console log level: {}", e);
+            }
+        }
+    }
 }
 
 impl Default for LoggingConfig {
@@ -124,6 +155,7 @@ where
     }
 }
 
+
 /// Visitor to extract log messages from tracing events
 struct LogMessageVisitor {
     message: Option<CompactString>,
@@ -153,9 +185,13 @@ impl tracing::field::Visit for LogMessageVisitor {
 pub fn init_logging(
     config: LoggingConfig,
     event_sender: Option<Sender<GlimEvent>>,
-) -> Result<Option<WorkerGuard>, Box<dyn std::error::Error>> {
+) -> Result<(Option<WorkerGuard>, LoggingReloadHandle), Box<dyn std::error::Error>> {
     let mut layers = vec![];
     let mut guard = None;
+    let mut reload_handle = LoggingReloadHandle {
+        file_reload_handle: None,
+        console_reload_handle: None,
+    };
 
     // Create file logging layer if log directory is specified
     if let Some(log_dir) = &config.log_dir {
@@ -166,24 +202,23 @@ pub fn init_logging(
         let (non_blocking, file_guard) = tracing_appender::non_blocking(file_appender);
         guard = Some(file_guard);
 
+        let file_filter = EnvFilter::builder()
+            .with_default_directive(config.file_level.into())
+            .from_env_lossy();
+        
+        let (file_layer, file_reload) = reload::Layer::new(file_filter);
+        reload_handle.file_reload_handle = Some(file_reload);
+
         let file_layer = if config.json_format {
             fmt::layer()
                 .json()
                 .with_writer(non_blocking)
-                .with_filter(
-                    EnvFilter::builder()
-                        .with_default_directive(config.file_level.into())
-                        .from_env_lossy(),
-                )
+                .with_filter(file_layer)
                 .boxed()
         } else {
             fmt::layer()
                 .with_writer(non_blocking)
-                .with_filter(
-                    EnvFilter::builder()
-                        .with_default_directive(config.file_level.into())
-                        .from_env_lossy(),
-                )
+                .with_filter(file_layer)
                 .boxed()
         };
 
@@ -192,15 +227,18 @@ pub fn init_logging(
 
     // Create console logging layer (for development/debugging)
     if std::env::var("GLIM_CONSOLE_LOGS").is_ok() {
+        let console_filter = EnvFilter::builder()
+            .with_default_directive(config.console_level.into())
+            .from_env_lossy();
+        
+        let (console_layer_filter, console_reload) = reload::Layer::new(console_filter);
+        reload_handle.console_reload_handle = Some(console_reload);
+
         let console_layer = fmt::layer()
             .with_target(true)
             .with_file(false)
             .with_line_number(false)
-            .with_filter(
-                EnvFilter::builder()
-                    .with_default_directive(config.console_level.into())
-                    .from_env_lossy(),
-            )
+            .with_filter(console_layer_filter)
             .boxed();
 
         layers.push(console_layer);
@@ -216,7 +254,7 @@ pub fn init_logging(
     let subscriber = tracing_subscriber::registry().with(layers);
     subscriber.init();
 
-    Ok(guard)
+    Ok((guard, reload_handle))
 }
 
 /// Convenience macro for logging with structured fields
