@@ -5,7 +5,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::{
-    client::{ClientConfig, GitlabPoller, GitlabService},
+    client::{ClientConfig, GitlabApi, GitlabPoller, GitlabService},
     dispatcher::Dispatcher,
     effect_registry::EffectRegistry,
     event::{EventHandler, GlimEvent},
@@ -41,9 +41,13 @@ pub async fn initialize_app(
     let tui = initialize_terminal(event_handler)?;
     let widget_states = StatefulWidgets::new(sender.clone());
 
-    let (service, poller) = create_gitlab_service_and_poller(sender.clone(), config, debug).await?;
+    let (service, poller) =
+        create_gitlab_service_and_poller(sender.clone(), config.clone(), debug).await?;
     let app = GlimApp::new(sender.clone(), config_path, service);
     app.dispatch(GlimEvent::ProjectsFetch);
+    if config == GlimConfig::default() {
+        app.dispatch(GlimEvent::ConfigOpen);
+    }
 
     let mut effects = EffectRegistry::new(app.sender());
     effects.register_default_glitch_effect();
@@ -100,12 +104,14 @@ async fn create_gitlab_service_and_poller(
 ) -> Result<(GitlabService, GitlabPoller)> {
     let client_config = ClientConfig::from(config).with_debug_logging(debug);
 
-    let service = GitlabService::new(client_config.clone(), sender.clone())?;
+    // Create a shared GitlabApi instance
+    let api = std::sync::Arc::new(GitlabApi::force_new(client_config.clone())?);
 
-    // Create a second service instance for the poller
-    let poller_service = GitlabService::new(client_config.clone(), sender)?;
-    let poller =
-        GitlabPoller::new(std::sync::Arc::new(poller_service), client_config.polling.clone());
+    // Create service using shared API
+    let service = GitlabService::from_api(api.clone(), sender.clone())?;
+
+    // Create poller using shared API
+    let poller = GitlabPoller::new(api, sender, client_config.polling.clone());
 
     Ok((service, poller))
 }

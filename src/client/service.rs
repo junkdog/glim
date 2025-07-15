@@ -15,6 +15,7 @@ use crate::{
     dispatcher::Dispatcher,
     event::{GlimEvent, IntoGlimEvent},
     id::{JobId, PipelineId, ProjectId},
+    result::GlimError::GeneralError,
 };
 
 /// High-level service for GitLab operations
@@ -38,20 +39,20 @@ impl GitlabService {
     }
 
     /// Create service from existing API client
-    #[allow(dead_code)]
     pub fn from_api(api: Arc<GitlabApi>, sender: Sender<GlimEvent>) -> Result<Self> {
-        let handle = Handle::current();
+        let handle = Handle::try_current().map_err(|_| {
+            ClientError::config("GitlabService must be created within a Tokio runtime context")
+        })?;
         Ok(Self { api, sender, handle })
-    }
-
-    /// Create service from existing parts (for internal use in spawn methods)
-    fn from_existing_parts(api: Arc<GitlabApi>, sender: Sender<GlimEvent>, handle: Handle) -> Self {
-        Self { api, sender, handle }
     }
 
     /// Fetch projects and dispatch results as events
     #[instrument(skip(self), fields(updated_after = ?updated_after))]
     pub async fn fetch_projects(&self, updated_after: Option<DateTime<Utc>>) -> Result<()> {
+        if !self.api.is_configured() {
+            return Ok(());
+        }
+
         info!("Fetching projects from GitLab");
 
         let query = self
@@ -83,6 +84,10 @@ impl GitlabService {
         project_id: ProjectId,
         updated_after: Option<DateTime<Utc>>,
     ) -> Result<()> {
+        if !self.api.is_configured() {
+            return Ok(());
+        }
+
         let query = self
             .api
             .config()
@@ -120,6 +125,10 @@ impl GitlabService {
         project_id: ProjectId,
         pipeline_id: PipelineId,
     ) -> Result<()> {
+        if !self.api.is_configured() {
+            return Ok(());
+        }
+
         match self.api.get_jobs(project_id, pipeline_id).await {
             Ok(jobs) => {
                 info!(
@@ -150,6 +159,10 @@ impl GitlabService {
     /// Download job log and dispatch results
     #[instrument(skip(self), fields(project_id = %project_id, job_id = %job_id))]
     pub async fn download_job_log(&self, project_id: ProjectId, job_id: JobId) -> Result<()> {
+        if !self.api.is_configured() {
+            return Ok(());
+        }
+
         info!("Downloading job log from GitLab");
 
         match self.api.get_job_trace(project_id, job_id).await {
@@ -197,15 +210,12 @@ impl GitlabService {
     }
 
     /// Update service configuration
-    pub fn update_config(&mut self, config: ClientConfig) -> Result<()> {
-        config.validate()?;
-        // Since api is Arc, we need to create a new instance
-        self.api = Arc::new(GitlabApi::new(config)?);
-        Ok(())
+    pub fn update_config(&self, config: ClientConfig) -> Result<()> {
+        self.api.update_config(config)
     }
 
     /// Get current configuration
-    pub fn config(&self) -> &ClientConfig {
+    pub fn config(&self) -> ClientConfig {
         self.api.config()
     }
 
@@ -226,9 +236,8 @@ impl GitlabService {
     pub fn spawn_fetch_projects(&self, updated_after: Option<DateTime<Utc>>) {
         let api = self.api.clone();
         let sender = self.sender.clone();
-        let handle = self.handle.clone();
         self.handle.spawn(async move {
-            let temp_service = Self::from_existing_parts(api, sender, handle);
+            let temp_service = Self::from_api(api, sender).unwrap();
             if let Err(e) = temp_service.fetch_projects(updated_after).await {
                 warn!("Background project fetch failed: {}", e);
             }
@@ -243,9 +252,8 @@ impl GitlabService {
     ) {
         let api = self.api.clone();
         let sender = self.sender.clone();
-        let handle = self.handle.clone();
         self.handle.spawn(async move {
-            let temp_service = Self::from_existing_parts(api, sender, handle);
+            let temp_service = Self::from_api(api, sender).unwrap();
             if let Err(e) = temp_service
                 .fetch_pipelines(project_id, updated_after)
                 .await
@@ -259,9 +267,8 @@ impl GitlabService {
     pub fn spawn_fetch_jobs(&self, project_id: ProjectId, pipeline_id: PipelineId) {
         let api = self.api.clone();
         let sender = self.sender.clone();
-        let handle = self.handle.clone();
         self.handle.spawn(async move {
-            let temp_service = Self::from_existing_parts(api, sender, handle);
+            let temp_service = Self::from_api(api, sender).unwrap();
             if let Err(e) = temp_service
                 .fetch_all_jobs(project_id, pipeline_id)
                 .await
@@ -275,9 +282,8 @@ impl GitlabService {
     pub fn spawn_download_job_log(&self, project_id: ProjectId, job_id: JobId) {
         let api = self.api.clone();
         let sender = self.sender.clone();
-        let handle = self.handle.clone();
         self.handle.spawn(async move {
-            let temp_service = Self::from_existing_parts(api, sender, handle);
+            let temp_service = Self::from_api(api, sender).unwrap();
             if let Err(e) = temp_service
                 .download_job_log(project_id, job_id)
                 .await
@@ -292,25 +298,17 @@ impl GitlabService {
 impl From<&ClientError> for crate::result::GlimError {
     fn from(err: &ClientError) -> Self {
         match err {
-            ClientError::Http(e) => {
-                crate::result::GlimError::GeneralError(format!("HTTP error: {e}").into())
-            },
-            ClientError::JsonParse { message, .. } => {
-                crate::result::GlimError::GeneralError(message.clone().into())
-            },
-            ClientError::GitlabApi { message } => {
-                crate::result::GlimError::GeneralError(message.clone())
-            },
-            ClientError::Config(msg) => crate::result::GlimError::GeneralError(msg.into()),
-            ClientError::Authentication => {
-                crate::result::GlimError::GeneralError("Authentication failed".into())
-            },
+            ClientError::Http(e) => GeneralError(format!("HTTP error: {e}").into()),
+            ClientError::JsonParse { message, .. } => GeneralError(message.clone().into()),
+            ClientError::GitlabApi { message } => GeneralError(message.clone()),
+            ClientError::Config(msg) => GeneralError(msg.into()),
+            ClientError::Authentication => GeneralError("Authentication failed".into()),
+            ClientError::Timeout => GeneralError("Request timeout".into()),
+            ClientError::InvalidUrl { url } => GeneralError(format!("Invalid URL: {url}").into()),
             ClientError::NotFound { resource } => {
-                crate::result::GlimError::GeneralError(format!("Not found: {resource}").into())
+                GeneralError(format!("Not found: {resource}").into())
             },
-            ClientError::RateLimit { .. } => {
-                crate::result::GlimError::GeneralError("Rate limit exceeded".into())
-            },
+            ClientError::RateLimit { .. } => GeneralError("Rate limit exceeded".into()),
         }
     }
 }
@@ -358,7 +356,7 @@ mod tests {
         let glim_error: crate::result::GlimError = (&client_error).into();
 
         match glim_error {
-            crate::result::GlimError::GeneralError(msg) => {
+            GeneralError(msg) => {
                 assert!(msg.contains("Test error"));
             },
             _ => panic!("Expected GeneralError"),

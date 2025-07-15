@@ -36,7 +36,7 @@ pub struct GlimApp {
     clipboard: arboard::Clipboard,
 }
 
-#[derive(Default, Debug, Clone, Deserialize, Serialize)]
+#[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlimConfig {
     /// The URL of the GitLab instance
     pub gitlab_url: CompactString,
@@ -46,18 +46,6 @@ pub struct GlimConfig {
     pub search_filter: Option<CompactString>,
     /// Logging level: Off, Error, Warn, Info, Debug, Trace
     pub log_level: Option<CompactString>,
-}
-
-impl GlimConfig {
-    pub fn validate(&self) -> Result<(), String> {
-        if self.gitlab_url.trim().is_empty() {
-            return Err("gitlab_url is required".to_string());
-        }
-        if self.gitlab_token.trim().is_empty() {
-            return Err("gitlab_token is required".to_string());
-        }
-        Ok(())
-    }
 }
 
 impl GlimApp {
@@ -191,10 +179,8 @@ impl GlimApp {
                         .with_debug_logging(self.gitlab.config().debug.log_responses);
 
                     // Create a temporary service for validation
-                    match GitlabService::new(client_config, self.sender.clone()) {
-                        Ok(_service) => {
-                            // Use async validation in blocking context - for now, skip validation in apply
-                            // as validation is already done in config.rs
+                    match self.gitlab.update_config(client_config) {
+                        Ok(_) => {
                             save_config(&self.config_path, config.clone())
                                 .expect("failed to save config");
                             self.dispatch(GlimEvent::ConfigUpdate(config));

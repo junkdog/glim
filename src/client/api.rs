@@ -1,5 +1,7 @@
 //! Core HTTP client for GitLab API
 
+use std::sync::RwLock;
+
 use chrono::Local;
 use compact_str::{format_compact, CompactString};
 use reqwest::{Client, RequestBuilder, Response};
@@ -16,10 +18,10 @@ use crate::{
 };
 
 /// Pure HTTP client for GitLab API
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct GitlabApi {
-    client: Client,
-    config: ClientConfig,
+    client: RwLock<Client>,
+    config: RwLock<ClientConfig>,
 }
 
 /// GitLab API error response formats
@@ -44,7 +46,22 @@ impl GitlabApi {
             .build()
             .map_err(ClientError::Http)?;
 
-        Ok(Self { client, config })
+        Ok(Self {
+            client: RwLock::new(client),
+            config: RwLock::new(config),
+        })
+    }
+
+    pub fn force_new(config: ClientConfig) -> Result<Self> {
+        let client = Client::builder()
+            .timeout(config.request.timeout)
+            .build()
+            .map_err(ClientError::Http)?;
+
+        Ok(Self {
+            client: RwLock::new(client),
+            config: RwLock::new(config),
+        })
     }
 
     /// Get projects from GitLab API
@@ -72,12 +89,10 @@ impl GitlabApi {
         project_id: ProjectId,
         pipeline_id: PipelineId,
     ) -> Result<Vec<JobDto>> {
-        let base_url = format_compact!(
-            "{}/projects/{}/pipelines/{}",
-            self.config.base_url,
-            project_id,
-            pipeline_id
-        );
+        let base_url = {
+            let config = self.config.read().unwrap();
+            format_compact!("{}/projects/{}/pipelines/{}", config.base_url, project_id, pipeline_id)
+        };
 
         // Fetch both regular jobs and trigger jobs concurrently
         let jobs_url = format_compact!("{}/jobs", base_url);
@@ -104,12 +119,10 @@ impl GitlabApi {
         project_id: ProjectId,
         job_id: JobId,
     ) -> Result<CompactString> {
-        let url = format_compact!(
-            "{}/projects/{}/jobs/{}/trace",
-            self.config.base_url,
-            project_id,
-            job_id
-        );
+        let url = {
+            let config = self.config.read().unwrap();
+            format_compact!("{}/projects/{}/jobs/{}/trace", config.base_url, project_id, job_id)
+        };
 
         let response = self.authenticated_request(&url).send().await?;
         let body = response.text().await?;
@@ -136,16 +149,32 @@ impl GitlabApi {
     }
 
     /// Update configuration
-    #[allow(dead_code)]
-    pub fn update_config(&mut self, config: ClientConfig) -> Result<()> {
+    pub fn update_config(&self, config: ClientConfig) -> Result<()> {
         config.validate()?;
-        self.config = config;
+
+        // Create new client with updated timeout
+        let client = Client::builder()
+            .timeout(config.request.timeout)
+            .build()
+            .map_err(ClientError::Http)?;
+
+        // Update both config and client atomically
+        *self.config.write().unwrap() = config;
+        *self.client.write().unwrap() = client;
+
         Ok(())
     }
 
     /// Get current configuration
-    pub fn config(&self) -> &ClientConfig {
-        &self.config
+    pub fn config(&self) -> ClientConfig {
+        self.config.read().unwrap().clone()
+    }
+
+    pub fn is_configured(&self) -> bool {
+        self.config
+            .read()
+            .map(|c| c.validate().is_ok())
+            .unwrap_or(false)
     }
 
     // Private helper methods
@@ -161,9 +190,11 @@ impl GitlabApi {
 
     /// Create authenticated request builder
     fn authenticated_request(&self, url: &str) -> RequestBuilder {
-        self.client
+        let client = self.client.read().unwrap();
+        let private_token = self.config.read().unwrap().private_token.clone();
+        client
             .get(url)
-            .header("PRIVATE-TOKEN", self.config.private_token.as_str())
+            .header("PRIVATE-TOKEN", private_token.as_str())
     }
 
     /// Handle HTTP response and deserialize JSON
@@ -176,8 +207,11 @@ impl GitlabApi {
         let body = response.text().await?;
 
         // Log response if debug is enabled
-        if self.config.debug.log_responses {
-            self.log_response_to_file(&url_path, &body);
+        {
+            let config = self.config.read().unwrap();
+            if config.debug.log_responses {
+                self.log_response_to_file(&url_path, &body, &config);
+            }
         }
 
         if status.is_success() {
@@ -222,7 +256,8 @@ impl GitlabApi {
 
     /// Build URL for projects endpoint
     fn build_projects_url(&self, query: &ProjectQuery) -> CompactString {
-        let mut url = format_compact!("{}/projects?", self.config.base_url);
+        let config = self.config.read().unwrap();
+        let mut url = format_compact!("{}/projects?", config.base_url);
 
         // Add query parameters
         url.push_str("search_namespaces=true");
@@ -254,9 +289,10 @@ impl GitlabApi {
 
     /// Build URL for pipelines endpoint
     fn build_pipelines_url(&self, project_id: ProjectId, query: &PipelineQuery) -> CompactString {
+        let config = self.config.read().unwrap();
         let mut url = format_compact!(
             "{}/projects/{}/pipelines?per_page={}",
-            self.config.base_url,
+            config.base_url,
             project_id,
             query.per_page
         );
@@ -269,8 +305,8 @@ impl GitlabApi {
     }
 
     /// Log HTTP response to file for debugging
-    fn log_response_to_file(&self, path: &str, body: &str) {
-        if let Some(log_dir) = &self.config.debug.log_directory {
+    fn log_response_to_file(&self, path: &str, body: &str, config: &ClientConfig) {
+        if let Some(log_dir) = &config.debug.log_directory {
             if !log_dir.exists() {
                 if let Err(e) = std::fs::create_dir_all(log_dir) {
                     warn!("Failed to create log directory: {}", e);
@@ -308,8 +344,12 @@ mod tests {
     #[test]
     fn test_api_creation() {
         let config = test_config();
-        let api = GitlabApi::new(config);
+        let api = GitlabApi::new(config.clone());
         assert!(api.is_ok());
+
+        let api = api.unwrap();
+        assert_eq!(api.config().base_url, config.base_url);
+        assert_eq!(api.config().private_token, config.private_token);
     }
 
     #[test]
@@ -317,6 +357,19 @@ mod tests {
         let config = ClientConfig::new("", "test-token");
         let api = GitlabApi::new(config);
         assert!(api.is_err());
+    }
+
+    #[test]
+    fn test_config_update() {
+        let config = test_config();
+        let api = GitlabApi::new(config).unwrap();
+
+        let new_config = ClientConfig::new("https://gitlab.new.com", "new-token");
+        assert!(api.update_config(new_config.clone()).is_ok());
+
+        let updated_config = api.config();
+        assert_eq!(updated_config.base_url, new_config.base_url);
+        assert_eq!(updated_config.private_token, new_config.private_token);
     }
 
     #[test]
@@ -376,28 +429,18 @@ mod tests {
 
     #[test]
     fn test_error_handling() {
+        let api = GitlabApi::new(test_config()).unwrap();
+
         // Test authentication error
-        let error = GitlabApi::handle_error_response::<()>(
-            &GitlabApi::new(test_config()).unwrap(),
-            401,
-            "",
-        );
+        let error = api.handle_error_response::<()>(401, "");
         assert!(matches!(error, Err(ClientError::Authentication)));
 
         // Test not found error
-        let error = GitlabApi::handle_error_response::<()>(
-            &GitlabApi::new(test_config()).unwrap(),
-            404,
-            "",
-        );
+        let error = api.handle_error_response::<()>(404, "");
         assert!(matches!(error, Err(ClientError::NotFound { .. })));
 
         // Test rate limit error
-        let error = GitlabApi::handle_error_response::<()>(
-            &GitlabApi::new(test_config()).unwrap(),
-            429,
-            "",
-        );
+        let error = api.handle_error_response::<()>(429, "");
         assert!(matches!(error, Err(ClientError::RateLimit { .. })));
     }
 }

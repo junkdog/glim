@@ -24,8 +24,6 @@ impl InputProcessor for ConfigProcessor {
                 KeyCode::Esc => self.sender.dispatch(GlimEvent::ConfigClose),
                 KeyCode::Down => popup.select_next_input(),
                 KeyCode::Up => popup.select_previous_input(),
-                KeyCode::Char('j') => popup.select_next_input(),
-                KeyCode::Char('k') => popup.select_previous_input(),
                 KeyCode::Tab => popup.select_next_input(),
                 KeyCode::BackTab => popup.select_previous_input(),
                 KeyCode::Left => {

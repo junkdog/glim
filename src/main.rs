@@ -5,7 +5,8 @@ use compact_str::ToCompactString;
 
 use crate::{
     app_init::{initialize_app, AppComponents},
-    config::{default_config_path, run_config_ui_loop},
+    config::default_config_path,
+    glim_app::GlimConfig,
     rendering::render_main_ui,
     result::Result,
 };
@@ -57,7 +58,7 @@ fn main() -> Result<()> {
         confy::load_path(&config_path)
             .map_err(|e| crate::result::GlimError::ConfigError(e.to_compact_string()))?
     } else {
-        initialize_config_ui(&config_path, debug)?
+        GlimConfig::default()
     };
 
     // Create a shared runtime for async operations
@@ -85,22 +86,4 @@ fn main() -> Result<()> {
 
     tui.exit()?;
     Ok(())
-}
-
-fn initialize_config_ui(
-    config_path: &std::path::Path,
-    debug: bool,
-) -> Result<crate::glim_app::GlimConfig> {
-    let event_handler = crate::event::EventHandler::new(std::time::Duration::from_millis(33));
-    let sender = event_handler.sender();
-    let backend = ratatui::backend::CrosstermBackend::new(std::io::stdout());
-    let terminal = ratatui::Terminal::new(backend).unwrap();
-    let mut tui = crate::tui::Tui::new(terminal, event_handler);
-    tui.enter()?;
-    let mut widget_states = crate::ui::StatefulWidgets::new(sender.clone());
-
-    let config =
-        run_config_ui_loop(&mut tui, &mut widget_states, sender, config_path.to_path_buf(), debug)?;
-    tui.exit()?;
-    Ok(config)
 }

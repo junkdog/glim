@@ -30,6 +30,16 @@ pub enum ClientError {
     #[error("Authentication failed")]
     Authentication,
 
+    /// Network timeout
+    #[error("Request timeout")]
+    #[allow(dead_code)]
+    Timeout,
+
+    /// Invalid URL format
+    #[error("Invalid URL: {url}")]
+    #[allow(dead_code)]
+    InvalidUrl { url: String },
+
     /// Resource not found
     #[error("Resource not found: {resource}")]
     NotFound { resource: String },
@@ -55,6 +65,12 @@ impl ClientError {
         Self::Config(message.into())
     }
 
+    /// Create an invalid URL error
+    #[allow(dead_code)]
+    pub fn invalid_url(url: impl Into<String>) -> Self {
+        Self::InvalidUrl { url: url.into() }
+    }
+
     /// Create a not found error
     pub fn not_found(resource: impl Into<String>) -> Self {
         Self::NotFound { resource: resource.into() }
@@ -63,6 +79,27 @@ impl ClientError {
     /// Create a rate limit error
     pub fn rate_limit(retry_after: Option<std::time::Duration>) -> Self {
         Self::RateLimit { retry_after }
+    }
+
+    /// Check if this error is retryable
+    #[allow(dead_code)]
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            ClientError::Http(e) => e.is_timeout() || e.is_connect(),
+            ClientError::Timeout => true,
+            ClientError::RateLimit { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Check if this error indicates a temporary network issue
+    #[allow(dead_code)]
+    pub fn is_network_error(&self) -> bool {
+        match self {
+            ClientError::Http(e) => e.is_timeout() || e.is_connect() || e.is_request(),
+            ClientError::Timeout => true,
+            _ => false,
+        }
     }
 }
 
@@ -85,5 +122,20 @@ mod tests {
         let err = ClientError::gitlab_api("Project not found");
         assert!(matches!(err, ClientError::GitlabApi { .. }));
         assert_eq!(err.to_string(), "GitLab API error: Project not found");
+    }
+
+    #[test]
+    fn test_retryable_errors() {
+        assert!(ClientError::Timeout.is_retryable());
+        assert!(ClientError::rate_limit(None).is_retryable());
+        assert!(!ClientError::Authentication.is_retryable());
+        assert!(!ClientError::config("test").is_retryable());
+    }
+
+    #[test]
+    fn test_network_errors() {
+        assert!(ClientError::Timeout.is_network_error());
+        assert!(!ClientError::Authentication.is_network_error());
+        assert!(!ClientError::config("test").is_network_error());
     }
 }
