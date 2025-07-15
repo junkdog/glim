@@ -29,7 +29,7 @@ pub struct ConfigPopupState {
     pub cursor_position: Position,
     input_fields: Vec<InputField>,
     pub error_message: Option<CompactString>,
-    popup_area: RefRect,
+    pub popup_area: RefRect,
 }
 
 impl ConfigPopup {

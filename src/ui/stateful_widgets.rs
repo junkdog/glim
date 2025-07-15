@@ -54,7 +54,10 @@ impl StatefulWidgets {
         match event {
             GlimEvent::ProjectNext => self.handle_project_selection(1, app),
             GlimEvent::ProjectPrevious => self.handle_project_selection(-1, app),
-            GlimEvent::ProjectsLoaded(_) => effects.register_projects_table_new_data(),
+            GlimEvent::ProjectsLoaded(_) => {
+                let exclude_area_from_fx = self.current_popup_area();
+                effects.register_projects_table_new_data(exclude_area_from_fx)
+            },
             GlimEvent::ProjectDetailsOpen(id) => {
                 let popup_area = RefRect::default();
                 effects.register_project_details(popup_area.clone());
@@ -86,6 +89,18 @@ impl StatefulWidgets {
             GlimEvent::ApplyTemporaryFilter(filter) => self.apply_temporary_filter(filter.clone()),
 
             _ => (),
+        }
+    }
+
+    fn current_popup_area(&self) -> Option<RefRect> {
+        if let Some(pd) = &self.project_details {
+            Some(pd.popup_area.clone())
+        } else if let Some(cp) = &self.config_popup_state {
+            Some(cp.popup_area.clone())
+        } else {
+            self.pipeline_actions
+                .as_ref()
+                .map(|pa| pa.popup_area.clone())
         }
     }
 

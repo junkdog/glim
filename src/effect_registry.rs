@@ -184,11 +184,17 @@ impl EffectRegistry {
     /// # Returns
     ///
     /// A parallel effect combining coalescing and left-to-right sweep animation
-    pub fn register_projects_table_new_data(&mut self) {
+    pub fn register_projects_table_new_data(&mut self, exclude_popup_area: Option<RefRect>) {
+        let filter = match exclude_popup_area {
+            Some(area) => AllOf(vec![Inner(Margin::new(1, 1)), Not(ref_rect_filter(area).into())]),
+            None => Inner(Margin::new(1, 1)),
+        };
+
         let fx = parallel(&[
             coalesce(550),
             sweep_in(Motion::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn)),
-        ]);
+        ])
+        .with_filter(filter);
 
         self.effects.add_effect(fx);
     }
@@ -493,7 +499,7 @@ fn dim_screen_behind_popup(screen_area: RefRect, popup_area: RefRect) -> Effect 
 /// # Returns
 ///
 /// A `CellFilter` that matches cells within the specified rectangle
-fn ref_rect_filter(ref_rect: RefRect) -> CellFilter {
+pub fn ref_rect_filter(ref_rect: RefRect) -> CellFilter {
     CellFilter::PositionFn(ref_count(Box::new(move |pos| ref_rect.contains(pos))))
 }
 

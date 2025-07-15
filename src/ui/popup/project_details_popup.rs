@@ -27,7 +27,7 @@ pub struct ProjectDetailsPopupState {
     project_stat_summary: Text<'static>,
     pub pipelines: PipelineTable, // widget
     pub pipelines_table_state: TableState,
-    popup_area: RefRect,
+    pub popup_area: RefRect,
 }
 
 impl ProjectDetailsPopup {

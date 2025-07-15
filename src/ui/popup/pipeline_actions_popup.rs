@@ -18,7 +18,7 @@ pub struct PipelineActionsPopup {}
 pub struct PipelineActionsPopupState {
     pub actions: Vec<GlimEvent>,
     pub list_state: ListState,
-    popup_area: RefRect,
+    pub popup_area: RefRect,
 }
 
 impl PipelineActionsPopupState {
