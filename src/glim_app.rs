@@ -180,7 +180,7 @@ impl GlimApp {
                     .with_debug_logging(self.gitlab.config().debug.log_responses);
                 let _ = self.gitlab.update_config(client_config);
 
-                // Update logging level if specified
+                // Update logging level
                 if let Some(ref log_level_str) = config.log_level {
                     self.update_logging_level(log_level_str);
                 }
@@ -358,7 +358,6 @@ impl GlimApp {
     /// Update the logging level at runtime
     fn update_logging_level(&self, log_level_str: &str) {
         let level = match log_level_str.to_lowercase().as_str() {
-            "off" => return, // Don't update if logging is off
             "error" => tracing::Level::ERROR,
             "warn" => tracing::Level::WARN,
             "info" => tracing::Level::INFO,

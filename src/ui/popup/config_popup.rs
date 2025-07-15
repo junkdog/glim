@@ -40,17 +40,17 @@ impl ConfigPopup {
 
 impl ConfigPopupState {
     pub fn new(config: GlimConfig, popup_area: RefRect) -> Self {
-        let log_level_options = vec!["Trace", "Debug", "Info", "Warn", "Error", "Off"];
+        let log_level_options = vec!["Trace", "Debug", "Info", "Warn", "Error"];
 
         let current_log_level = config
             .log_level
             .as_ref()
             .map(|s| s.as_str())
-            .unwrap_or("Off");
+            .unwrap_or("Error");
         let log_level_index = log_level_options
             .iter()
             .position(|&level| level == current_log_level)
-            .unwrap_or(5); // Default to "Off"
+            .unwrap_or(4); // Default to "Error"
 
         let mut log_level_field = InputField::builder()
             .label("log level")
@@ -160,8 +160,8 @@ impl ConfigPopupState {
             Some(search_filter_value.to_compact_string())
         };
 
-        let log_level = if log_level_value == "Off" || log_level_value.is_empty() {
-            None
+        let log_level = if log_level_value.is_empty() {
+            Some("Error".to_compact_string())
         } else {
             Some(log_level_value.to_compact_string())
         };
