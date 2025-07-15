@@ -121,7 +121,7 @@ pub enum PipelineStatus {
 impl Default for PollingConfig {
     fn default() -> Self {
         Self {
-            projects_interval: Duration::from_secs(15),
+            projects_interval: Duration::from_secs(60),
             jobs_interval: Duration::from_secs(30),
         }
     }
