@@ -71,9 +71,16 @@ fn main() -> Result<()> {
         mut tui,
         mut widget_states,
         mut effects,
-        poller: _poller,
+        poller,
         _log_guard,
     } = rt.block_on(async { initialize_app(config_path, config, debug).await })?;
+
+    // Start the poller in the background
+    rt.spawn(async move {
+        if let Err(e) = poller.start().await {
+            tracing::error!("GitLab poller failed: {}", e);
+        }
+    });
 
     while app.is_running() {
         widget_states.last_frame = app.process_timers();
