@@ -116,8 +116,10 @@ fn handle_screen_capture(f: &mut Frame, app: &GlimApp, widget_states: &mut State
     debug!("Converting screen buffer to ANSI string using tachyonfx");
 
     // Use tachyonfx's built-in function to convert buffer to ANSI string
-    let ansi_output = tachyonfx::render_as_ansi_string(f.buffer_mut());
+    let ansi_output = tachyonfx::buffer_to_ansi_string(f.buffer_mut(), false);
 
     // Dispatch event to copy to clipboard since we can't access app's clipboard here
-    app.dispatch(crate::event::GlimEvent::ScreenCaptureToClipboard(ansi_output));
+    app.dispatch(crate::event::GlimEvent::ScreenCaptureToClipboard(
+        ansi_output,
+    ));
 }

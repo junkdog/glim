@@ -54,7 +54,10 @@ impl GitlabService {
 
         match self.api.get_projects(&query).await {
             Ok(projects) => {
-                debug!(project_count = projects.len(), "Successfully fetched projects");
+                debug!(
+                    project_count = projects.len(),
+                    "Successfully fetched projects"
+                );
                 self.sender.dispatch(projects.into_glim_event());
                 Ok(())
             },

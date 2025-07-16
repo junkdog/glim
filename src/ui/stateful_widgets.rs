@@ -2,7 +2,7 @@ use std::sync::mpsc::Sender;
 
 use compact_str::CompactString;
 use ratatui::widgets::TableState;
-use tachyonfx::Duration;
+use tachyonfx::{Duration, RefRect};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -13,7 +13,7 @@ use crate::{
     id::PipelineId,
     ui::{
         popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState},
-        widget::{NotificationState, RefRect},
+        widget::NotificationState,
     },
 };
 

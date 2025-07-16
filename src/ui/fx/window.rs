@@ -41,8 +41,8 @@ impl PopupWindow {
         }
     }
 
-    // pub fn process_opening(&mut self, _duration: Duration, _buf: &mut Buffer, _area: Rect) {
-    //     // TODO: Implement opening effects - currently disabled for refactoring
+    // pub fn process_opening(&mut self, _duration: Duration, _buf: &mut Buffer, _area: Rect)
+    // {     // TODO: Implement opening effects - currently disabled for refactoring
     // }
 }
 
@@ -61,9 +61,9 @@ impl Widget for PopupWindow {
 //         "open_window"
 //     }
 //
-//     fn process(&mut self, _duration: Duration, buf: &mut Buffer, area: Rect) -> Option<Duration> {
-//         // TODO: Implement parent window effects - currently disabled for refactoring
-//         Clear.render(area, buf);
+//     fn process(&mut self, _duration: Duration, buf: &mut Buffer, area: Rect) ->
+// Option<Duration> {         // TODO: Implement parent window effects - currently
+// disabled for refactoring         Clear.render(area, buf);
 //         self.window_block().render(area, buf);
 //         None
 //     }

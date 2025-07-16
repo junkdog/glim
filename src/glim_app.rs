@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::mpsc::Sender};
 use compact_str::{format_compact, CompactString, ToCompactString};
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
-use tachyonfx::Duration;
+use tachyonfx::{Duration, RefRect};
 use tracing::{debug, info, instrument, warn};
 
 use crate::{
@@ -19,10 +19,7 @@ use crate::{
     notice_service::{Notice, NoticeLevel, NoticeService},
     result::GlimError,
     stores::{log_event, ProjectStore},
-    ui::{
-        widget::{NotificationState, RefRect},
-        StatefulWidgets,
-    },
+    ui::{widget::NotificationState, StatefulWidgets},
 };
 
 pub struct GlimApp {
@@ -252,7 +249,8 @@ impl GlimApp {
             _ => {},
         }
 
-        // if there are any error notifications, and the current notification is an info notice, dismiss it
+        // if there are any error notifications, and the current notification is an info notice,
+        // dismiss it
         if self.notices.has_error()
             && ui
                 .notice
@@ -268,7 +266,11 @@ impl GlimApp {
             if let Some(notice) = self.pop_notice() {
                 let content_area = RefRect::new(Rect::default());
                 effects.register_notification_effect(content_area.clone());
-                ui.notice = Some(NotificationState::new(notice, &self.project_store, content_area));
+                ui.notice = Some(NotificationState::new(
+                    notice,
+                    &self.project_store,
+                    content_area,
+                ));
             }
         }
     }
@@ -364,7 +366,10 @@ impl GlimApp {
             "debug" => tracing::Level::DEBUG,
             "trace" => tracing::Level::TRACE,
             _ => {
-                warn!("Invalid log level: {}, keeping current level", log_level_str);
+                warn!(
+                    "Invalid log level: {}, keeping current level",
+                    log_level_str
+                );
                 return;
             },
         };

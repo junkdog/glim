@@ -384,10 +384,7 @@ impl From<JobDto> for Job {
 
 impl From<CommitDto> for Commit {
     fn from(c: CommitDto) -> Self {
-        Self {
-            title: c.title,
-            author_name: c.author_name,
-        }
+        Self { title: c.title, author_name: c.author_name }
     }
 }
 
@@ -512,7 +509,12 @@ pub fn parse_row<'a>(project: &'a Project) -> Row<'a> {
         None => Text::from(Span::from(&project.path)).style(theme().project_name),
     };
 
-    Row::new(vec![text_from(last_activity), project_path, Text::from(pipeline_spans)]).height(3)
+    Row::new(vec![
+        text_from(last_activity),
+        project_path,
+        Text::from(pipeline_spans),
+    ])
+    .height(3)
 }
 
 /// Represents types that can be associated with an icon.

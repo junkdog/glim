@@ -45,7 +45,10 @@ impl ProjectStore {
 
             // updates the projects in the store
             GlimEvent::ProjectsLoaded(projects) => {
-                debug!(project_count = projects.len(), "Processing received projects");
+                debug!(
+                    project_count = projects.len(),
+                    "Processing received projects"
+                );
                 let first_projects = self.sorted.is_empty();
                 projects
                     .iter()

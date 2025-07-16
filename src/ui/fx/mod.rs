@@ -1,4 +1,3 @@
-pub mod dynamic_area;
 mod window;
 
 use ratatui::prelude::{Line, Span};
@@ -21,7 +20,8 @@ pub fn popup_window(
         .unwrap()
 }
 
-/// Creates a popup window title line with effects (TODO: integrate with proper window system)
+/// Creates a popup window title line with effects (TODO: integrate with proper window
+/// system)
 fn create_window_title(title: &'static str) -> Line<'static> {
     Line::from(vec![
         Span::from("┫").style(theme().border.config_border),

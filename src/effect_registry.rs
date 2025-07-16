@@ -9,7 +9,7 @@
 //! The effect system is built around several key concepts:
 //!
 //! - **Effect Registry**: Central coordinator for all effects
-//! - **Effect IDs**: Unique identifiers preventing effect conflicts  
+//! - **Effect IDs**: Unique identifiers preventing effect conflicts
 //! - **Dynamic Areas**: Effects that adapt to UI layout changes
 //! - **Event Integration**: Effects triggered by application events
 //!
@@ -45,15 +45,13 @@ use ratatui::{
 };
 use tachyonfx::{
     fx::*,
-    ref_count, CellFilter,
-    CellFilter::{AllOf, Inner, Not, Outer, Text},
-    Duration, Effect, EffectManager, Interpolation, IntoEffect, Motion,
+    CellFilter::{AllOf, Inner, Not, Outer, RefArea, Text},
+    Duration, Effect, EffectManager, Interpolation, IntoEffect, Motion, RefRect,
 };
 
 use crate::{
     event::{GlimEvent, GlitchState},
     gruvbox::Gruvbox::{Dark0, Dark0Hard, Dark3},
-    ui::{fx::dynamic_area::DynamicArea, widget::RefRect},
 };
 
 /// Unique identifiers for different visual effects in the application.
@@ -186,13 +184,19 @@ impl EffectRegistry {
     /// A parallel effect combining coalescing and left-to-right sweep animation
     pub fn register_projects_table_new_data(&mut self, exclude_popup_area: Option<RefRect>) {
         let filter = match exclude_popup_area {
-            Some(area) => AllOf(vec![Inner(Margin::new(1, 1)), Not(ref_rect_filter(area).into())]),
+            Some(area) => AllOf(vec![Inner(Margin::new(1, 1)), Not(RefArea(area).into())]),
             None => Inner(Margin::new(1, 1)),
         };
 
         let fx = parallel(&[
             coalesce(550),
-            sweep_in(Motion::LeftToRight, 50, 0, Dark0Hard, (450, Interpolation::QuadIn)),
+            sweep_in(
+                Motion::LeftToRight,
+                50,
+                0,
+                Dark0Hard,
+                (450, Interpolation::QuadIn),
+            ),
         ])
         .with_filter(filter);
 
@@ -236,7 +240,7 @@ impl EffectRegistry {
     /// # Effect Characteristics
     ///
     /// - Action duration: 100-500ms
-    /// - Delay between actions: 0-2000ms  
+    /// - Delay between actions: 0-2000ms
     /// - Cell glitch ratio: 0.0015 (very subtle)
     pub fn register_default_glitch_effect(&mut self) {
         let fx = Glitch::builder()
@@ -341,7 +345,10 @@ impl EffectRegistry {
                 repeating(ping_pong(hsl_shift_fg([0.0, 0.0, 25.0], (500, SineOut)))),
             ),
             // 4. fade out notification text and then redraw border
-            prolong_end(Duration::from_millis(100), fade_to_fg(Dark0Hard, (250, SineIn))),
+            prolong_end(
+                Duration::from_millis(100),
+                fade_to_fg(Dark0Hard, (250, SineIn)),
+            ),
             parallel(&[draw_border(Duration::from_millis(150)), coalesce(150)]),
         ]);
 
@@ -374,7 +381,8 @@ impl EffectRegistry {
         self.screen_area.clone()
     }
 
-    /// Adds an effect with a unique identifier, replacing any existing effect with the same ID.
+    /// Adds an effect with a unique identifier, replacing any existing effect with the
+    /// same ID.
     ///
     /// # Arguments
     ///
@@ -475,32 +483,16 @@ fn open_window_fx<C: Into<Color>>(bg: C) -> Effect {
 ///
 /// An effect that dims the background after a 250ms delay
 fn dim_screen_behind_popup(screen_area: RefRect, popup_area: RefRect) -> Effect {
-    let screen = ref_rect_filter(screen_area);
-    let popup = ref_rect_filter(popup_area);
+    let screen = RefArea(screen_area);
+    let popup = RefArea(popup_area);
 
-    let behind_popup = AllOf(vec![screen, Not(Box::new(popup))]);
+    let behind_popup = AllOf(vec![screen, Not(popup.into())]);
 
     sequence(&[
         sleep(250),
         never_complete(fade_to(Dark3, Dark0Hard, (750, Interpolation::CircInOut))),
     ])
     .with_filter(behind_popup)
-}
-
-/// Creates a cell filter based on a reference rectangle.
-///
-/// This helper function creates a filter that can be used to apply effects
-/// only to cells within a specific rectangular area.
-///
-/// # Arguments
-///
-/// * `ref_rect` - The reference rectangle to filter by
-///
-/// # Returns
-///
-/// A `CellFilter` that matches cells within the specified rectangle
-pub fn ref_rect_filter(ref_rect: RefRect) -> CellFilter {
-    CellFilter::PositionFn(ref_count(Box::new(move |pos| ref_rect.contains(pos))))
 }
 
 /// Helper function for drawing notification border.

@@ -33,12 +33,20 @@ impl ProjectDetailsProcessor {
             KeyCode::Down => ui.handle_pipeline_selection(1),
             KeyCode::Char('k') => ui.handle_pipeline_selection(-1),
             KeyCode::Char('j') => ui.handle_pipeline_selection(1),
-            KeyCode::Enter if self.selected.is_some() => self
-                .sender
-                .dispatch(GlimEvent::PipelineActionsOpen(self.project_id, self.selected.unwrap())),
-            KeyCode::Char('o') if self.selected.is_some() => self
-                .sender
-                .dispatch(GlimEvent::PipelineActionsOpen(self.project_id, self.selected.unwrap())),
+            KeyCode::Enter if self.selected.is_some() => {
+                self.sender
+                    .dispatch(GlimEvent::PipelineActionsOpen(
+                        self.project_id,
+                        self.selected.unwrap(),
+                    ))
+            },
+            KeyCode::Char('o') if self.selected.is_some() => {
+                self.sender
+                    .dispatch(GlimEvent::PipelineActionsOpen(
+                        self.project_id,
+                        self.selected.unwrap(),
+                    ))
+            },
             KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
             _ => (),
         }

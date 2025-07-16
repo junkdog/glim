@@ -4,11 +4,12 @@ use ratatui::{
     prelude::{Line, StatefulWidget, Widget},
     widgets::{List, ListState},
 };
+use tachyonfx::RefRect;
 
 use crate::{
     event::GlimEvent,
     theme::theme,
-    ui::{fx::popup_window, popup::utility::CenteredShrink, widget::RefRect},
+    ui::{fx::popup_window, popup::utility::CenteredShrink},
 };
 
 /// pipeline actions popup

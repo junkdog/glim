@@ -6,12 +6,12 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Clear, Widget},
 };
+use tachyonfx::RefRect;
 
 use crate::{
     notice_service::{Notice, NoticeMessage},
     stores::ProjectStore,
     theme::theme,
-    ui::widget::RefRect,
 };
 
 #[derive(Clone)]

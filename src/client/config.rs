@@ -173,7 +173,9 @@ impl ClientConfig {
         }
 
         if !self.base_url.starts_with("http://") && !self.base_url.starts_with("https://") {
-            return Err(ClientError::config("Base URL must start with http:// or https://"));
+            return Err(ClientError::config(
+                "Base URL must start with http:// or https://",
+            ));
         }
 
         if self.request.per_page == 0 || self.request.per_page > 100 {

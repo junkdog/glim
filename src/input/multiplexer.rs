@@ -37,7 +37,10 @@ impl InputMultiplexer {
         match event {
             // project details popup
             GlimEvent::ProjectDetailsOpen(id) => {
-                self.push(Box::new(ProjectDetailsProcessor::new(self.sender.clone(), *id)));
+                self.push(Box::new(ProjectDetailsProcessor::new(
+                    self.sender.clone(),
+                    *id,
+                )));
             },
             GlimEvent::ProjectDetailsClose => self.pop_processor(),
 

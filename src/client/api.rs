@@ -76,7 +76,12 @@ impl GitlabApi {
     ) -> Result<Vec<JobDto>> {
         let base_url = {
             let config = self.config.read().unwrap();
-            format_compact!("{}/projects/{}/pipelines/{}", config.base_url, project_id, pipeline_id)
+            format_compact!(
+                "{}/projects/{}/pipelines/{}",
+                config.base_url,
+                project_id,
+                pipeline_id
+            )
         };
 
         // Fetch both regular jobs and trigger jobs concurrently
@@ -106,7 +111,12 @@ impl GitlabApi {
     ) -> Result<CompactString> {
         let url = {
             let config = self.config.read().unwrap();
-            format_compact!("{}/projects/{}/jobs/{}/trace", config.base_url, project_id, job_id)
+            format_compact!(
+                "{}/projects/{}/jobs/{}/trace",
+                config.base_url,
+                project_id,
+                job_id
+            )
         };
 
         let response = self.authenticated_request(&url).send().await?;
@@ -214,7 +224,11 @@ impl GitlabApi {
                         api_error2.message
                     )))
                 } else {
-                    Err(ClientError::gitlab_api(format_compact!("HTTP {}: {}", status, body)))
+                    Err(ClientError::gitlab_api(format_compact!(
+                        "HTTP {}: {}",
+                        status,
+                        body
+                    )))
                 }
             },
         }
@@ -233,7 +247,10 @@ impl GitlabApi {
         }
 
         if let Some(updated_after) = query.updated_after {
-            url.push_str(&format_compact!("&last_activity_after={}", updated_after.to_rfc3339()));
+            url.push_str(&format_compact!(
+                "&last_activity_after={}",
+                updated_after.to_rfc3339()
+            ));
         }
 
         if query.include_statistics {
@@ -264,7 +281,10 @@ impl GitlabApi {
         );
 
         if let Some(updated_after) = query.updated_after {
-            url.push_str(&format_compact!("&updated_after={}", updated_after.to_rfc3339()));
+            url.push_str(&format_compact!(
+                "&updated_after={}",
+                updated_after.to_rfc3339()
+            ));
         }
 
         url
@@ -388,7 +408,10 @@ mod tests {
 
         let url = api.build_pipelines_url(project_id, &query);
 
-        assert_eq!(url, "https://gitlab.example.com/projects/123/pipelines?per_page=60");
+        assert_eq!(
+            url,
+            "https://gitlab.example.com/projects/123/pipelines?per_page=60"
+        );
     }
 
     #[test]

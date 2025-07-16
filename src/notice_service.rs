@@ -65,15 +65,15 @@ impl NoticeService {
                 GlimError::JsonDeserializeError(cat, json) => {
                     Some(NoticeMessage::JsonDeserializeError(cat, json))
                 },
-                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) => {
-                    Some(NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s))
-                },
-                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) => {
-                    Some(NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s))
-                },
-                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => {
-                    Some(NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s))
-                },
+                GlimError::GitlabGetJobsError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetJobsError(project_id, pipeline_id, s),
+                ),
+                GlimError::GitlabGetTriggerJobsError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetTriggerJobsError(project_id, pipeline_id, s),
+                ),
+                GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => Some(
+                    NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s),
+                ),
                 _ => None,
             }
             .map(|m| self.push_notice(NoticeLevel::Error, m))

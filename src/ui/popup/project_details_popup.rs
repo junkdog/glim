@@ -6,15 +6,12 @@ use ratatui::{
     text::Span,
     widgets::{TableState, Widget},
 };
+use tachyonfx::RefRect;
 
 use crate::{
     domain::{Pipeline, Project},
     theme::theme,
-    ui::{
-        fx::popup_window,
-        popup::utility::CenteredShrink,
-        widget::{PipelineTable, RefRect},
-    },
+    ui::{fx::popup_window, popup::utility::CenteredShrink, widget::PipelineTable},
 };
 
 /// project details popup
@@ -112,7 +109,11 @@ impl StatefulWidget for ProjectDetailsPopup {
 
         popup_window(
             "Project Details",
-            Some(vec![("ESC", "close"), ("↑ ↓", "selection"), ("↵", "actions...")]),
+            Some(vec![
+                ("ESC", "close"),
+                ("↑ ↓", "selection"),
+                ("↵", "actions..."),
+            ]),
         )
         .render(area, buf);
 

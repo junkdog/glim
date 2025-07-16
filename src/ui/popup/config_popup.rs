@@ -7,17 +7,14 @@ use ratatui::{
     prelude::{Line, StatefulWidget, Style, Text, Widget},
     text::Span,
 };
+use tachyonfx::RefRect;
 use tui_input::Input;
 
 use crate::{
     glim_app::GlimConfig,
     logging::LoggingConfig,
     theme::theme,
-    ui::{
-        fx::popup_window,
-        popup::utility::CenteredShrink,
-        widget::{InputField, RefRect},
-    },
+    ui::{fx::popup_window, popup::utility::CenteredShrink, widget::InputField},
 };
 
 /// configuration popup
@@ -166,12 +163,7 @@ impl ConfigPopupState {
             Some(log_level_value.to_compact_string())
         };
 
-        GlimConfig {
-            gitlab_url,
-            gitlab_token,
-            search_filter,
-            log_level,
-        }
+        GlimConfig { gitlab_url, gitlab_token, search_filter, log_level }
     }
 
     /// returns the style for the input, considering the selected input field.
@@ -206,7 +198,12 @@ impl StatefulWidget for ConfigPopup {
 
         popup_window(
             "Configuration",
-            Some(vec![("ESC", "close"), ("↑ ↓", "navigate"), ("← →", "change"), ("↵", "apply")]),
+            Some(vec![
+                ("ESC", "close"),
+                ("↑ ↓", "navigate"),
+                ("← →", "change"),
+                ("↵", "apply"),
+            ]),
         )
         .render(area, buf);
 
@@ -255,8 +252,10 @@ fn token_description() -> Line<'static> {
 }
 
 fn filter_description() -> Line<'static> {
-    Line::from(vec![Span::from("optional project filter, applied to project namespace")
-        .style(theme().input_description)])
+    Line::from(vec![Span::from(
+        "optional project filter, applied to project namespace",
+    )
+    .style(theme().input_description)])
 }
 
 fn log_level_description() -> Line<'static> {

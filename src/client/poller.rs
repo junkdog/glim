@@ -31,13 +31,7 @@ impl GitlabPoller {
     ) -> Self {
         let (shutdown_tx, shutdown_rx) = broadcast::channel(1);
 
-        Self {
-            api,
-            sender,
-            config,
-            shutdown_tx,
-            shutdown_rx,
-        }
+        Self { api, sender, config, shutdown_tx, shutdown_rx }
     }
 
     /// Start polling in the background
