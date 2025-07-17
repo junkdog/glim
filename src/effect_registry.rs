@@ -485,14 +485,10 @@ fn open_window_fx<C: Into<Color>>(bg: C) -> Effect {
 fn dim_screen_behind_popup(screen_area: RefRect, popup_area: RefRect) -> Effect {
     let screen = RefArea(screen_area);
     let popup = RefArea(popup_area);
-
     let behind_popup = AllOf(vec![screen, Not(popup.into())]);
 
-    sequence(&[
-        sleep(250),
-        never_complete(fade_to(Dark3, Dark0Hard, (750, Interpolation::CircInOut))),
-    ])
-    .with_filter(behind_popup)
+    never_complete(fade_to(Dark3, Dark0Hard, (1150, Interpolation::QuadIn)))
+        .with_filter(behind_popup)
 }
 
 /// Helper function for drawing notification border.
