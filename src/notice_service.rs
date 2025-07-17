@@ -34,8 +34,8 @@ pub enum NoticeMessage {
     #[allow(dead_code)]
     JobLogDownloaded(ProjectId, PipelineId, JobId),
     ScreenCaptured,
-    // InvalidGitlabToken,
-    // ExpiredGitlabToken,
+    InvalidGitlabToken,
+    ExpiredGitlabToken,
     ConfigError(CompactString),
     JsonDeserializeError(Category, CompactString),
     #[allow(dead_code)]
@@ -58,9 +58,23 @@ impl NoticeService {
     pub fn apply(&mut self, event: &GlimEvent) {
         match event {
             GlimEvent::AppError(e) => match e.clone() {
-                // GlimError::InvalidGitlabToken => {}
-                // GlimError::ExpiredGitlabToken => {}
-                GlimError::ConfigError(s) => Some(NoticeMessage::ConfigError(s)),
+                GlimError::InvalidGitlabToken => Some(NoticeMessage::InvalidGitlabToken),
+                GlimError::ExpiredGitlabToken => Some(NoticeMessage::ExpiredGitlabToken),
+                GlimError::ConfigFileNotFound { path } => Some(NoticeMessage::ConfigError(
+                    format!("Configuration file not found: {}", path.display()).into(),
+                )),
+                GlimError::ConfigLoadError { path, message } => Some(NoticeMessage::ConfigError(
+                    format!("Failed to load config from {}: {}", path.display(), message).into(),
+                )),
+                GlimError::ConfigSaveError { path, message } => Some(NoticeMessage::ConfigError(
+                    format!("Failed to save config to {}: {}", path.display(), message).into(),
+                )),
+                GlimError::ConfigValidationError { field, message } => Some(
+                    NoticeMessage::ConfigError(format!("Invalid {field}: {message}").into()),
+                ),
+                GlimError::ConfigConnectionError { message } => Some(NoticeMessage::ConfigError(
+                    format!("Connection test failed: {message}").into(),
+                )),
                 GlimError::GeneralError(s) => Some(NoticeMessage::GeneralMessage(s)),
                 GlimError::JsonDeserializeError(cat, json) => {
                     Some(NoticeMessage::JsonDeserializeError(cat, json))
@@ -74,7 +88,6 @@ impl NoticeService {
                 GlimError::GitlabGetPipelinesError(project_id, pipeline_id, s) => Some(
                     NoticeMessage::GitlabGetPipelinesError(project_id, pipeline_id, s),
                 ),
-                _ => None,
             }
             .map(|m| self.push_notice(NoticeLevel::Error, m))
             .unwrap_or(()),

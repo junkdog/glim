@@ -10,9 +10,10 @@ pub enum ClientError {
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),
 
-    /// JSON deserialization failed
-    #[error("JSON deserialization failed: {message}")]
+    /// JSON parsing error with endpoint context
+    #[error("Failed to parse JSON response from {endpoint}: {message}")]
     JsonParse {
+        endpoint: String,
         message: String,
         #[source]
         source: serde_json::Error,
@@ -26,9 +27,21 @@ pub enum ClientError {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    /// Configuration field validation failed
+    #[error("Invalid {field}: {message}")]
+    ConfigValidation { field: String, message: String },
+
     /// Authentication failed
     #[error("Authentication failed")]
     Authentication,
+
+    /// GitLab token is invalid
+    #[error("GitLab token is invalid")]
+    InvalidToken,
+
+    /// GitLab token has expired
+    #[error("GitLab token has expired")]
+    ExpiredToken,
 
     /// Network timeout
     #[error("Request timeout")]
@@ -50,9 +63,17 @@ pub enum ClientError {
 }
 
 impl ClientError {
-    /// Create a JSON parsing error with context
-    pub fn json_parse(message: impl Into<String>, source: serde_json::Error) -> Self {
-        Self::JsonParse { message: message.into(), source }
+    /// Create a JSON parsing error with endpoint context
+    pub fn json_parse(
+        endpoint: impl Into<String>,
+        message: impl Into<String>,
+        source: serde_json::Error,
+    ) -> Self {
+        Self::JsonParse {
+            endpoint: endpoint.into(),
+            message: message.into(),
+            source,
+        }
     }
 
     /// Create a GitLab API error
@@ -63,6 +84,11 @@ impl ClientError {
     /// Create a configuration error
     pub fn config(message: impl Into<String>) -> Self {
         Self::Config(message.into())
+    }
+
+    /// Create a configuration field validation error
+    pub fn config_validation(field: impl Into<String>, message: impl Into<String>) -> Self {
+        Self::ConfigValidation { field: field.into(), message: message.into() }
     }
 
     /// Create an invalid URL error

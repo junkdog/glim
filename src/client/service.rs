@@ -15,7 +15,7 @@ use crate::{
     dispatcher::Dispatcher,
     event::{GlimEvent, IntoGlimEvent},
     id::{JobId, PipelineId, ProjectId},
-    result::GlimError::GeneralError,
+    result::GlimError::{self, GeneralError},
 };
 
 /// High-level service for GitLab operations
@@ -271,10 +271,17 @@ impl From<&ClientError> for crate::result::GlimError {
     fn from(err: &ClientError) -> Self {
         match err {
             ClientError::Http(e) => GeneralError(format!("HTTP error: {e}").into()),
-            ClientError::JsonParse { message, .. } => GeneralError(message.clone().into()),
+            ClientError::JsonParse { endpoint, message, .. } => {
+                GeneralError(format!("JSON parse error from {endpoint}: {message}").into())
+            },
             ClientError::GitlabApi { message } => GeneralError(message.clone()),
             ClientError::Config(msg) => GeneralError(msg.into()),
+            ClientError::ConfigValidation { field, message } => {
+                GlimError::config_validation_error(field, message)
+            },
             ClientError::Authentication => GeneralError("Authentication failed".into()),
+            ClientError::InvalidToken => GlimError::InvalidGitlabToken,
+            ClientError::ExpiredToken => GlimError::ExpiredGitlabToken,
             ClientError::Timeout => GeneralError("Request timeout".into()),
             ClientError::InvalidUrl { url } => GeneralError(format!("Invalid URL: {url}").into()),
             ClientError::NotFound { resource } => {

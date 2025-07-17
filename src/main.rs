@@ -1,7 +1,6 @@
 use std::{path::PathBuf, process::exit};
 
 use clap::Parser;
-use compact_str::ToCompactString;
 
 use crate::{
     app_init::{initialize_app, AppComponents},
@@ -56,7 +55,7 @@ fn main() -> Result<()> {
 
     let config = if config_path.exists() {
         confy::load_path(&config_path)
-            .map_err(|e| crate::result::GlimError::ConfigError(e.to_compact_string()))?
+            .map_err(|e| crate::result::GlimError::config_load_error(config_path.clone(), e))?
     } else {
         GlimConfig::default()
     };

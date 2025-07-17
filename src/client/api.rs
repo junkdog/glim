@@ -191,9 +191,8 @@ impl GitlabApi {
         }
 
         if status.is_success() {
-            serde_json::from_str(&body).map_err(|e| {
-                ClientError::json_parse(format!("Failed to parse response from {url_path}"), e)
-            })
+            serde_json::from_str(&body)
+                .map_err(|e| ClientError::json_parse(url_path, "Failed to parse response", e))
         } else {
             self.handle_error_response(status.as_u16(), &body)
         }
@@ -202,7 +201,28 @@ impl GitlabApi {
     /// Handle error responses from GitLab API
     fn handle_error_response<T>(&self, status: u16, body: &str) -> Result<T> {
         match status {
-            401 => Err(ClientError::Authentication),
+            401 => {
+                // Try to parse GitLab API error to distinguish between invalid and expired tokens
+                if let Ok(api_error) = serde_json::from_str::<GitlabApiError>(body) {
+                    match api_error.error.as_str() {
+                        "invalid_token" => Err(ClientError::InvalidToken),
+                        "expired_token" => Err(ClientError::ExpiredToken),
+                        _ => {
+                            // Check error description for expiration indicators
+                            if let Some(description) = &api_error.error_description {
+                                if description.contains("expired") || description.contains("expiry")
+                                {
+                                    return Err(ClientError::ExpiredToken);
+                                }
+                            }
+                            Err(ClientError::Authentication)
+                        },
+                    }
+                } else {
+                    // Fallback to generic authentication error
+                    Err(ClientError::Authentication)
+                }
+            },
             404 => Err(ClientError::not_found("Resource")),
             429 => {
                 // Try to extract retry-after header info if available

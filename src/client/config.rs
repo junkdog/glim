@@ -165,25 +165,54 @@ impl ClientConfig {
     /// Validate the configuration
     pub fn validate(&self) -> Result<()> {
         if self.base_url.is_empty() {
-            return Err(ClientError::config("Base URL cannot be empty"));
+            return Err(ClientError::config_validation(
+                "gitlab_url",
+                "Base URL cannot be empty",
+            ));
         }
 
         if self.private_token.is_empty() {
-            return Err(ClientError::config("Private token cannot be empty"));
+            return Err(ClientError::config_validation(
+                "gitlab_token",
+                "Private token cannot be empty",
+            ));
         }
 
         if !self.base_url.starts_with("http://") && !self.base_url.starts_with("https://") {
-            return Err(ClientError::config(
+            return Err(ClientError::config_validation(
+                "gitlab_url",
                 "Base URL must start with http:// or https://",
             ));
         }
 
+        // Enhanced URL validation
+        if url::Url::parse(&self.base_url).is_err() {
+            return Err(ClientError::config_validation(
+                "gitlab_url",
+                "Base URL is not a valid URL format",
+            ));
+        }
+
+        // Enhanced token validation
+        if self.private_token.len() < 8 {
+            return Err(ClientError::config_validation(
+                "gitlab_token",
+                "Private token must be at least 8 characters long",
+            ));
+        }
+
         if self.request.per_page == 0 || self.request.per_page > 100 {
-            return Err(ClientError::config("per_page must be between 1 and 100"));
+            return Err(ClientError::config_validation(
+                "per_page",
+                "per_page must be between 1 and 100",
+            ));
         }
 
         if self.request.timeout.is_zero() {
-            return Err(ClientError::config("Timeout must be greater than zero"));
+            return Err(ClientError::config_validation(
+                "timeout",
+                "Timeout must be greater than zero",
+            ));
         }
 
         Ok(())
@@ -300,19 +329,23 @@ mod tests {
     #[test]
     fn test_config_validation() {
         // Valid config
-        let config = ClientConfig::new("https://gitlab.com", "token");
+        let config = ClientConfig::new("https://gitlab.com", "valid_token_12345");
         assert!(config.validate().is_ok());
 
         // Empty base URL
-        let config = ClientConfig::new("", "token");
+        let config = ClientConfig::new("", "valid_token_12345");
         assert!(config.validate().is_err());
 
         // Empty token
         let config = ClientConfig::new("https://gitlab.com", "");
         assert!(config.validate().is_err());
 
+        // Short token (less than 8 characters)
+        let config = ClientConfig::new("https://gitlab.com", "short");
+        assert!(config.validate().is_err());
+
         // Invalid URL
-        let config = ClientConfig::new("not-a-url", "token");
+        let config = ClientConfig::new("not-a-url", "valid_token_12345");
         assert!(config.validate().is_err());
     }
 

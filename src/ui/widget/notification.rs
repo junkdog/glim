@@ -29,7 +29,9 @@ impl NotificationState {
             NoticeMessage::GeneralMessage(_)
             | NoticeMessage::ConfigError(_)
             | NoticeMessage::JsonDeserializeError(_, _)
-            | NoticeMessage::ScreenCaptured => None,
+            | NoticeMessage::ScreenCaptured
+            | NoticeMessage::InvalidGitlabToken
+            | NoticeMessage::ExpiredGitlabToken => None,
 
             NoticeMessage::JobLogDownloaded(id, _, _)
             | NoticeMessage::GitlabGetJobsError(id, _, _)
@@ -60,6 +62,12 @@ impl StatefulWidget for Notification {
             NoticeMessage::ConfigError(s) => {
                 Line::from(vec![Span::from("Config error: "), Span::from(s)])
             },
+            NoticeMessage::InvalidGitlabToken => Line::from(Span::from(
+                "Invalid GitLab token - please check your configuration",
+            )),
+            NoticeMessage::ExpiredGitlabToken => Line::from(Span::from(
+                "GitLab token has expired - please update your configuration",
+            )),
             NoticeMessage::JsonDeserializeError(cat, s) => Line::from(vec![
                 Span::from("Failed to parse JSON ("),
                 Span::from(format!("{cat:?}")),

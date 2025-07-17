@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use compact_str::ToCompactString;
 use directories::BaseDirs;
 
 use crate::{
@@ -18,7 +17,7 @@ pub fn default_config_path() -> PathBuf {
 
 pub fn save_config(config_file: &PathBuf, config: GlimConfig) -> Result<()> {
     confy::store_path(config_file, &config)
-        .map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
+        .map_err(|e| GlimError::config_save_error(config_file.clone(), e))?;
 
     Ok(())
 }

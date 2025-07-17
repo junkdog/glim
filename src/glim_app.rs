@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::mpsc::Sender};
 
-use compact_str::{format_compact, CompactString, ToCompactString};
+use compact_str::CompactString;
 use ratatui::layout::Rect;
 use serde::{Deserialize, Serialize};
 use tachyonfx::{Duration, RefRect};
@@ -188,7 +188,14 @@ impl GlimApp {
                     let client_config = ClientConfig::from(config.clone())
                         .with_debug_logging(self.gitlab.config().debug.log_responses);
 
-                    // Create a temporary service for validation
+                    // Pre-validate configuration before attempting to connect
+                    if let Err(validation_error) = client_config.validate() {
+                        let glim_error = GlimError::from(&validation_error);
+                        self.dispatch(GlimEvent::AppError(glim_error));
+                        return;
+                    }
+
+                    // Create a temporary service for connection validation
                     match self.gitlab.update_config(client_config) {
                         Ok(_) => {
                             save_config(&self.config_path, config.clone())
@@ -198,7 +205,7 @@ impl GlimApp {
                             self.dispatch(GlimEvent::ProjectsFetch);
                         },
                         Err(e) => {
-                            let glim_error = GlimError::GeneralError(e.to_string().into());
+                            let glim_error = GlimError::config_connection_error(e.to_string());
                             self.dispatch(GlimEvent::AppError(glim_error));
                         },
                     }
@@ -279,14 +286,11 @@ impl GlimApp {
         let config_file = &self.config_path;
         if config_file.exists() {
             let config: GlimConfig = confy::load_path(config_file)
-                .map_err(|e| GlimError::ConfigError(e.to_compact_string()))?;
+                .map_err(|e| GlimError::config_load_error(config_file.clone(), e))?;
 
             Ok(config)
         } else {
-            Err(GlimError::ConfigError(format_compact!(
-                "Unable to find configuration file at {:?}",
-                config_file
-            )))
+            Err(GlimError::config_file_not_found(config_file.clone()))
         }
     }
 
