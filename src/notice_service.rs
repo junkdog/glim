@@ -44,6 +44,7 @@ pub enum NoticeMessage {
     GitlabGetTriggerJobsError(ProjectId, PipelineId, CompactString),
     #[allow(dead_code)]
     GitlabGetPipelinesError(ProjectId, PipelineId, CompactString),
+    LogLevelChanged(tracing::Level),
 }
 
 impl NoticeService {
@@ -98,6 +99,10 @@ impl NoticeService {
             GlimEvent::ScreenCaptureToClipboard(_) => {
                 self.push_notice(NoticeLevel::Info, NoticeMessage::ScreenCaptured)
             },
+            GlimEvent::LogLevelChanged(new_level) => self.push_notice(
+                NoticeLevel::Info,
+                NoticeMessage::LogLevelChanged(*new_level),
+            ),
             _ => {},
         }
     }

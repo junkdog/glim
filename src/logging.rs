@@ -13,8 +13,6 @@ use crate::event::GlimEvent;
 /// Configuration for the logging system
 #[derive(Debug, Clone)]
 pub struct LoggingConfig {
-    /// Log level for console output
-    pub console_level: Level,
     /// Log level for file output
     pub file_level: Level,
     /// Directory where log files should be written
@@ -60,7 +58,6 @@ impl LoggingReloadHandle {
 impl Default for LoggingConfig {
     fn default() -> Self {
         Self {
-            console_level: Level::INFO,
             file_level: Level::DEBUG,
             log_dir: Some(Self::default_log_dir()),
             json_format: false,
@@ -91,7 +88,6 @@ impl LoggingConfig {
         // Override log levels from environment
         if let Ok(level) = std::env::var("GLIM_LOG_LEVEL") {
             if let Ok(parsed_level) = level.parse::<Level>() {
-                config.console_level = parsed_level;
                 config.file_level = parsed_level;
             }
         }
@@ -222,25 +218,6 @@ pub fn init_logging(
         };
 
         layers.push(file_layer);
-    }
-
-    // Create console logging layer (for development/debugging)
-    if std::env::var("GLIM_CONSOLE_LOGS").is_ok() {
-        let console_filter = EnvFilter::builder()
-            .with_default_directive(config.console_level.into())
-            .from_env_lossy();
-
-        let (console_layer_filter, console_reload) = reload::Layer::new(console_filter);
-        reload_handle.console_reload_handle = Some(console_reload);
-
-        let console_layer = fmt::layer()
-            .with_target(true)
-            .with_file(false)
-            .with_line_number(false)
-            .with_filter(console_layer_filter)
-            .boxed();
-
-        layers.push(console_layer);
     }
 
     // Create internal logs bridge layer if event sender is provided

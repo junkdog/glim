@@ -2,6 +2,7 @@ use std::{fmt::Debug, sync::mpsc, thread};
 
 use compact_str::CompactString;
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, KeyEventKind};
+use tracing::Level;
 
 use crate::{
     dispatcher::Dispatcher,
@@ -36,6 +37,7 @@ pub enum GlimEvent {
     JobsFetch(ProjectId, PipelineId),
     JobsLoaded(ProjectId, PipelineId, Vec<JobDto>),
     LogEntry(CompactString),
+    LogLevelChanged(Level),
     NotificationDismiss,
     NotificationLast,
     PipelineActionsClose,
@@ -85,6 +87,7 @@ impl GlimEvent {
             GlimEvent::JobsFetch(_, _) => "JobsFetch",
             GlimEvent::JobsLoaded(_, _, _) => "JobsLoaded",
             GlimEvent::LogEntry(_) => "LogEntry",
+            GlimEvent::LogLevelChanged(_) => "LogLevelChanged",
             GlimEvent::NotificationDismiss => "NotificationDismiss",
             GlimEvent::NotificationLast => "NotificationLast",
             GlimEvent::PipelineActionsClose => "PipelineActionsClose",

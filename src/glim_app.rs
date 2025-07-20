@@ -33,6 +33,7 @@ pub struct GlimApp {
     input: InputMultiplexer,
     clipboard: arboard::Clipboard,
     log_reload_handle: LoggingReloadHandle,
+    current_log_level: tracing::Level,
 }
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -53,9 +54,17 @@ impl GlimApp {
         config_path: PathBuf,
         gitlab: GitlabService,
         log_reload_handle: LoggingReloadHandle,
+        config: &GlimConfig,
     ) -> Self {
         let mut input = InputMultiplexer::new(sender.clone());
         input.push(Box::new(NormalModeProcessor::new(sender.clone())));
+
+        // Parse initial log level from config, defaulting to ERROR
+        let current_log_level = config
+            .log_level
+            .as_ref()
+            .and_then(|level_str| level_str.parse().ok())
+            .unwrap_or(tracing::Level::ERROR);
 
         Self {
             running: true,
@@ -68,6 +77,7 @@ impl GlimApp {
             input,
             clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
             log_reload_handle,
+            current_log_level,
         }
     }
 
@@ -181,6 +191,11 @@ impl GlimApp {
                 if let Some(ref log_level_str) = config.log_level {
                     self.update_logging_level(log_level_str);
                 }
+            },
+            GlimEvent::LogLevelChanged(level) => {
+                info!("Log level changed to: {:?}", level);
+                // Event is primarily for user confirmation - actual level change is
+                // handled in update_logging_level
             },
             GlimEvent::ConfigApply => {
                 if let Some(config_popup) = ui.config_popup_state.as_ref() {
@@ -362,7 +377,7 @@ impl GlimApp {
     }
 
     /// Update the logging level at runtime
-    fn update_logging_level(&self, log_level_str: &str) {
+    fn update_logging_level(&mut self, log_level_str: &str) {
         let level = match log_level_str.to_lowercase().as_str() {
             "error" => tracing::Level::ERROR,
             "warn" => tracing::Level::WARN,
@@ -378,8 +393,18 @@ impl GlimApp {
             },
         };
 
-        info!("Updating log level to: {}", level);
-        self.log_reload_handle.update_levels(level, level);
+        // Only update and dispatch if the level actually changed
+        if level != self.current_log_level {
+            info!(
+                "Updating log level from {:?} to {:?}",
+                self.current_log_level, level
+            );
+            self.log_reload_handle.update_levels(level, level);
+            self.current_log_level = level;
+
+            // Dispatch confirmation event to user
+            self.dispatch(GlimEvent::LogLevelChanged(level));
+        }
     }
 }
 

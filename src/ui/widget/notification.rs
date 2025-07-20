@@ -31,7 +31,8 @@ impl NotificationState {
             | NoticeMessage::JsonDeserializeError(_, _)
             | NoticeMessage::ScreenCaptured
             | NoticeMessage::InvalidGitlabToken
-            | NoticeMessage::ExpiredGitlabToken => None,
+            | NoticeMessage::ExpiredGitlabToken
+            | NoticeMessage::LogLevelChanged(_) => None,
 
             NoticeMessage::JobLogDownloaded(id, _, _)
             | NoticeMessage::GitlabGetJobsError(id, _, _)
@@ -99,6 +100,10 @@ impl StatefulWidget for Notification {
             NoticeMessage::ScreenCaptured => {
                 Line::from(vec![Span::from("Screen contents copied to clipboard")])
             },
+            NoticeMessage::LogLevelChanged(level) => Line::from(vec![
+                Span::from("Log level changed to "),
+                Span::from(format!("{level:?}")).style(theme().notification_project),
+            ]),
         };
 
         let text_len = (text.width() as u16).min(area.width - 2);

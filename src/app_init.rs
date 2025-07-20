@@ -46,7 +46,13 @@ pub async fn initialize_app(
 
     // We need to move the log_reload_handle into the app, so we can't use it in AppComponents
     // Instead, we'll create a separate handle for the app and keep one for external use
-    let app = GlimApp::new(sender.clone(), config_path, service, log_reload_handle);
+    let app = GlimApp::new(
+        sender.clone(),
+        config_path,
+        service,
+        log_reload_handle,
+        &config,
+    );
     app.dispatch(GlimEvent::ProjectsFetch);
     if config == GlimConfig::default() {
         app.dispatch(GlimEvent::ConfigOpen);
@@ -74,7 +80,6 @@ fn initialize_logging(
     // Override with config if specified
     if let Some(log_level) = &glim_config.log_level {
         if let Ok(level) = log_level.parse() {
-            logging_config.console_level = level;
             logging_config.file_level = level;
         }
 
