@@ -1,6 +1,6 @@
 [package]
 name = "glim-tui"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 description = "A TUI for monitoring GitLab CI/CD pipelines and projects"
