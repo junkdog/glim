@@ -16,7 +16,7 @@ use crate::{
 /// pipelines widget. used inside the project details popup.
 ///
 /// Each pipeline is represented as a row in the table, with the following format:
-/// ```
+/// ```text
 /// #BRANCH| PIPELNE/JOB | TIME   | %DONE | COMMENT
 /// main   | 🔵🔵🔵🔵🔵 | 14m24s  | ~72%  | Merge branch 'renovate/all-minor-dependencies'
 ///        | deploy-prod |  3m23s | ~40%  |  into 'main'
