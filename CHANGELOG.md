@@ -1,6 +1,6 @@
 # Changelog
 
-## glim 0.2.0-dev - Unreleased
+## glim 0.2.0 - 2025-07-21
 
 ### Added
 - GitLab service integration
