@@ -356,6 +356,7 @@ mod tests {
             gitlab_token: "test-token".into(),
             search_filter: Some("test".into()),
             log_level: Some("Off".into()),
+            animations: true,
         };
 
         let client_config = ClientConfig::from(glim_config);

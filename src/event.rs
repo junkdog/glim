@@ -115,9 +115,9 @@ impl GlimEvent {
 #[derive(Debug, Clone, Copy)]
 pub enum GlitchState {
     #[allow(dead_code)]
-    Active,
+    RampedUp,
     #[allow(dead_code)]
-    Inactive,
+    Normal,
 }
 
 #[derive(Debug)]

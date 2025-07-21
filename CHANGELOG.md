@@ -8,6 +8,7 @@
 - Project search filtering
 - Structured logging with tracing framework
 - Visual effects system with EffectRegistry
+- Animation toggle configuration option
 
 ### Changed
 - Refactored GitLab client architecture

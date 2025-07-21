@@ -59,6 +59,7 @@ pub async fn initialize_app(
     }
 
     let mut effects = EffectRegistry::new(app.sender());
+    effects.apply(&GlimEvent::ConfigUpdate(config.clone()));
     effects.register_default_glitch_effect();
 
     Ok(AppComponents {

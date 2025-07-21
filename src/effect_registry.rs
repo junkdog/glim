@@ -101,6 +101,8 @@ pub struct EffectRegistry {
     sender: Sender<GlimEvent>,
     /// Reference to the current screen area for layout-aware effects
     screen_area: RefRect,
+    /// Whether animations are enabled
+    animations_enabled: bool,
 }
 
 impl EffectRegistry {
@@ -118,6 +120,7 @@ impl EffectRegistry {
             effects: EffectManager::default(),
             screen_area: RefRect::default(),
             sender,
+            animations_enabled: true, // default to enabled
         }
     }
 
@@ -139,11 +142,11 @@ impl EffectRegistry {
     pub fn apply(&mut self, event: &GlimEvent) {
         use GlimEvent::*;
         match event {
-            GlitchOverride(g) => self.register_ramped_up_glitch_effect(*g),
+            GlitchOverride(g) => self.register_glitch_effect(*g),
             ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
             PipelineActionsClose => self.register_close_popup(FxId::PipelineActionsPopup),
-
             ConfigClose => self.register_close_popup(FxId::ConfigPopup),
+            ConfigUpdate(config) => self.animations_enabled = config.animations,
             _ => (),
         }
     }
@@ -171,7 +174,13 @@ impl EffectRegistry {
     /// * `buf` - Mutable reference to the terminal buffer to render into
     /// * `area` - The screen area to render effects within
     pub fn process_effects(&mut self, duration: Duration, buf: &mut Buffer, area: Rect) {
-        self.effects.process_effects(duration, buf, area);
+        let effective_duration = if self.animations_enabled {
+            duration
+        } else {
+            Duration::from_secs(3600) // 1 hour - ensures all effects complete immediately
+        };
+        self.effects
+            .process_effects(effective_duration, buf, area);
     }
 
     /// Creates a table fade-in effect for the projects table.
@@ -215,18 +224,20 @@ impl EffectRegistry {
     /// # Effect Characteristics
     ///
     /// - **Inactive**: Falls back to default low-intensity glitch
-    /// - **Active**: Higher intensity with more frequent glitch bursts
-    pub fn register_ramped_up_glitch_effect(&mut self, glitch_state: GlitchState) {
-        let fx = match glitch_state {
-            GlitchState::Inactive => {
-                return self.register_default_glitch_effect();
-            },
-            GlitchState::Active => Glitch::builder()
-                .action_ms(100..200)
-                .action_start_delay_ms(0..500)
-                .cell_glitch_ratio(0.05)
-                .build()
-                .into_effect(),
+    /// - **RampedUp**: Higher intensity with more frequent glitch bursts
+    pub fn register_glitch_effect(&mut self, glitch_state: GlitchState) {
+        let fx = if self.animations_enabled {
+            match glitch_state {
+                GlitchState::Normal => default_glitch_effect(),
+                GlitchState::RampedUp => Glitch::builder()
+                    .action_ms(100..200)
+                    .action_start_delay_ms(0..500)
+                    .cell_glitch_ratio(0.05)
+                    .build()
+                    .into_effect(),
+            }
+        } else {
+            consume_tick()
         };
 
         self.add_unique(FxId::Glitch, fx);
@@ -243,14 +254,7 @@ impl EffectRegistry {
     /// - Delay between actions: 0-2000ms
     /// - Cell glitch ratio: 0.0015 (very subtle)
     pub fn register_default_glitch_effect(&mut self) {
-        let fx = Glitch::builder()
-            .action_ms(100..500)
-            .action_start_delay_ms(0..2000)
-            .cell_glitch_ratio(0.0015)
-            .build()
-            .into_effect();
-
-        self.add_unique(FxId::Glitch, fx);
+        self.register_glitch_effect(GlitchState::Normal);
     }
 
     /// Registers opening effects for the project details popup.
@@ -393,21 +397,13 @@ impl EffectRegistry {
     }
 }
 
-/// Creates a dynamic area effect that adapts to changes in the area.
-///
-/// This wrapper allows effects to automatically adjust when the UI layout
-/// changes, such as during terminal resizing.
-///
-/// # Arguments
-///
-/// * `area` - Reference to the area that may change size
-/// * `fx` - The effect to apply within the dynamic area
-///
-/// # Returns
-///
-/// An effect that tracks area changes and adapts accordingly
-fn dynamic_area(area: RefRect, fx: Effect) -> Effect {
-    DynamicArea::new(area, fx).into_effect()
+fn default_glitch_effect() -> Effect {
+    Glitch::builder()
+        .action_ms(100..500)
+        .action_start_delay_ms(0..2000)
+        .cell_glitch_ratio(0.0015)
+        .build()
+        .into_effect()
 }
 
 /// Creates a window opening effect with fade-in animation.

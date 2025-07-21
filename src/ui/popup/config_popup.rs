@@ -60,6 +60,21 @@ impl ConfigPopupState {
 
         log_level_field.set_dropdown_value(current_log_level);
 
+        let animations_options = vec!["true", "false"];
+        let animations_value = if config.animations { "true" } else { "false" };
+        let animations_index = if config.animations { 0 } else { 1 };
+
+        let mut animations_field = InputField::builder()
+            .label("animations")
+            .description(Some(animations_description()))
+            .input(Input::new(animations_value.to_string()))
+            .dropdown_options(Some(animations_options))
+            .selected_option_index(animations_index)
+            .build()
+            .unwrap();
+
+        animations_field.set_dropdown_value(animations_value);
+
         Self {
             // duration_ms: 0,
             active_input_idx: 0,
@@ -89,18 +104,19 @@ impl ConfigPopupState {
                     ))
                     .into(),
                 log_level_field,
+                animations_field,
             ],
             popup_area,
         }
     }
 
     pub fn select_next_input(&mut self) {
-        self.active_input_idx = (self.active_input_idx + 1) % 4;
+        self.active_input_idx = (self.active_input_idx + 1) % 5;
     }
 
     pub fn select_previous_input(&mut self) {
         self.active_input_idx =
-            if self.active_input_idx == 0 { 3 } else { self.active_input_idx - 1 };
+            if self.active_input_idx == 0 { 4 } else { self.active_input_idx - 1 };
     }
 
     pub fn cycle_dropdown_next(&mut self) {
@@ -150,6 +166,7 @@ impl ConfigPopupState {
             .to_compact_string();
         let search_filter_value = values.get(2).unwrap_or(&"").trim();
         let log_level_value = values.get(3).unwrap_or(&"Off").trim();
+        let animations_value = values.get(4).unwrap_or(&"true").trim();
 
         let search_filter = if search_filter_value.is_empty() {
             None
@@ -163,7 +180,15 @@ impl ConfigPopupState {
             Some(log_level_value.to_compact_string())
         };
 
-        GlimConfig { gitlab_url, gitlab_token, search_filter, log_level }
+        let animations = animations_value == "true";
+
+        GlimConfig {
+            gitlab_url,
+            gitlab_token,
+            search_filter,
+            log_level,
+            animations,
+        }
     }
 
     /// returns the style for the input, considering the selected input field.
@@ -184,7 +209,7 @@ impl ConfigPopupState {
     }
 
     pub fn update_popup_area(&self, screen: Rect) -> Rect {
-        let area = screen.inner_centered(80, 15);
+        let area = screen.inner_centered(80, 18);
         self.popup_area.set(area);
         area
     }
@@ -264,5 +289,11 @@ fn log_level_description() -> Line<'static> {
     Line::from(vec![
         Span::from("logs saved to ").style(theme().input_description),
         Span::from(log_path).style(theme().input_description_em),
+    ])
+}
+
+fn animations_description() -> Line<'static> {
+    Line::from(vec![
+        Span::from("enable visual animations and effects").style(theme().input_description)
     ])
 }

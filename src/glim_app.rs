@@ -46,6 +46,13 @@ pub struct GlimConfig {
     pub search_filter: Option<CompactString>,
     /// Logging level: Off, Error, Warn, Info, Debug, Trace
     pub log_level: Option<CompactString>,
+    /// Enable animations (default: true)
+    #[serde(default = "default_animations_enabled")]
+    pub animations: bool,
+}
+
+fn default_animations_enabled() -> bool {
+    true
 }
 
 impl GlimApp {
