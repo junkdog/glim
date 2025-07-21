@@ -36,7 +36,7 @@ pub struct GlimApp {
     current_log_level: tracing::Level,
 }
 
-#[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlimConfig {
     /// The URL of the GitLab instance
     pub gitlab_url: CompactString,
@@ -47,12 +47,20 @@ pub struct GlimConfig {
     /// Logging level: Off, Error, Warn, Info, Debug, Trace
     pub log_level: Option<CompactString>,
     /// Enable animations (default: true)
-    #[serde(default = "default_animations_enabled")]
+    #[serde(default)]
     pub animations: bool,
 }
 
-fn default_animations_enabled() -> bool {
-    true
+impl Default for GlimConfig {
+    fn default() -> Self {
+        Self {
+            gitlab_url: "https://".into(),
+            gitlab_token: "".into(),
+            search_filter: None,
+            log_level: Some("Error".into()),
+            animations: true,
+        }
+    }
 }
 
 impl GlimApp {

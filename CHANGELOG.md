@@ -1,5 +1,10 @@
 # Changelog
 
+## glim 0.2.1 - 2025-07-21
+
+### Changed
+- Animations/transitions now default to enabled
+
 ## glim 0.2.0 - 2025-07-21
 
 ### Added
