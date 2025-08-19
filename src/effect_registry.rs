@@ -506,28 +506,3 @@ fn draw_border(duration: Duration) -> Effect {
         });
     })
 }
-
-/// Creates an effect that dispatches an event as soon as it starts.
-///
-/// This utility function allows effects to trigger application events,
-/// enabling coordination between the visual effect system and application logic.
-///
-/// # Type Parameters
-///
-/// * `T` - Event type that implements Clone, Debug, Send, and 'static
-///
-/// # Arguments
-///
-/// * `sender` - Channel for sending the event
-/// * `event` - Event to be dispatched
-///
-/// # Returns
-///
-/// An effect that dispatches the specified event immediately when started
-fn dispatch_event<T: Clone + Debug + Send + 'static>(sender: Sender<T>, event: T) -> Effect {
-    effect_fn_buf(Some(event), 1, move |e, _, _| {
-        if let Some(e) = e.take() {
-            let _ = sender.send(e);
-        }
-    })
-}

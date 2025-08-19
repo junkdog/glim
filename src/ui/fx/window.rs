@@ -26,7 +26,7 @@ impl PopupWindow {
         PopupWindowBuilder::default()
     }
 
-    fn window_block(&self) -> Block {
+    fn window_block(&self) -> Block<'_> {
         let w = Block::new()
             .borders(Borders::ALL)
             .title_style(self.border_style)

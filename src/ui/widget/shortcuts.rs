@@ -30,7 +30,7 @@ impl Shortcuts<'_> {
         }
     }
 
-    pub fn as_line(&self) -> Line {
+    pub fn as_line(&self) -> Line<'_> {
         let shortcuts = self
             .values
             .iter()
