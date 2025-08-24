@@ -24,7 +24,7 @@ arboard = { version = "3.6.0", default-features = false, features = ["windows-sy
 chrono = { version = "0.4.41", features = ["serde"] }
 compact_str = { version = "0.9", features = ["serde"] }
 confy = "1.0.0"
-tachyonfx = "0.16.0"
+tachyonfx = "0.17.0"
 crossterm = "0.28.1"
 derive_builder = "0.20.2"
 directories = "6.0.0"
