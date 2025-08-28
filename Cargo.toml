@@ -44,7 +44,7 @@ tui-input = "0.14.0"
 clap = { version = "4.5.45", features = ["derive"] }
 unicode-width = "0.2"
 color-eyre = "0.6.5"
-url = "2.5.0"
+url = "2.5.4"
 
 [dev-dependencies]
 wiremock = "0.6"
