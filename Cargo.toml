@@ -20,7 +20,7 @@ name = "glim"
 path = "src/main.rs"
 
 [dependencies]
-arboard = { version = "3.6.0", default-features = false, features = ["windows-sys", "wl-clipboard-rs"] }
+arboard = { version = "3.6.1", default-features = false, features = ["windows-sys", "wl-clipboard-rs"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 compact_str = { version = "0.9", features = ["serde"] }
 confy = "1.0.0"
