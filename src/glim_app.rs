@@ -42,6 +42,8 @@ pub struct GlimConfig {
     pub gitlab_url: CompactString,
     /// The Personal Access Token to authenticate with GitLab
     pub gitlab_token: CompactString,
+    #[serde(default)]
+    pub gitlab_token_file: Option<PathBuf>,
     /// Filter applied to the projects list
     pub search_filter: Option<CompactString>,
     /// Logging level: Off, Error, Warn, Info, Debug, Trace
@@ -56,6 +58,7 @@ impl Default for GlimConfig {
         Self {
             gitlab_url: "https://".into(),
             gitlab_token: "".into(),
+            gitlab_token_file: None,
             search_filter: None,
             log_level: Some("Error".into()),
             animations: true,

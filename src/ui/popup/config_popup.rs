@@ -1,4 +1,4 @@
-use std::vec;
+use std::{path::PathBuf, vec};
 
 use compact_str::{CompactString, ToCompactString};
 use ratatui::{
@@ -164,9 +164,14 @@ impl ConfigPopupState {
             .unwrap_or(&"")
             .trim()
             .to_compact_string();
-        let search_filter_value = values.get(2).unwrap_or(&"").trim();
-        let log_level_value = values.get(3).unwrap_or(&"Off").trim();
-        let animations_value = values.get(4).unwrap_or(&"true").trim();
+        let gitlab_token_file = values
+            .get(2)
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| PathBuf::from(s));
+        let search_filter_value = values.get(3).unwrap_or(&"").trim();
+        let log_level_value = values.get(4).unwrap_or(&"Off").trim();
+        let animations_value = values.get(5).unwrap_or(&"true").trim();
 
         let search_filter = if search_filter_value.is_empty() {
             None
@@ -185,6 +190,7 @@ impl ConfigPopupState {
         GlimConfig {
             gitlab_url,
             gitlab_token,
+            gitlab_token_file,
             search_filter,
             log_level,
             animations,

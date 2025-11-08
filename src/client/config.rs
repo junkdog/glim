@@ -240,9 +240,26 @@ impl ClientConfig {
     }
 }
 
+// impl From<GlimConfig> for ClientConfig {
+//     fn from(config: GlimConfig) -> Self {
+//         Self::new(config.gitlab_url, config.gitlab_token).with_search_filter(config.search_filter)
+//     }
+// }
+//
 impl From<GlimConfig> for ClientConfig {
     fn from(config: GlimConfig) -> Self {
-        Self::new(config.gitlab_url, config.gitlab_token).with_search_filter(config.search_filter)
+        let token = if let Some(token_file) = &config.gitlab_token_file {
+            std::fs::read_to_string(token_file)
+                .map(|s| s.trim().to_string())
+                .unwrap_or_else(|e| {
+                    tracing::warn!("Failed to read token file {:?}: {}", token_file, e);
+                    config.gitlab_token.to_string()
+                })
+        } else {
+            config.gitlab_token.to_string()
+        };
+
+        Self::new(config.gitlab_url, token).with_search_filter(config.search_filter)
     }
 }
 
@@ -354,6 +371,7 @@ mod tests {
         let glim_config = GlimConfig {
             gitlab_url: "https://gitlab.example.com".into(),
             gitlab_token: "test-token".into(),
+            gitlab_token_file: None,
             search_filter: Some("test".into()),
             log_level: Some("Off".into()),
             animations: true,
