@@ -43,7 +43,7 @@ pub fn sample_project_dto() -> ProjectDto {
         id: ProjectId::new(123),
         path_with_namespace: "group/project".into(),
         description: Some("Test project".into()),
-        default_branch: "main".into(),
+        default_branch: Some("main".into()),
         ssh_url_to_repo: "git@gitlab.example.com:group/project.git".into(),
         web_url: "https://gitlab.example.com/group/project".into(),
         last_activity_at: DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
@@ -65,6 +65,7 @@ pub fn sample_pipeline_dto() -> PipelineDto {
         status: crate::domain::PipelineStatus::Success,
         source: crate::domain::PipelineSource::Push,
         branch: "main".into(),
+        sha: "abc123def456".into(),
         web_url: "https://gitlab.example.com/group/project/-/pipelines/456".into(),
         created_at: DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
             .unwrap()
@@ -81,10 +82,10 @@ pub fn sample_job_dto() -> JobDto {
         id: JobId::new(789),
         name: "test-job".into(),
         stage: "test".into(),
-        commit: CommitDto {
+        commit: Some(CommitDto {
             title: "Test commit".into(),
             author_name: "Test Author".into(),
-        },
+        }),
         status: crate::domain::PipelineStatus::Success,
         created_at: DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
             .unwrap()

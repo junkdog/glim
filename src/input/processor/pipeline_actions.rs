@@ -27,29 +27,29 @@ impl PipelineActionsProcessor {
             KeyCode::Char('j') => ui.handle_pipeline_action_selection(1),
             KeyCode::Enter => {
                 let state = ui.pipeline_actions.as_ref().unwrap();
-                if let Some(action) = state
+                let action = state
                     .list_state
                     .selected()
-                    .map(|idx| state.copy_selected_action(idx))
-                {
+                    .map(|idx| state.copy_selected_action(idx));
+
+                // Close BEFORE dispatching the action so PipelineActionsClose
+                // pops PipelineActionsProcessor, not any processor the action pushes.
+                self.sender.dispatch(GlimEvent::PipelineActionsClose);
+                if let Some(action) = action {
                     self.sender.dispatch(action)
                 }
-
-                self.sender
-                    .dispatch(GlimEvent::PipelineActionsClose)
             },
             KeyCode::Char('o') => {
                 let state = ui.pipeline_actions.as_ref().unwrap();
-                if let Some(action) = state
+                let action = state
                     .list_state
                     .selected()
-                    .map(|idx| state.copy_selected_action(idx))
-                {
+                    .map(|idx| state.copy_selected_action(idx));
+
+                self.sender.dispatch(GlimEvent::PipelineActionsClose);
+                if let Some(action) = action {
                     self.sender.dispatch(action)
                 }
-
-                self.sender
-                    .dispatch(GlimEvent::PipelineActionsClose)
             },
             KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
             _ => (),

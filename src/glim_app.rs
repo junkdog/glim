@@ -39,8 +39,10 @@ pub struct GlimApp {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct GlimConfig {
     /// The URL of the GitLab instance
+    #[serde(default)]
     pub gitlab_url: CompactString,
     /// The Personal Access Token to authenticate with GitLab
+    #[serde(default)]
     pub gitlab_token: CompactString,
     /// Filter applied to the projects list
     pub search_filter: Option<CompactString>,
@@ -194,6 +196,56 @@ impl GlimApp {
                 debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Requesting jobs for pipeline");
                 self.gitlab
                     .spawn_fetch_jobs(project_id, pipeline_id)
+            },
+
+            // MR view events
+            GlimEvent::MrViewOpen(project_id, pipeline_id) => {
+                let sha = self.project_store
+                    .find(project_id)
+                    .and_then(|p| p.pipeline(pipeline_id))
+                    .map(|p| p.sha.clone())
+                    .unwrap_or_default();
+
+                if sha.is_empty() {
+                    self.dispatch(GlimEvent::MrNotFound(project_id, pipeline_id));
+                } else {
+                    self.gitlab.spawn_fetch_mr(project_id, pipeline_id, sha);
+                }
+            },
+            GlimEvent::MrNotFound(_, _) => {
+                self.dispatch(GlimEvent::AppError(GlimError::GeneralError(
+                    "No open MR found for this pipeline".into(),
+                )));
+            },
+            GlimEvent::MrLoaded(project_id, mr) => {
+                self.gitlab.spawn_fetch_mr_notes(project_id, mr.iid);
+            },
+            GlimEvent::MrNotePost(project_id, mr_iid, body) => {
+                self.gitlab.spawn_post_mr_note(project_id, mr_iid, body.clone());
+            },
+            GlimEvent::MrNotePosted(project_id, mr_iid) => {
+                self.gitlab.spawn_fetch_mr_notes(project_id, mr_iid);
+            },
+            GlimEvent::MrAtlantisAction(project_id, mr_iid, action) => {
+                let body: compact_str::CompactString = action.comment_body().into();
+                self.dispatch(GlimEvent::MrNotePost(project_id, mr_iid, body));
+            },
+
+            // pipeline operations
+            GlimEvent::PipelineRetry(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Retrying pipeline");
+                self.gitlab
+                    .spawn_retry_pipeline(project_id, pipeline_id);
+            },
+            GlimEvent::PipelineCancel(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Cancelling pipeline");
+                self.gitlab
+                    .spawn_cancel_pipeline(project_id, pipeline_id);
+            },
+            GlimEvent::PipelineDelete(project_id, pipeline_id) => {
+                debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Deleting pipeline");
+                self.gitlab
+                    .spawn_delete_pipeline(project_id, pipeline_id);
             },
 
             // configuration

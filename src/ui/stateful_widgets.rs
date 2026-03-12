@@ -6,13 +6,13 @@ use tachyonfx::{Duration, RefRect};
 
 use crate::{
     dispatcher::Dispatcher,
-    domain::Project,
+    domain::{MrNote, Project},
     effect_registry::EffectRegistry,
     event::GlimEvent,
     glim_app::{GlimApp, GlimConfig, Modulo},
     id::PipelineId,
     ui::{
-        popup::{ConfigPopupState, PipelineActionsPopupState, ProjectDetailsPopupState},
+        popup::{ConfigPopupState, MrViewState, PipelineActionsPopupState, ProjectDetailsPopupState},
         widget::NotificationState,
     },
 };
@@ -24,6 +24,7 @@ pub struct StatefulWidgets {
     pub config_popup_state: Option<ConfigPopupState>,
     pub project_details: Option<ProjectDetailsPopupState>,
     pub pipeline_actions: Option<PipelineActionsPopupState>,
+    pub mr_view: Option<MrViewState>,
     pub notice: Option<NotificationState>,
     pub filter_input_active: bool,
     pub filter_input_text: CompactString,
@@ -41,6 +42,7 @@ impl StatefulWidgets {
             config_popup_state: None,
             project_details: None,
             pipeline_actions: None,
+            mr_view: None,
             notice: None,
             filter_input_active: false,
             filter_input_text: CompactString::default(),
@@ -80,6 +82,25 @@ impl StatefulWidgets {
                 self.open_config(app.load_config().unwrap_or_default(), popup_area);
             },
             GlimEvent::ConfigClose => self.config_popup_state = None,
+
+            GlimEvent::MrViewOpen(project_id, _pipeline_id) => {
+                self.mr_view = Some(MrViewState::new(*project_id));
+            },
+            GlimEvent::MrViewClose => {
+                self.mr_view = None;
+            },
+            GlimEvent::MrLoaded(_project_id, mr) => {
+                if let Some(state) = self.mr_view.as_mut() {
+                    state.set_mr(*mr.clone());
+                }
+            },
+            GlimEvent::MrNotesLoaded(_project_id, _mr_iid, note_dtos) => {
+                if let Some(state) = self.mr_view.as_mut() {
+                    let notes: Vec<MrNote> =
+                        note_dtos.iter().cloned().map(MrNote::from).collect();
+                    state.set_notes(notes);
+                }
+            },
 
             GlimEvent::FilterMenuShow => self.show_filter_input(),
             GlimEvent::FilterMenuClose => self.close_filter_input(),

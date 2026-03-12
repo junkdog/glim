@@ -9,7 +9,7 @@ use ratatui::{
 use serde::Deserialize;
 
 use crate::{
-    id::{JobId, PipelineId, ProjectId},
+    id::{JobId, MrIid, PipelineId, ProjectId},
     theme::theme,
     ui::{format_duration, widget::text_from},
 };
@@ -41,6 +41,7 @@ pub struct Pipeline {
     pub updated_at: DateTime<Utc>,
     pub jobs: Option<Vec<Job>>,
     pub commit: Option<Commit>,
+    pub sha: CompactString,
 }
 
 #[derive(Clone, Debug)]
@@ -69,10 +70,12 @@ pub struct ProjectDto {
     pub id: ProjectId,
     pub path_with_namespace: CompactString,
     pub description: Option<CompactString>,
-    pub default_branch: CompactString,
+    #[serde(default)]
+    pub default_branch: Option<CompactString>,
     pub ssh_url_to_repo: CompactString,
     pub web_url: CompactString,
     pub last_activity_at: DateTime<Utc>,
+    #[serde(default)]
     pub statistics: StatisticsDto,
 }
 
@@ -85,7 +88,9 @@ pub struct StatisticsDto {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct CommitDto {
+    #[serde(default)]
     pub title: CompactString,
+    #[serde(default)]
     pub author_name: CompactString,
 }
 
@@ -94,7 +99,8 @@ pub struct JobDto {
     pub id: JobId,
     pub name: CompactString,
     pub stage: CompactString,
-    pub commit: CommitDto,
+    #[serde(default)]
+    pub commit: Option<CommitDto>,
     pub status: PipelineStatus,
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
@@ -113,6 +119,8 @@ pub struct PipelineDto {
     pub web_url: CompactString,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[serde(default)]
+    pub sha: CompactString,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Deserialize)]
@@ -154,6 +162,8 @@ pub enum PipelineSource {
     Trigger,
     Web,
     Webide,
+    #[serde(other)]
+    Unknown,
 }
 
 impl PipelineSource {
@@ -174,6 +184,7 @@ impl PipelineSource {
             PipelineSource::Trigger => "trigger",
             PipelineSource::Web => "web",
             PipelineSource::Webide => "web ide",
+            PipelineSource::Unknown => "unknown",
         }
         .into()
     }
@@ -278,7 +289,7 @@ impl From<ProjectDto> for Project {
             id: p.id,
             description: p.description,
             path: p.path_with_namespace,
-            default_branch: p.default_branch,
+            default_branch: p.default_branch.unwrap_or_default(),
             ssh_git_url: p.ssh_url_to_repo,
             url: p.web_url,
             last_activity_at: p.last_activity_at,
@@ -363,6 +374,7 @@ impl From<PipelineDto> for Pipeline {
             updated_at: p.updated_at,
             jobs: None,
             commit: None,
+            sha: p.sha,
         }
     }
 }
@@ -444,7 +456,7 @@ impl Pipeline {
             _ => self
                 .jobs
                 .as_ref()
-                .and_then(|jobs| jobs.iter().map(|j| j.finished_at).max().unwrap()),
+                .and_then(|jobs| jobs.iter().map(|j| j.finished_at).max().flatten()),
         }
     }
 }
@@ -560,5 +572,91 @@ impl IconRepresentable for Pipeline {
             .as_ref()
             .map(|jobs| jobs.icon())
             .unwrap_or(self.status.icon())
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct MrAuthorDto {
+    #[serde(default)]
+    pub username: CompactString,
+    #[serde(default)]
+    pub name: CompactString,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct MrDto {
+    pub iid: MrIid,
+    #[serde(default)]
+    pub title: CompactString,
+    #[serde(default)]
+    pub description: Option<CompactString>,
+    #[serde(default)]
+    pub state: CompactString,
+    #[serde(default)]
+    pub author: MrAuthorDto,
+    #[serde(default)]
+    pub web_url: CompactString,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct NoteDto {
+    #[serde(default)]
+    pub id: u64,
+    #[serde(default)]
+    pub body: CompactString,
+    #[serde(default)]
+    pub author: MrAuthorDto,
+    #[serde(default)]
+    pub created_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub system: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct MrView {
+    pub iid: MrIid,
+    pub project_id: ProjectId,
+    pub title: CompactString,
+    pub description: Option<CompactString>,
+    pub state: CompactString,
+    pub author_username: CompactString,
+    pub web_url: CompactString,
+    pub notes: Vec<MrNote>,
+}
+
+#[derive(Clone, Debug)]
+pub struct MrNote {
+    pub id: u64,
+    pub body: CompactString,
+    pub author_username: CompactString,
+    pub created_at: Option<DateTime<Utc>>,
+    pub is_atlantis: bool,
+}
+
+impl MrView {
+    pub fn from_dto(dto: MrDto, project_id: ProjectId) -> Self {
+        Self {
+            iid: dto.iid,
+            project_id,
+            title: dto.title,
+            description: dto.description,
+            state: dto.state,
+            author_username: dto.author.username,
+            web_url: dto.web_url,
+            notes: Vec::new(),
+        }
+    }
+}
+
+impl From<NoteDto> for MrNote {
+    fn from(n: NoteDto) -> Self {
+        let is_atlantis = n.author.username == "atlantis";
+        Self {
+            id: n.id,
+            body: n.body,
+            author_username: n.author.username,
+            created_at: n.created_at,
+            is_atlantis,
+        }
     }
 }

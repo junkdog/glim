@@ -66,6 +66,8 @@ pub enum FxId {
     ConfigPopup,
     /// Global screen glitch effects
     Glitch,
+    /// MR view popup dialog effects
+    MrViewPopup,
     /// Notification message effects
     Notification,
     /// Pipeline actions popup dialog effects
@@ -146,6 +148,7 @@ impl EffectRegistry {
             ProjectDetailsClose => self.register_close_popup(FxId::ProjectDetailsPopup),
             PipelineActionsClose => self.register_close_popup(FxId::PipelineActionsPopup),
             ConfigClose => self.register_close_popup(FxId::ConfigPopup),
+            MrViewClose => self.register_close_popup(FxId::MrViewPopup),
             ConfigUpdate(config) => self.animations_enabled = config.animations,
             _ => (),
         }

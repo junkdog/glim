@@ -11,10 +11,13 @@ use super::{
     config::ClientConfig,
     error::{ClientError, Result},
 };
+use compact_str::CompactString;
+
 use crate::{
     dispatcher::Dispatcher,
+    domain::MrView,
     event::{GlimEvent, IntoGlimEvent},
-    id::{JobId, PipelineId, ProjectId},
+    id::{JobId, MrIid, PipelineId, ProjectId},
     result::GlimError::{self, GeneralError},
 };
 
@@ -261,6 +264,64 @@ impl GitlabService {
                 .await
             {
                 warn!("Background job log download failed: {}", e);
+            }
+        });
+    }
+
+    /// Spawn an async task to fetch the MR associated with a commit SHA
+    pub fn spawn_fetch_mr(&self, project_id: ProjectId, sha: CompactString) {
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        self.handle.spawn(async move {
+            match api.get_mr_for_commit(project_id, &sha).await {
+                Ok(Some(mr)) => {
+                    let mr_view = MrView::from_dto(mr, project_id);
+                    sender.dispatch(GlimEvent::MrLoaded(project_id, Box::new(mr_view)));
+                },
+                Ok(None) => {
+                    // No open MR found - silently ignore
+                },
+                Err(e) => {
+                    error!(error = %e, "Failed to fetch MR for commit");
+                    let glim_error = crate::result::GlimError::from(&e);
+                    sender.dispatch(GlimEvent::AppError(glim_error));
+                },
+            }
+        });
+    }
+
+    /// Spawn an async task to fetch notes for a merge request
+    pub fn spawn_fetch_mr_notes(&self, project_id: ProjectId, mr_iid: MrIid) {
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        self.handle.spawn(async move {
+            match api.get_mr_notes(project_id, mr_iid).await {
+                Ok(notes) => {
+                    sender.dispatch(GlimEvent::MrNotesLoaded(project_id, mr_iid, notes));
+                },
+                Err(e) => {
+                    error!(error = %e, "Failed to fetch MR notes");
+                    let glim_error = crate::result::GlimError::from(&e);
+                    sender.dispatch(GlimEvent::AppError(glim_error));
+                },
+            }
+        });
+    }
+
+    /// Spawn an async task to post a note on a merge request
+    pub fn spawn_post_mr_note(&self, project_id: ProjectId, mr_iid: MrIid, body: CompactString) {
+        let api = self.api.clone();
+        let sender = self.sender.clone();
+        self.handle.spawn(async move {
+            match api.post_mr_note(project_id, mr_iid, &body).await {
+                Ok(_) => {
+                    sender.dispatch(GlimEvent::MrNotePosted(project_id, mr_iid));
+                },
+                Err(e) => {
+                    error!(error = %e, "Failed to post MR note");
+                    let glim_error = crate::result::GlimError::from(&e);
+                    sender.dispatch(GlimEvent::AppError(glim_error));
+                },
             }
         });
     }

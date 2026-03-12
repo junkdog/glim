@@ -6,7 +6,7 @@ use tracing::{debug, info, instrument, warn};
 
 use crate::{
     dispatcher::Dispatcher,
-    domain::{Job, Pipeline, Project},
+    domain::{Commit, Job, Pipeline, Project},
     event::GlimEvent,
     id::ProjectId,
 };
@@ -35,12 +35,13 @@ impl ProjectStore {
             // requests jobs for pipelines that have not been loaded yet
             GlimEvent::ProjectDetailsOpen(id) => {
                 debug!(project_id = %id, "Opening project details and requesting missing jobs");
-                let project = self.find(*id).unwrap();
-                project
-                    .recent_pipelines()
-                    .into_iter()
-                    .filter(|p| p.jobs.is_none())
-                    .for_each(|p| self.dispatch(GlimEvent::JobsFetch(project.id, p.id)));
+                if let Some(project) = self.find(*id) {
+                    project
+                        .recent_pipelines()
+                        .into_iter()
+                        .filter(|p| p.jobs.is_none())
+                        .for_each(|p| self.dispatch(GlimEvent::JobsFetch(project.id, p.id)));
+                }
             },
 
             // updates the projects in the store
@@ -62,13 +63,16 @@ impl ProjectStore {
 
                 self.sorted = self.projects_sorted_by_last_activity();
                 if first_projects {
-                    self.dispatch(GlimEvent::ProjectSelected(self.sorted.first().unwrap().id));
+                    if let Some(first) = self.sorted.first() {
+                        self.dispatch(GlimEvent::ProjectSelected(first.id));
+                    }
                 }
             },
 
             // updates the pipelines for a project
             GlimEvent::PipelinesLoaded(pipelines) => {
-                let project_id = pipelines[0].project_id;
+                let Some(first) = pipelines.first() else { return };
+                let project_id = first.project_id;
                 debug!(project_id = %project_id, pipeline_count = pipelines.len(), "Processing received pipelines");
                 let sender = self.sender.clone();
 
@@ -100,14 +104,13 @@ impl ProjectStore {
                 let sender = self.sender.clone();
                 if let Some(project) = self.find_mut(*project_id) {
                     project.update_jobs(*pipeline_id, jobs);
-                    // todo: ugly, fix
-                    project.update_commit(
-                        *pipeline_id,
-                        job_dtos
-                            .first()
-                            .map(|j| j.commit.clone().into())
-                            .unwrap(),
-                    );
+                    if let Some(commit) = job_dtos
+                        .first()
+                        .and_then(|j| j.commit.clone())
+                        .map(Commit::from)
+                    {
+                        project.update_commit(*pipeline_id, commit);
+                    }
                     sender.dispatch(GlimEvent::ProjectUpdated(Box::new(project.clone())))
                 }
 
@@ -230,6 +233,31 @@ pub fn log_event(event: &GlimEvent) {
                 content_length = log_content.len(),
                 "Job log downloaded successfully"
             )
+        },
+        GlimEvent::MrViewOpen(project_id, pipeline_id) => {
+            debug!(project_id = %project_id, pipeline_id = %pipeline_id, "Opening MR view")
+        },
+        GlimEvent::MrViewClose => debug!("Closing MR view"),
+        GlimEvent::MrLoaded(project_id, mr) => {
+            debug!(project_id = %project_id, mr_iid = %mr.iid, "MR loaded")
+        },
+        GlimEvent::MrNotFound(project_id, pipeline_id) => {
+            debug!(project_id = %project_id, pipeline_id = %pipeline_id, "No MR found for pipeline")
+        },
+        GlimEvent::MrNotesFetch(project_id, mr_iid) => {
+            debug!(project_id = %project_id, mr_iid = %mr_iid, "Fetching MR notes")
+        },
+        GlimEvent::MrNotesLoaded(project_id, mr_iid, notes) => {
+            debug!(project_id = %project_id, mr_iid = %mr_iid, count = notes.len(), "MR notes loaded")
+        },
+        GlimEvent::MrNotePost(project_id, mr_iid, _body) => {
+            debug!(project_id = %project_id, mr_iid = %mr_iid, "Posting MR note")
+        },
+        GlimEvent::MrNotePosted(project_id, mr_iid) => {
+            info!(project_id = %project_id, mr_iid = %mr_iid, "MR note posted")
+        },
+        GlimEvent::MrAtlantisAction(project_id, mr_iid, _action) => {
+            info!(project_id = %project_id, mr_iid = %mr_iid, "Triggering Atlantis action")
         },
         GlimEvent::ConfigOpen => debug!("Displaying configuration"),
         GlimEvent::ConfigApply => info!("Applying new configuration"),

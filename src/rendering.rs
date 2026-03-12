@@ -12,7 +12,7 @@ use crate::{
     glim_app::GlimApp,
     theme::theme,
     ui::{
-        popup::{ConfigPopup, PipelineActionsPopup, ProjectDetailsPopup},
+        popup::{ConfigPopup, MrViewPopup, PipelineActionsPopup, ProjectDetailsPopup},
         widget::{Notification, ProjectsTable},
         StatefulWidgets,
     },
@@ -83,6 +83,25 @@ fn render_popups(
 
     if let Some(notification) = &mut widget_states.notice {
         f.render_stateful_widget(Notification::new(), area, notification);
+    }
+
+    if let Some(mr_state) = widget_states.mr_view.as_mut() {
+        let popup_area = area.inner(ratatui::layout::Margin::new(3, 1));
+        f.render_stateful_widget(MrViewPopup, popup_area, mr_state);
+
+        if matches!(mr_state.mode, crate::ui::popup::MrViewMode::Composing) {
+            // Calculate input area position to set cursor
+            // Layout is: 4 header + min(5) notes + 3 input = inner area
+            let inner = popup_area.inner(ratatui::layout::Margin::new(1, 1));
+            let input_area = Rect {
+                x: inner.x,
+                y: inner.bottom().saturating_sub(3),
+                width: inner.width,
+                height: 3,
+            };
+            let (cx, cy) = mr_state.cursor_position(input_area);
+            f.set_cursor_position((cx, cy));
+        }
     }
 }
 

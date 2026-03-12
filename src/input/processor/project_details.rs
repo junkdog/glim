@@ -47,6 +47,13 @@ impl ProjectDetailsProcessor {
                         self.selected.unwrap(),
                     ))
             },
+            KeyCode::Char('m') if self.selected.is_some() => {
+                self.sender
+                    .dispatch(GlimEvent::MrViewOpen(
+                        self.project_id,
+                        self.selected.unwrap(),
+                    ))
+            },
             KeyCode::F(12) => self.sender.dispatch(GlimEvent::ScreenCapture),
             _ => (),
         }

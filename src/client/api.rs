@@ -13,8 +13,8 @@ use super::{
     error::{ClientError, Result},
 };
 use crate::{
-    domain::{JobDto, PipelineDto, ProjectDto},
-    id::{JobId, PipelineId, ProjectId},
+    domain::{JobDto, MrDto, NoteDto, PipelineDto, ProjectDto},
+    id::{JobId, MrIid, PipelineId, ProjectId},
 };
 
 /// Pure HTTP client for GitLab API
@@ -122,6 +122,78 @@ impl GitlabApi {
         let response = self.authenticated_request(&url).send().await?;
         let body = response.text().await?;
         Ok(body.into())
+    }
+
+    /// Get merge request associated with a commit SHA
+    pub async fn get_mr_for_commit(
+        &self,
+        project_id: ProjectId,
+        sha: &str,
+    ) -> Result<Option<MrDto>> {
+        let url = {
+            let config = self.config.read().unwrap();
+            format_compact!(
+                "{}/projects/{}/repository/commits/{}/merge_requests",
+                config.base_url,
+                project_id,
+                sha
+            )
+        };
+        let mrs: Vec<MrDto> = self.get_json(&url).await?;
+        Ok(mrs.into_iter().find(|mr| mr.state == "opened"))
+    }
+
+    /// Get notes (comments) for a merge request
+    pub async fn get_mr_notes(
+        &self,
+        project_id: ProjectId,
+        mr_iid: MrIid,
+    ) -> Result<Vec<NoteDto>> {
+        let url = {
+            let config = self.config.read().unwrap();
+            format_compact!(
+                "{}/projects/{}/merge_requests/{}/notes?per_page=100&sort=asc",
+                config.base_url,
+                project_id,
+                mr_iid
+            )
+        };
+        self.get_json(&url).await
+    }
+
+    /// Post a note (comment) on a merge request
+    pub async fn post_mr_note(
+        &self,
+        project_id: ProjectId,
+        mr_iid: MrIid,
+        body: &str,
+    ) -> Result<NoteDto> {
+        let url = {
+            let config = self.config.read().unwrap();
+            format_compact!(
+                "{}/projects/{}/merge_requests/{}/notes",
+                config.base_url,
+                project_id,
+                mr_iid
+            )
+        };
+        let payload = serde_json::json!({ "body": body });
+        let payload_str = serde_json::to_string(&payload)
+            .map_err(|e| ClientError::json_parse(url.as_str(), "Failed to serialize payload", e))?;
+        let (client_clone, private_token) = {
+            let client = self.client.read().unwrap();
+            let private_token = self.config.read().unwrap().private_token.clone();
+            (client.clone(), private_token)
+        };
+        let response = client_clone
+            .post(url.as_str())
+            .header("PRIVATE-TOKEN", private_token.as_str())
+            .header("Content-Type", "application/json")
+            .body(payload_str)
+            .send()
+            .await
+            .map_err(ClientError::Http)?;
+        self.handle_response(response).await
     }
 
     /// Update configuration
@@ -283,6 +355,10 @@ impl GitlabApi {
 
         if query.membership {
             url.push_str("&membership=true");
+        }
+
+        if let Some(level) = query.min_access_level {
+            url.push_str(&format_compact!("&min_access_level={}", level));
         }
 
         url.push_str(&format_compact!("&per_page={}", query.per_page));

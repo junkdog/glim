@@ -53,12 +53,36 @@ fn main() -> Result<()> {
 
     let debug = std::env::var("GLIM_DEBUG").is_ok();
 
-    let config = if config_path.exists() {
+    let mut config = if config_path.exists() {
         confy::load_path(&config_path)
             .map_err(|e| crate::result::GlimError::config_load_error(config_path.clone(), e))?
     } else {
         GlimConfig::default()
     };
+
+    // Allow env vars to override config file values
+    if let Ok(token) = std::env::var("GITLAB_TOKEN") {
+        config.gitlab_token = token.into();
+    }
+    if let Ok(url) = std::env::var("GITLAB_URL") {
+        config.gitlab_url = url.into();
+    }
+
+    // Validate that credentials are available from some source
+    if config.gitlab_token.is_empty() {
+        eprintln!("Error: GitLab token is not configured.\n");
+        eprintln!("Set it via environment variable:  export GITLAB_TOKEN=<your-token>");
+        eprintln!("Or add to config file ({}):", config_path.display());
+        eprintln!("  gitlab_token = \"<your-token>\"");
+        exit(1);
+    }
+    if config.gitlab_url.is_empty() {
+        eprintln!("Error: GitLab URL is not configured.\n");
+        eprintln!("Set it via environment variable:  export GITLAB_URL=https://gitlab.com");
+        eprintln!("Or add to config file ({}):", config_path.display());
+        eprintln!("  gitlab_url = \"https://gitlab.com\"");
+        exit(1);
+    }
 
     // Create a shared runtime for async operations
     let rt = tokio::runtime::Runtime::new().map_err(|e| {

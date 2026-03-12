@@ -9,7 +9,7 @@ use crate::{
 
 pub fn default_config_path() -> PathBuf {
     if let Some(dirs) = BaseDirs::new() {
-        dirs.config_dir().join("glim.toml")
+        dirs.home_dir().join(".config").join("glim").join("glim.toml")
     } else {
         PathBuf::from("glim.toml")
     }

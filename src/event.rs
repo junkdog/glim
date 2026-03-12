@@ -6,9 +6,9 @@ use tracing::Level;
 
 use crate::{
     dispatcher::Dispatcher,
-    domain::{JobDto, PipelineDto, Project, ProjectDto},
+    domain::{JobDto, MrView, NoteDto, PipelineDto, Project, ProjectDto},
     glim_app::GlimConfig,
-    id::{JobId, PipelineId, ProjectId},
+    id::{JobId, MrIid, PipelineId, ProjectId},
     result,
 };
 
@@ -59,6 +59,30 @@ pub enum GlimEvent {
     ProjectsLoaded(Vec<ProjectDto>),
     ScreenCapture,
     ScreenCaptureToClipboard(String),
+    MrViewOpen(ProjectId, PipelineId),
+    MrViewClose,
+    MrLoaded(ProjectId, Box<MrView>),
+    MrNotFound(ProjectId, PipelineId),
+    MrNotesFetch(ProjectId, MrIid),
+    MrNotesLoaded(ProjectId, MrIid, Vec<NoteDto>),
+    MrNotePost(ProjectId, MrIid, CompactString),
+    MrNotePosted(ProjectId, MrIid),
+    MrAtlantisAction(ProjectId, MrIid, AtlantisAction),
+}
+
+#[derive(Debug, Clone)]
+pub enum AtlantisAction {
+    Plan,
+    Apply,
+}
+
+impl AtlantisAction {
+    pub fn comment_body(&self) -> &'static str {
+        match self {
+            AtlantisAction::Plan => "atlantis plan",
+            AtlantisAction::Apply => "atlantis apply",
+        }
+    }
 }
 
 impl GlimEvent {
@@ -108,6 +132,15 @@ impl GlimEvent {
             GlimEvent::ProjectsLoaded(_) => "ProjectsLoaded",
             GlimEvent::ScreenCapture => "ScreenCapture",
             GlimEvent::ScreenCaptureToClipboard(_) => "ScreenCaptureToClipboard",
+            GlimEvent::MrViewOpen(_, _) => "MrViewOpen",
+            GlimEvent::MrViewClose => "MrViewClose",
+            GlimEvent::MrLoaded(_, _) => "MrLoaded",
+            GlimEvent::MrNotFound(_, _) => "MrNotFound",
+            GlimEvent::MrNotesFetch(_, _) => "MrNotesFetch",
+            GlimEvent::MrNotesLoaded(_, _, _) => "MrNotesLoaded",
+            GlimEvent::MrNotePost(_, _, _) => "MrNotePost",
+            GlimEvent::MrNotePosted(_, _) => "MrNotePosted",
+            GlimEvent::MrAtlantisAction(_, _, _) => "MrAtlantisAction",
         }
     }
 }

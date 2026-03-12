@@ -3,7 +3,9 @@ use std::sync::mpsc::Sender;
 use crate::{
     event::GlimEvent,
     input::{
-        processor::{ConfigProcessor, PipelineActionsProcessor, ProjectDetailsProcessor},
+        processor::{
+            ConfigProcessor, MrViewProcessor, PipelineActionsProcessor, ProjectDetailsProcessor,
+        },
         InputProcessor,
     },
     ui::StatefulWidgets,
@@ -55,6 +57,15 @@ impl InputMultiplexer {
                 self.push(Box::new(ConfigProcessor::new(self.sender.clone())));
             },
             GlimEvent::ConfigClose => self.pop_processor(),
+
+            // MR view
+            GlimEvent::MrViewOpen(project_id, _pipeline_id) => {
+                self.push(Box::new(MrViewProcessor::new(
+                    self.sender.clone(),
+                    *project_id,
+                )));
+            },
+            GlimEvent::MrViewClose => self.pop_processor(),
 
             _ => (),
         }
