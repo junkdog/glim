@@ -31,7 +31,7 @@ pub struct GlimApp {
     project_store: ProjectStore,
     notices: NoticeService,
     input: InputMultiplexer,
-    clipboard: arboard::Clipboard,
+    clipboard: Option<arboard::Clipboard>,
     log_reload_handle: LoggingReloadHandle,
     current_log_level: tracing::Level,
 }
@@ -90,7 +90,11 @@ impl GlimApp {
             project_store: ProjectStore::new(sender),
             notices: NoticeService::new(),
             input,
-            clipboard: arboard::Clipboard::new().expect("failed to create clipboard"),
+            clipboard: arboard::Clipboard::new()
+                .inspect_err(
+                    |e| warn!(error = %e, "clipboard unavailable; copy actions will be disabled"),
+                )
+                .ok(),
             log_reload_handle,
             current_log_level,
         }
@@ -153,8 +157,8 @@ impl GlimApp {
                     .spawn_download_job_log(project_id, job.id);
             },
             GlimEvent::JobLogDownloaded(project_id, job_id, trace) => {
-                info!(project_id = %project_id, job_id = %job_id, trace_length = trace.len(), "Job log downloaded and copied to clipboard");
-                self.clipboard.set_text(trace).unwrap();
+                info!(project_id = %project_id, job_id = %job_id, trace_length = trace.len(), "Job log downloaded");
+                self.copy_to_clipboard(trace, "job log");
             },
 
             GlimEvent::JobsActiveFetch => {
@@ -272,15 +276,7 @@ impl GlimApp {
             },
 
             GlimEvent::ScreenCaptureToClipboard(ansi_string) => {
-                debug!("Copying screen capture to clipboard");
-                match self.clipboard.set_text(ansi_string) {
-                    Ok(_) => {
-                        info!("Screen buffer captured and copied to clipboard");
-                    },
-                    Err(e) => {
-                        warn!(error = %e, "Failed to copy screen capture to clipboard");
-                    },
-                }
+                self.copy_to_clipboard(ansi_string, "screen capture");
             },
 
             _ => {},
@@ -389,6 +385,25 @@ impl GlimApp {
 
     pub fn pop_notice(&mut self) -> Option<Notice> {
         self.notices.pop_notice()
+    }
+
+    fn copy_to_clipboard(&mut self, text: impl Into<String>, what: &str) {
+        let result = match self.clipboard.as_mut() {
+            Some(clipboard) => clipboard
+                .set_text(text.into())
+                .map_err(|e| e.to_string()),
+            None => Err("no clipboard available in this environment".to_string()),
+        };
+
+        match result {
+            Ok(()) => info!("Copied {what} to clipboard"),
+            Err(e) => {
+                warn!(error = %e, "Failed to copy {what} to clipboard");
+                self.dispatch(GlimEvent::AppError(GlimError::GeneralError(
+                    format!("failed to copy {what} to clipboard: {e}").into(),
+                )));
+            },
+        }
     }
 
     /// Update the logging level at runtime
